@@ -11,12 +11,7 @@ export default function HomePage() {
         textAlign: 'center',
       }}
     >
-      <img
-        src="/logo.png"
-        alt="UTJN Logo"
-        style={{ width: 210.4, height: 41.7, marginBottom: 30 }}
-      />
-
+      
       <h1 style={{ fontSize: '2rem', margin: '0.5rem 0' }}>
         University of Toronto Japanese Network
       </h1>
