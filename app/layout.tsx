@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           style={{
             position: 'relative',
             height: '100px',
-            borderBottom: '1px solid #ddd',
+            // borderBottom: '1px solid #ddd',
             backgroundColor: '#fff'
           }}
         >
