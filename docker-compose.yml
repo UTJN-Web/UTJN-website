@@ -2,10 +2,17 @@ version: "3.9"
 
 services:
   web:
-    build: .          
-    ports:
-      - "3000:3000"  
+    build: .
     command: npm run dev
-    volumes:          
-      - .:/app
-      - /app/node_modules
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app                    
+      - node_deps:/app/node_modules 
+    environment:
+      - NEXT_TELEMETRY_DISABLED=1   
+      - NODE_ENV=development        
+
+volumes:
+  node_deps:  
+  
