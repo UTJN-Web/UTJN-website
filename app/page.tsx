@@ -1,35 +1,51 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
   /* ---------------------------------------------------------------- events */
-  const events = [
+  const baseEvents = [
     'halloween.png',
     'happy-new-year.png',
     'sports-fes.png',
     'utjn-advice.png',
     'ball-game.png',
-    'end-year.png'
+    'end-year.png',
   ];
+
+  /** 10 周左 + 1 周中央 + 10 周右 = 21 周 (126 枚) */
+  const loops  = 10;
+  const events = Array.from({ length: loops * 2 + 1 }, () => baseEvents).flat();
+
+  /** layout helpers (larger card & full-width rail) */
+  const gap        = 32;              // gap-x-8 = 32px
+  const imgWidth   = 300;             // bigger tile
+  const step       = imgWidth + gap;  // move distance
+  const centerIdx  = loops * baseEvents.length;
+  const centerPos  = centerIdx * step;
+
   const carouselRef = useRef<HTMLDivElement | null>(null);
 
   const scroll = (dir: 'left' | 'right') => {
     if (!carouselRef.current) return;
-    const cardWidth = carouselRef.current.firstElementChild?.clientWidth ?? 0;
     carouselRef.current.scrollBy({
-      left: dir === 'left' ? -cardWidth - 24 : cardWidth + 24, // 24 ≈ gap
+      left: dir === 'left' ? -step : step,
       behavior: 'smooth',
     });
   };
 
+  /* 初期スクロール位置を中央へ */
+  useEffect(() => {
+    if (carouselRef.current) carouselRef.current.scrollLeft = centerPos;
+  }, [centerPos]);
+
   /* ---------------------------------------------------------------- render */
   return (
     <div className="flex flex-col items-center w-full min-h-screen">
-      {/* Hero Section */}
+      {/* ─────────── Hero Section ─────────── */}
       <div className="relative w-full h-screen">
         <Image
           src="/toronto-skyline-from-park.jpg"
@@ -47,7 +63,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Mission Section */}
+      {/* ─────────── Mission Section ─────────── */}
       <div className="bg-[#1c2a52] text-white text-center py-16 px-4 md:px-16">
         <p className="text-2xl md:text-3xl font-semibold mb-8">
           “刺激的な環境を提供することで個々の新しいアイディアや挑戦を可能にし、
@@ -62,7 +78,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Stats Section */}
+      {/* ─────────── Stats Section ─────────── */}
       <div className="bg-white text-center py-12 grid grid-cols-2 md:grid-cols-4 gap-8 w-full">
         <Stat value="2016" label="Founded" />
         <Stat value="400+" label="Alumni" />
@@ -70,29 +86,36 @@ export default function HomePage() {
         <Stat value="37" label="Executives" />
       </div>
 
-      {/* ───────────────────── Events Section (carousel) ─────────────────────── */}
+      {/* ─────────── Events Section ─────────── */}
       <div className="bg-[#1c2a52] text-white py-16 w-full px-4">
-        <h2 className="text-3xl md:text-4xl text-center font-bold mb-12">
+        <h2 className="text-3xl md:text-5xl text-center font-bold mb-12">
           Our Events
         </h2>
 
-        {/* scroll container */}
+        {/* full-width rail */}
         <div
           ref={carouselRef}
-          className="no-scrollbar mx-auto flex max-w-6xl gap-6 overflow-x-auto px-1"
+          className="no-scrollbar flex w-full gap-8 overflow-x-auto px-4 scroll-smooth"
         >
           {events.map((file, idx) => (
-            <div key={idx} className="flex-shrink-0 w-64">
+            <div
+              key={`${file}-${idx}`}
+              className="flex-shrink-0 w-[300px] flex flex-col items-center"
+            >
               <Image
                 src={`/${file}`}
-                alt={`Event ${idx + 1}`}
-                width={256}
-                height={256}
-                className="rounded-lg mb-4 object-cover"
+                alt={`Event ${(idx % baseEvents.length) + 1}`}
+                width={300}
+                height={300}
+                className="rounded-lg object-cover"
               />
               <Link
                 href="#"
-                className="block text-center text-white border border-white py-2 rounded-md"
+                className="
+                  mt-4 block w-full text-center font-medium
+                  border border-white py-2 rounded-md
+                  transition-colors hover:bg-white hover:text-[#1c2a52]
+                "
               >
                 TO GALLERY
               </Link>
@@ -100,27 +123,26 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* arrows below carousel */}
-        <div className="mt-8 flex justify-center gap-8">
+        {/* arrows */}
+        <div className="mt-12 flex justify-center gap-12">
           <button
             onClick={() => scroll('left')}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
             aria-label="Scroll left"
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={28} />
           </button>
           <button
             onClick={() => scroll('right')}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
             aria-label="Scroll right"
           >
-            <ArrowRight size={22} />
+            <ArrowRight size={28} />
           </button>
         </div>
       </div>
 
-
-      {/* Membership Section */}
+      {/* ─────────── Membership Section ─────────── */}
       <div className="bg-white py-16 text-center px-4">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">Become a Member</h2>
         <p className="mb-8 text-lg max-w-3xl mx-auto">
@@ -134,10 +156,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* ─────────── Footer ─────────── */}
       <footer className="bg-[#1c2a52] text-white py-8 w-full text-center text-sm">
         <p className="mb-2 font-bold">University of Toronto Japan Network</p>
-        <p className="mb-2">27 King&apos;s College Circle, Toronto, Ontario M5S 1A1</p>
+        <p className="mb-2">
+          27 King&apos;s College Circle, Toronto, Ontario M5S 1A1
+        </p>
         <div className="flex justify-center gap-4 mt-4">
           <Social icon="/facebook.png" alt="Facebook" />
           <Social icon="/instagram.png" alt="Instagram" />
