@@ -92,49 +92,49 @@ export default function HomePage() {
           Our Events
         </h2>
 
-        {/* full-width rail */}
-        <div
-          ref={carouselRef}
-          className="no-scrollbar flex w-full gap-8 overflow-x-auto px-4 scroll-smooth"
-        >
-          {events.map((file, idx) => (
-            <div
-              key={`${file}-${idx}`}
-              className="fade-in-up flex-shrink-0 w-[300px] flex flex-col items-center"
-            >
-              <Image
-                src={`/${file}`}
-                alt={`Event ${(idx % baseEvents.length) + 1}`}
-                width={300}
-                height={300}
-                className="rounded-lg object-cover"
-              />
-              <Link
-                href="#"
-                className="
-                  mt-4 block w-full text-center font-medium
-                  border border-white py-2 rounded-md
-                  transition-colors hover:bg-white hover:text-[#1c2a52]
-                "
-              >
-                TO GALLERY
-              </Link>
-            </div>
-          ))}
-        </div>
-
-        {/* arrows */}
-        <div className="fade-in-up mt-12 flex justify-center gap-12">
+        <div className="relative w-full">
           <button
             onClick={() => scroll('left')}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
+            className="fade-in-up absolute left-0 top-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
             aria-label="Scroll left"
           >
             <ArrowLeft size={28} />
           </button>
+
+          {/* full-width rail */}
+          <div
+            ref={carouselRef}
+            className="no-scrollbar flex w-full gap-8 overflow-x-auto px-20 scroll-smooth"
+          >
+            {events.map((file, idx) => (
+              <div
+                key={`${file}-${idx}`}
+                className="fade-in-up flex-shrink-0 w-[300px] flex flex-col items-center"
+              >
+                <Image
+                  src={`/${file}`}
+                  alt={`Event ${(idx % baseEvents.length) + 1}`}
+                  width={300}
+                  height={300}
+                  className="rounded-lg object-cover"
+                />
+                <Link
+                  href="#"
+                  className="
+                    mt-4 block w-full text-center font-medium
+                    border border-white py-2 rounded-md
+                    transition-colors hover:bg-white hover:text-[#1c2a52]
+                  "
+                >
+                  TO GALLERY
+                </Link>
+              </div>
+            ))}
+          </div>
+
           <button
             onClick={() => scroll('right')}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
+            className="fade-in-up absolute right-0 top-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
             aria-label="Scroll right"
           >
             <ArrowRight size={28} />

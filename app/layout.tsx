@@ -2,6 +2,7 @@
 import './globals.css';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import ScrollObserver from './components/ScrollObserver';
 
 export const metadata = {
   title: 'UTJN - University of Toronto Japanese Network',
@@ -106,6 +107,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <main className="flex flex-col items-center justify-start min-h-screen pt-8 text-center">
           {children}
         </main>
+        <ScrollObserver />
       </body>
     </html>
   );
