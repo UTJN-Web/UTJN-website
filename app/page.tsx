@@ -44,9 +44,9 @@ export default function HomePage() {
 
   /* ---------------------------------------------------------------- render */
   return (
-    <div className="flex flex-col items-center w-full min-h-screen">
+    <div className="fade-in-up flex flex-col items-center w-full min-h-screen">
       {/* ─────────── Hero Section ─────────── */}
-      <div className="relative -mt-[30px] pt-[30px] w-full h-[calc(100vh-100px)]">
+      <div className="fade-in-up relative -mt-[30px] pt-[30px] w-full h-[calc(100vh-100px)]">
         <Image
           src="/toronto-skyline-from-park.jpg"
           alt="Toronto Skyline"
@@ -64,7 +64,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Mission Section ─────────── */}
-      <div className="bg-[#1c2a52] text-white text-center py-16 px-4 md:px-16">
+      <div className="fade-in-up bg-[#1c2a52] text-white text-center py-16 px-4 md:px-16">
         <p className="text-2xl md:text-3xl font-semibold mb-8">
           “刺激的な環境を提供することで個々の新しいアイディアや挑戦を可能にし、
           トロント大学を才能と発想のインキュベーターにする”
@@ -79,7 +79,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Stats Section ─────────── */}
-      <div className="bg-white text-[#171717] text-center py-12 grid grid-cols-2 md:grid-cols-4 gap-8 w-full">
+      <div className="fade-in-up bg-white text-[#171717] text-center py-12 grid grid-cols-2 md:grid-cols-4 gap-8 w-full">
         <Stat value="2016" label="Founded" />
         <Stat value="400+" label="Alumni" />
         <Stat value="340+" label="Students" />
@@ -87,7 +87,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Events Section ─────────── */}
-      <div className="bg-[#1c2a52] text-white py-16 w-full px-4">
+      <div className="fade-in-up bg-[#1c2a52] text-white py-16 w-full px-4">
         <h2 className="text-3xl md:text-5xl text-center font-bold mb-12">
           Our Events
         </h2>
@@ -100,7 +100,7 @@ export default function HomePage() {
           {events.map((file, idx) => (
             <div
               key={`${file}-${idx}`}
-              className="flex-shrink-0 w-[300px] flex flex-col items-center"
+              className="fade-in-up flex-shrink-0 w-[300px] flex flex-col items-center"
             >
               <Image
                 src={`/${file}`}
@@ -124,7 +124,7 @@ export default function HomePage() {
         </div>
 
         {/* arrows */}
-        <div className="mt-12 flex justify-center gap-12">
+        <div className="fade-in-up mt-12 flex justify-center gap-12">
           <button
             onClick={() => scroll('left')}
             className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
@@ -143,7 +143,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Membership Section ─────────── */}
-      <div className="bg-white text-[#171717] py-16 text-center px-4">
+      <div className="fade-in-up bg-white text-[#171717] py-16 text-center px-4">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">Become a Member</h2>
         <p className="mb-8 text-lg max-w-3xl mx-auto">
           UTJNでは2023–2024年度もネットワーキング、就職、同窓会など、多様なニーズに応えた
@@ -157,7 +157,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Footer ─────────── */}
-      <footer className="bg-[#1c2a52] text-white py-8 w-full text-center text-sm">
+      <footer className="fade-in-up bg-[#1c2a52] text-white py-8 w-full text-center text-sm">
         <p className="mb-2 font-bold">University of Toronto Japan Network</p>
         <p className="mb-2">
           27 King&apos;s College Circle, Toronto, Ontario M5S 1A1
@@ -175,7 +175,7 @@ export default function HomePage() {
 /* ---------------------------------------------------------------- helpers */
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div>
+    <div className="fade-in-up">
       <h2 className="text-4xl font-bold">{value}</h2>
       <p>{label}</p>
     </div>
@@ -184,12 +184,12 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function CTA({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="bg-[#1c2a52] text-white px-6 py-3 rounded-md">
+    <Link href={href} className="fade-in-up bg-[#1c2a52] text-white px-6 py-3 rounded-md">
       {label}
     </Link>
   );
 }
 
 function Social({ icon, alt }: { icon: string; alt: string }) {
-  return <Image src={icon} alt={alt} width={24} height={24} />;
+  return <Image className="fade-in-up" src={icon} alt={alt} width={24} height={24} />;
 }
