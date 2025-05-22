@@ -27,3 +27,19 @@ body {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }   /* Chrome / Safari / Opera */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } /* IE / Edge / FF */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-in-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

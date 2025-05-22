@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
-  /* ---------------------------------------------------------------- events */
+  /* ─────────────────────────────── events data */
   const baseEvents = [
     'halloween.png',
     'happy-new-year.png',
@@ -16,16 +16,16 @@ export default function HomePage() {
     'end-year.png',
   ];
 
-  /** 10 周左 + 1 周中央 + 10 周右 = 21 周 (126 枚) */
+  /** 10 loops left + centre + 10 loops right  = 126 tiles */
   const loops  = 10;
   const events = Array.from({ length: loops * 2 + 1 }, () => baseEvents).flat();
 
-  /** layout helpers (larger card & full-width rail) */
-  const gap        = 32;              // gap-x-8 = 32px
-  const imgWidth   = 300;             // bigger tile
-  const step       = imgWidth + gap;  // move distance
-  const centerIdx  = loops * baseEvents.length;
-  const centerPos  = centerIdx * step;
+  /* ─────────────────────────────── layout helpers */
+  const gap       = 32;   // gap-x-8  in Tailwind → 32 px
+  const imgWidth  = 300;  // fixed card width
+  const step      = imgWidth + gap;
+  const centerIdx = loops * baseEvents.length;
+  const centerPos = centerIdx * step;
 
   const carouselRef = useRef<HTMLDivElement | null>(null);
 
@@ -37,35 +37,35 @@ export default function HomePage() {
     });
   };
 
-  /* 初期スクロール位置を中央へ */
+  /* first render → jump to the real centre */
   useEffect(() => {
     if (carouselRef.current) carouselRef.current.scrollLeft = centerPos;
   }, [centerPos]);
 
-  /* ---------------------------------------------------------------- render */
+  /* ─────────────────────────────── render */
   return (
-    <div className="flex flex-col items-center w-full min-h-screen">
-      {/* ─────────── Hero Section ─────────── */}
-      <div className="relative w-full h-screen">
+    <div className="fade-in-up flex min-h-screen w-full flex-col items-center">
+      {/* ─────────── Hero Section (unchanged) ─────────── */}
+      <div className="fade-in-up relative -mt-[30px] h-[calc(100vh-100px)] w-full pt-[30px]">
         <Image
           src="/toronto-skyline-from-park.jpg"
           alt="Toronto Skyline"
           fill
-          quality={100}
-          className="object-cover"
           priority
           sizes="100vw"
+          quality={100}
+          className="object-cover"
         />
         <div className="absolute inset-0 flex items-center justify-center px-4">
-          <h1 className="text-center text-white text-4xl md:text-6xl font-bold">
+          <h1 className="fade-in-up text-4xl font-bold text-white md:text-6xl">
             The Premier Japanese Network in Toronto
           </h1>
         </div>
       </div>
 
-      {/* ─────────── Mission Section ─────────── */}
-      <div className="bg-[#1c2a52] text-white text-center py-16 px-4 md:px-16">
-        <p className="text-2xl md:text-3xl font-semibold mb-8">
+      {/* ─────────── Mission Section (unchanged) ─────────── */}
+      <div className="fade-in-up bg-[#1c2a52] px-4 py-16 text-center text-white md:px-16">
+        <p className="mb-8 text-2xl font-semibold md:text-3xl">
           “刺激的な環境を提供することで個々の新しいアイディアや挑戦を可能にし、
           トロント大学を才能と発想のインキュベーターにする”
         </p>
@@ -78,29 +78,37 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* ─────────── Stats Section ─────────── */}
-      <div className="bg-white text-center py-12 grid grid-cols-2 md:grid-cols-4 gap-8 w-full">
+      {/* ─────────── Stats Section (unchanged) ─────────── */}
+      <div className="fade-in-up grid w-full grid-cols-2 gap-8 bg-white py-12 text-center text-[#171717] md:grid-cols-4">
         <Stat value="2016" label="Founded" />
         <Stat value="400+" label="Alumni" />
         <Stat value="340+" label="Students" />
         <Stat value="37" label="Executives" />
       </div>
 
-      {/* ─────────── Events Section ─────────── */}
-      <div className="bg-[#1c2a52] text-white py-16 w-full px-4">
-        <h2 className="text-3xl md:text-5xl text-center font-bold mb-12">
+      {/* ─────────── Events Section (updated) ─────────── */}
+      <div className="fade-in-up w-full bg-[#1c2a52] px-4 py-16 text-white">
+        <h2 className="mb-12 text-center text-3xl font-bold md:text-5xl">
           Our Events
         </h2>
 
-        {/* full-width rail */}
+        {/* ——— scrolling rail ——— */}
         <div
           ref={carouselRef}
-          className="no-scrollbar flex w-full gap-8 overflow-x-auto px-4 scroll-smooth"
+          className="
+            no-scrollbar flex w-full gap-8 overflow-x-auto scroll-smooth
+            snap-x snap-mandatory
+          "
+          style={{
+            /* side-padding keeps the *centre* of any 300 px tile at the mid-point */
+            paddingLeft: 'calc(50% - 150px)',
+            paddingRight: 'calc(50% - 150px)',
+          }}
         >
           {events.map((file, idx) => (
             <div
               key={`${file}-${idx}`}
-              className="flex-shrink-0 w-[300px] flex flex-col items-center"
+              className="fade-in-up flex w-[300px] flex-shrink-0 snap-center flex-col items-center"
             >
               <Image
                 src={`/${file}`}
@@ -112,9 +120,9 @@ export default function HomePage() {
               <Link
                 href="#"
                 className="
-                  mt-4 block w-full text-center font-medium
-                  border border-white py-2 rounded-md
-                  transition-colors hover:bg-white hover:text-[#1c2a52]
+                  mt-4 block w-full rounded-md border border-white
+                  py-2 text-center font-medium transition-colors
+                  hover:bg-white hover:text-[#1c2a52]
                 "
               >
                 TO GALLERY
@@ -123,29 +131,30 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* arrows */}
-        <div className="mt-12 flex justify-center gap-12">
+        {/* ——— arrow controls (unchanged) ——— */}
+        <div className="mt-10 flex justify-center gap-8">
           <button
             onClick={() => scroll('left')}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
             aria-label="Scroll left"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md transition hover:bg-[#e5e5e5]"
           >
             <ArrowLeft size={28} />
           </button>
+
           <button
             onClick={() => scroll('right')}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md"
             aria-label="Scroll right"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#1c2a52] shadow-md transition hover:bg-[#e5e5e5]"
           >
             <ArrowRight size={28} />
           </button>
         </div>
       </div>
 
-      {/* ─────────── Membership Section ─────────── */}
-      <div className="bg-white py-16 text-center px-4">
-        <h2 className="text-3xl md:text-4xl font-bold mb-6">Become a Member</h2>
-        <p className="mb-8 text-lg max-w-3xl mx-auto">
+      {/* ─────────── Membership Section (unchanged) ─────────── */}
+      <div className="fade-in-up bg-white px-4 py-16 text-center text-[#171717]">
+        <h2 className="mb-6 text-3xl font-bold md:text-4xl">Become a Member</h2>
+        <p className="mx-auto mb-8 max-w-3xl text-lg">
           UTJNでは2023–2024年度もネットワーキング、就職、同窓会など、多様なニーズに応えた
           イベントを企画しています。会員登録をすることで、様々なイベントに参加できる
           ようになります。会員登録は無料ですので、お気軽にご登録ください。
@@ -156,13 +165,13 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ─────────── Footer ─────────── */}
-      <footer className="bg-[#1c2a52] text-white py-8 w-full text-center text-sm">
+      {/* ─────────── Footer (unchanged) ─────────── */}
+      <footer className="fade-in-up w-full bg-[#1c2a52] py-8 text-center text-sm text-white">
         <p className="mb-2 font-bold">University of Toronto Japan Network</p>
         <p className="mb-2">
           27 King&apos;s College Circle, Toronto, Ontario M5S 1A1
         </p>
-        <div className="flex justify-center gap-4 mt-4">
+        <div className="mt-4 flex justify-center gap-4">
           <Social icon="/facebook.png" alt="Facebook" />
           <Social icon="/instagram.png" alt="Instagram" />
           <Social icon="/tiktok.png" alt="TikTok" />
@@ -172,10 +181,10 @@ export default function HomePage() {
   );
 }
 
-/* ---------------------------------------------------------------- helpers */
+/* ─────────────────────────────── helpers */
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div>
+    <div className="fade-in-up">
       <h2 className="text-4xl font-bold">{value}</h2>
       <p>{label}</p>
     </div>
@@ -184,12 +193,15 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function CTA({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="bg-[#1c2a52] text-white px-6 py-3 rounded-md">
+    <Link
+      href={href}
+      className="fade-in-up rounded-md bg-[#1c2a52] px-6 py-3 text-white"
+    >
       {label}
     </Link>
   );
 }
 
 function Social({ icon, alt }: { icon: string; alt: string }) {
-  return <Image src={icon} alt={alt} width={24} height={24} />;
+  return <Image className="fade-in-up" src={icon} alt={alt} width={24} height={24} />;
 }
