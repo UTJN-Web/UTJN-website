@@ -11,9 +11,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="m-0 p-0 font-sans text-[#171717] bg-white">
+      <body className="m-0 p-0 font-sans bg-[--color-background] text-[--color-foreground]">
         {/* ──────────────── Header ──────────────── */}
-        <header className="relative h-[100px] bg-white">
+        <header className="relative h-[100px] bg-[--color-background]">
           {/* ───────── Mobile “mod-signal” (hamburger → ×) ───────── */}
           <details className="group md:hidden absolute left-4 top-4">
             <summary className="
@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
             {/* full-screen overlay stays exactly the same */}
             <nav className="
-                fixed inset-0 z-40 bg-white
+                fixed inset-0 z-40 bg-[--color-background]
                 flex flex-col items-center justify-center
                 gap-12 text-4xl font-semibold tracking-wide
               ">
@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <nav
             className="
               absolute top-1/2 -translate-y-1/2
-              left-[120px] hidden md:flex gap-6 text-lg font-semibold
+              left-[50px] hidden md:flex gap-6 text-lg font-semibold
             "
           >
             <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
