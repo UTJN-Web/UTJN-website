@@ -7,7 +7,7 @@ import sys
 import webbrowser
 import boto3
 from pycognito import aws_srp
-from cognito_idp_actions import CognitoIdentityProviderWrapper
+from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
 
 def signup_user(email, password):
     
@@ -15,7 +15,8 @@ def signup_user(email, password):
         print("Invalid email address. Please use a @mail.utoronto.ca email.")
         return False
 
-    cog_wrapper = CognitoIdentityProviderWrapper("")
+    # Ad  cognito secret access key
+    cog_wrapper = CognitoIdentityProviderWrapper("1dr2g8qct4lf8feo5inia740365fnd9u7ng0vb5lrfsp6kd00cf9")
 
     confirmed = cog_wrapper.sign_up_user(email, password, email)
 
@@ -30,7 +31,7 @@ def verifyemail(email) -> bool:
         return False
     
 def confirm_user(email, code):
-    cog_wrapper = CognitoIdentityProviderWrapper("")
+    cog_wrapper = CognitoIdentityProviderWrapper("1dr2g8qct4lf8feo5inia740365fnd9u7ng0vb5lrfsp6kd00cf9")
 
     confirmed = cog_wrapper.confirm_user_sign_up(email, code)
     return confirmed

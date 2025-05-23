@@ -18,6 +18,7 @@ import boto3
 from botocore.exceptions import ClientError
 from pathlib import Path
 from dotenv import load_dotenv
+from authentication.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,20 +35,27 @@ class CognitoIdentityProviderWrapper:
         :param client_id: The ID of a client application registered with the user pool.
         :param client_secret: The client secret, if the client has a secret.
         """
-        env_path = Path(__file__).resolve().parents[2] / ".env"
-        load_dotenv(dotenv_path=env_path)
+        #env_path = Path(__file__).resolve().parents[2] / ".env"
+        #load_dotenv(dotenv_path=env_path)
 
-        user_pool_id = os.getenv("COGNITO_POOL_ID")
-        client_id = os.getenv("COGNITO_CLIENT_ID")
-        region = os.getenv("COGNITO_REGION")
-        cognito_idp_client = boto3.client("cognito-idp", region_name=region, 
-                                          aws_access_key_id=os.getenv("ACCESS_KEY_ID"), aws_secret_access_key=os.getenv("SECRET_ACCESS_KEY"))
+        #user_pool_id = os.getenv("COGNITO_POOL_ID")
+        #client_id = os.getenv("COGNITO_CLIENT_ID")
+        #region = os.getenv("COGNITO_REGION")
+        #cognito_idp_client = boto3.client("cognito-idp", region_name=region, 
+        #                                  aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"), aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
 
-        
+        #self.cognito_idp_client = cognito_idp_client
+        #self.user_pool_id = user_pool_id
+        #self.client_id = client_id
+        #self.client_secret = client_secret
+
+        settings = get_settings()
+        self.user_pool_id = settings.pool_id
+        self.client_id = settings.client_id
+        self.client_secret = settings.client_secret
+        cognito_idp_client = boto3.client("cognito-idp", region_name=settings.region, 
+                                               aws_access_key_id=settings.aws_access_key, aws_secret_access_key=settings.aws_secret_key)
         self.cognito_idp_client = cognito_idp_client
-        self.user_pool_id = user_pool_id
-        self.client_id = client_id
-        self.client_secret = client_secret
 
     # snippet-end:[python.example_code.cognito-idp.helper.CognitoIdentityProviderWrapper.decl]
 
