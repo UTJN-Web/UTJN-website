@@ -166,7 +166,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Footer (unchanged) ─────────── */}
-      <footer className="fade-in-up w-full bg-[#1c2a52] py-8 text-center text-sm text-white">
+      {/* <footer className="fade-in-up w-full bg-[#1c2a52] py-8 text-center text-sm text-white">
         <p className="mb-2 font-bold">University of Toronto Japan Network</p>
         <p className="mb-2">
           27 King&apos;s College Circle, Toronto, Ontario M5S 1A1
@@ -176,7 +176,7 @@ export default function HomePage() {
           <Social icon="/instagram.png" alt="Instagram" href="https://www.instagram.com/uoftjn" />
           <Social icon="/tiktok.png"    alt="TikTok"    href="https://www.tiktok.com/@uoftjn" />
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 }
