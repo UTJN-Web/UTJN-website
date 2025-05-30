@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 gap-12 text-4xl font-semibold tracking-wide
               ">
               <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
-              <Link href="#" className="hover:text-[#1c2a52]">Member Events</Link>
+              <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
               <Link href="#" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
               <Link href="#" className="hover:text-[#1c2a52]">Login</Link>
 
@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             "
           >
             <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
-            <Link href="#" className="hover:text-[#1c2a52]">Member Events</Link>
+            <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
             <Link href="#" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
           </nav>
 
