@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   return (
     <div
@@ -16,18 +19,33 @@ export default function LoginPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* Dark faded overlay */}
       <div className="absolute inset-0 bg-black opacity-20 z-0" />
 
-      {/* Login box */}
       <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-center leading-tight">
-          Welcome to <br />
+          Join the <br />
           University of Toronto <br />
           <span className="text-lg font-medium">Japan Network</span>
         </h1>
 
         <form className="mt-6 space-y-4">
+          <div className="flex space-x-4">
+            <input
+              type="text"
+              placeholder="First Name"
+              className="w-1/2 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Last Name"
+              className="w-1/2 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+
           <input
             type="email"
             placeholder="Email"
@@ -38,22 +56,30 @@ export default function LoginPage() {
 
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Create Password"
             className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <input
+            type="password"
+            placeholder="Re-type Password"
+            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
           <button
             type="submit"
             className="w-full bg-[#2e2e2e] hover:bg-[#1c2a52] text-white py-2 rounded font-semibold transition"
           >
-            Login
+            Sign Up
           </button>
         </form>
 
         <div className="text-sm text-center text-gray-600 mt-4">
-          Don't have an account? <a href="/signup" className="hover:underline">Sign Up</a>
+          Already have an account? <a href="/login" className="hover:underline">Login</a>
         </div>
       </div>
     </div>
