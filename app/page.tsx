@@ -166,17 +166,17 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Footer (unchanged) ─────────── */}
-      <footer className="fade-in-up w-full bg-[#1c2a52] py-8 text-center text-sm text-white">
+      {/* <footer className="fade-in-up w-full bg-[#1c2a52] py-8 text-center text-sm text-white">
         <p className="mb-2 font-bold">University of Toronto Japan Network</p>
         <p className="mb-2">
           27 King&apos;s College Circle, Toronto, Ontario M5S 1A1
         </p>
         <div className="mt-4 flex justify-center gap-4">
-          <Social icon="/facebook.png" alt="Facebook" />
-          <Social icon="/instagram.png" alt="Instagram" />
-          <Social icon="/tiktok.png" alt="TikTok" />
+          <Social icon="/facebook.png"  alt="Facebook"  href="https://www.facebook.com/uoftjn/" />
+          <Social icon="/instagram.png" alt="Instagram" href="https://www.instagram.com/uoftjn" />
+          <Social icon="/tiktok.png"    alt="TikTok"    href="https://www.tiktok.com/@uoftjn" />
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 }
@@ -202,6 +202,41 @@ function CTA({ href, label }: { href: string; label: string }) {
   );
 }
 
-function Social({ icon, alt }: { icon: string; alt: string }) {
-  return <Image className="fade-in-up" src={icon} alt={alt} width={24} height={24} />;
+function Social(
+  {
+    icon,
+    alt,
+    href,
+    invert = false,
+  }: {
+    icon: string;
+    alt: string;
+    href?: string;       // external or internal URL
+    invert?: boolean;    // sets the Tailwind “invert” filter
+  },
+) {
+  const img = (
+    <Image
+      src={icon}
+      alt={alt}
+      width={24}
+      height={24}
+      className={`fade-in-up ${invert ? 'invert' : ''}`}
+    />
+  );
+
+  // If no href is given, return the plain image
+  if (!href) return img;
+
+  // Otherwise wrap the image in an anchor that opens a new tab
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-block"
+    >
+      {img}
+    </a>
+  );
 }
