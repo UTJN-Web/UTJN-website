@@ -2,6 +2,7 @@ import './globals.css';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import ScrollObserver from './components/ScrollObserver';
+import Footer from './components/Footer';
 
 export const metadata = {
   title: 'UTJN - University of Toronto Japanese Network',
@@ -72,14 +73,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             "
           >
             <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
-            <Link href="#" className="hover:text-[#1c2a52]">Member Events</Link>
-            <Link href="#" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
+            <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
+            <Link href="https://note.com/torontonians" target="_blank" rel="noopener noreferrer" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
           </nav>
 
           {/* ───────── Centred logo (80 px) ───────── */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <Link
+            href="/"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1c2a52]"
+          >
             <img src="/logo.png" alt="UTJN Logo" style={{ height: 80, width: 'auto' }} />
-          </div>
+          </Link>
 
           {/* ───────── Right-side socials + desktop Login ───────── */}
           <div
@@ -106,6 +111,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <main className="flex flex-col items-center justify-start min-h-screen pt-8 text-center">
           {children}
         </main>
+        <Footer />
         <ScrollObserver />
       </body>
     </html>
