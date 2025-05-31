@@ -75,7 +75,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
             <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
-            <Link href="https://note.com/torontonians" target="_blank" rel="noopener noreferrer" className="hover:text-[#1c2a52]" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
+            <Link href="https://note.com/torontonians" target="_blank" rel="noopener noreferrer" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
           </nav>
 
           {/* ───────── Centred logo (80 px) ───────── */}
