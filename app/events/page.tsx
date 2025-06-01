@@ -7,13 +7,13 @@ const events = [
         id: 'prod_SPD6TM43Q7MxCO',
         name: 'Networking Night',
         description: 'Join us for a night of networking with fellow Japanese students.',
-        priceId: 'price_1RTIB5JVPAoDskPz2QmfgoBU', // Replace with real Stripe Price ID
+        priceId: 'price_1RUOg1JVPAoDskPzf0uzTQ2l', // Replace with real Stripe Price ID
     },
     {
         id: 'prod_SPD6cldB2HkVLN',
         name: 'Career Talk',
         description: 'Hear from Japanese alumni working in Canada and Japan.',
-        priceId: 'price_1RTIB5JVPAoDskPz2QmfgoBU', // Replace with real Stripe Price ID
+        priceId: 'price_1RUOgDJVPAoDskPz3k2MggQq', // Replace with real Stripe Price ID
     },
 ];
 
