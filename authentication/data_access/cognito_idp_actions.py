@@ -77,18 +77,14 @@ class CognitoIdentityProviderWrapper:
     # snippet-start:[python.example_code.cognito-idp.SignUp]
     def sign_up_user(self, user_name, password, user_email):
         """
-        Signs up a new user with Amazon Cognito. This action prompts Amazon Cognito
-        to send an email to the specified email address. The email contains a code that
-        can be used to confirm the user.
-
-        When the user already exists, the user status is checked to determine whether
-        the user has been confirmed.
+        Attempts to sign up a user. Returns True only if the user was just added.
+        Returns False if the user already exists (regardless of confirmation).
+        Raises if any other error occurs.
 
         :param user_name: The user name that identifies the new user.
         :param password: The password for the new user.
         :param user_email: The email address for the new user.
-        :return: True when the user is already confirmed with Amazon Cognito.
-                 Otherwise, false.
+        :return: True when the user was able to sign up.
         """
         try:
             kwargs = {
@@ -99,26 +95,30 @@ class CognitoIdentityProviderWrapper:
             }
             if self.client_secret is not None:
                 kwargs["SecretHash"] = self._secret_hash(user_name)
+
+            # Attempt to sign up (Cognito sends verification email automatically)
             response = self.cognito_idp_client.sign_up(**kwargs)
-            confirmed = response["UserConfirmed"]
+
+            # If we reached here, the user was just created
+            return True
+
         except ClientError as err:
-            if err.response["Error"]["Code"] == "UsernameExistsException":
-                response = self.cognito_idp_client.admin_get_user(
-                    UserPoolId=self.user_pool_id, Username=user_name
-                )
-                logger.warning(
-                    "User %s exists and is %s.", user_name, response["UserStatus"]
-                )
-                confirmed = response["UserStatus"] == "CONFIRMED"
-            else:
-                logger.error(
-                    "Couldn't sign up %s. Here's why: %s: %s",
-                    user_name,
-                    err.response["Error"]["Code"],
-                    err.response["Error"]["Message"],
-                )
-                raise
-        return confirmed
+            error_code = err.response["Error"]["Code"]
+
+            if error_code == "UsernameExistsException":
+                # User already exists, so not a new sign-up
+                logger.warning("User %s already exists in user pool.", user_name)
+                return False
+
+            # Any other unexpected error → re-raise
+            logger.error(
+                "Couldn't sign up %s. Here's why: %s: %s",
+                user_name,
+                error_code,
+                err.response["Error"]["Message"],
+            )
+            raise
+
 
     # snippet-end:[python.example_code.cognito-idp.SignUp]
 
