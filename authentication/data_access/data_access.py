@@ -61,7 +61,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.cmd == "signup":
-        ok = signup_user(args.email, args.pw)
+        ok = signup_user(args.email, args.pw, args.pw2)
         print("Signup OK?", ok)
 
     elif args.cmd == "confirm":
