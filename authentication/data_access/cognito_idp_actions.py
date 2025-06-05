@@ -98,6 +98,7 @@ class CognitoIdentityProviderWrapper:
 
             # Attempt to sign up (Cognito sends verification email automatically)
             response = self.cognito_idp_client.sign_up(**kwargs)
+            print(response)
 
             # If we reached here, the user was just created
             return True
@@ -143,7 +144,7 @@ class CognitoIdentityProviderWrapper:
                 err.response["Error"]["Code"],
                 err.response["Error"]["Message"],
             )
-            raise
+            return None
         else:
             return delivery
 
@@ -181,6 +182,30 @@ class CognitoIdentityProviderWrapper:
             return True
 
     # snippet-end:[python.example_code.cognito-idp.ConfirmSignUp]
+
+    # snippet-start:[python.example_code.cognito-idp.AdminGetUser]
+    def admin_get_user(self, user_name):
+        """
+        Calls the Cognito AdminGetUser API to retrieve user information.
+
+        :param user_name: The name of the user to retrieve.
+        :return: The response from the AdminGetUser API call.
+        """
+        try:
+            response = self.cognito_idp_client.admin_get_user(
+                UserPoolId=self.user_pool_id, Username=user_name
+            )
+        except ClientError as err:
+            logger.error(
+                "Couldn't get user %s. Here's why: %s: %s",
+                user_name,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            raise
+        else:
+            return response
+    # snippet-end:[python.example_code.cognito-idp.AdminGetUser]
 
     # snippet-start:[python.example_code.cognito-idp.ListUsers]
     def list_users(self):

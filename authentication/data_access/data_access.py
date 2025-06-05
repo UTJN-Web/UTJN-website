@@ -40,6 +40,42 @@ def confirm_user(email, code):
     confirmed = cog_wrapper.confirm_user_sign_up(email, code)
     return confirmed
 
+def resend_confirmation(email):
+    cog_wrapper = CognitoIdentityProviderWrapper()
+    delivery = cog_wrapper.resend_confirmation(email)
+    if delivery is None:
+        print(f"No confirmation delivery found for {email}.")
+        return False
+    print(
+        f"Confirmation code sent by {delivery['DeliveryMedium']} "
+        f"to {delivery['Destination']}."
+    )
+    return True
+
+def call_admin_get_user(email):
+    """
+    Calls the Cognito AdminGetUser API to retrieve user information.
+    """
+    cog_wrapper = CognitoIdentityProviderWrapper()
+    response = cog_wrapper.admin_get_user(email)
+    if response is None:
+        print(f"User {email} not found.")
+        return None
+    return response
+    
+
+def get_user_sub(email):
+    """
+    Retrieves the Cognito UUID (sub) for a given email.
+    """
+    cog_wrapper = CognitoIdentityProviderWrapper()
+    response = cog_wrapper.call_admin_get_user(email)
+    if response is None:
+        print(f"User {email} not found.")
+        return None
+    userattribute = response.get("UserAttributes", {})
+    value = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
+    return value
 
 if __name__ == "__main__":
     import argparse, asyncio
@@ -58,6 +94,14 @@ if __name__ == "__main__":
     p2.add_argument("--email", required=True)
     p2.add_argument("--code",  required=True)
 
+    # resend confirmation
+    p3 = sub.add_parser("resend")
+    p3.add_argument("--email", required=True)
+
+    # admin get user
+    p4 = sub.add_parser("admin_get_user")
+    p4.add_argument("--email", required=True)
+
     args = parser.parse_args()
 
     if args.cmd == "signup":
@@ -67,3 +111,11 @@ if __name__ == "__main__":
     elif args.cmd == "confirm":
         ok = confirm_user(args.email, args.code)
         print("Confirmed?", ok)
+
+    elif args.cmd == "resend":
+        delivery = resend_confirmation(args.email)
+        print("Resend confirmation delivery:", delivery)
+
+    elif args.cmd == "admin_get_user": 
+        user_info = call_admin_get_user(args.email)
+        print(user_info)
