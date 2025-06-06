@@ -22,6 +22,9 @@ from authentication.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+class UsernameExistsError(Exception):
+        """Raised when the user already exists in the user pool."""
+        pass
 
 # snippet-start:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
 # snippet-start:[python.example_code.cognito-idp.helper.CognitoIdentityProviderWrapper.decl]
@@ -98,7 +101,7 @@ class CognitoIdentityProviderWrapper:
 
             # Attempt to sign up (Cognito sends verification email automatically)
             response = self.cognito_idp_client.sign_up(**kwargs)
-            print(response)
+            #print(response)
 
             # If we reached here, the user was just created
             return True
@@ -109,7 +112,7 @@ class CognitoIdentityProviderWrapper:
             if error_code == "UsernameExistsException":
                 # User already exists, so not a new sign-up
                 logger.warning("User %s already exists in user pool.", user_name)
-                return False
+                raise UsernameExistsError("The username already exists.")
 
             # Any other unexpected error → re-raise
             logger.error(
@@ -118,8 +121,7 @@ class CognitoIdentityProviderWrapper:
                 error_code,
                 err.response["Error"]["Message"],
             )
-            raise
-
+            return False
 
     # snippet-end:[python.example_code.cognito-idp.SignUp]
 
@@ -202,7 +204,7 @@ class CognitoIdentityProviderWrapper:
                 err.response["Error"]["Code"],
                 err.response["Error"]["Message"],
             )
-            raise
+            return None
         else:
             return response
     # snippet-end:[python.example_code.cognito-idp.AdminGetUser]

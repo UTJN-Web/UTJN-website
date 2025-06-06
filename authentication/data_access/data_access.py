@@ -8,49 +8,105 @@ import webbrowser
 import boto3
 from pycognito import aws_srp
 from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
+from authentication.data_access.cognito_idp_actions import UsernameExistsError
 
 def signup_user(email, password, password2):
-    
+    """
+    Function to sign up a user with email and password.
+    Args:
+        email (str): The user's email address.
+        password (str): The user's password.
+        password2 (str): Confirmation of the user's password.
+    Returns:
+        bool: True if the user is successfully signed up, False otherwise.
+    """
+    # Check if the email is valid a uoft email
     if verifyemail(email) == False:
         print("Invalid email address. Please use a @mail.utoronto.ca email.")
         return False
     
+    # Check if the password matches
     if password != password2:
         print("Passwords do not match. Please try again.")
         return False
 
-    # Ad  cognito secret access key
+    # Initialize the CognitoIdentityProviderWrapper to call the aws related functions.
     cog_wrapper = CognitoIdentityProviderWrapper()
 
-    confirmed = cog_wrapper.sign_up_user(email, password, email)
+    # Call the sign up function
+    try:
+        # Call the boto3 function that signs up the user
+        confirmed = cog_wrapper.sign_up_user(email, password, email)
 
-    print(confirmed)
-    return confirmed
+        return confirmed
+    
+    # If user name exists, check if the user has been verified
+    except UsernameExistsError:
+        response = call_admin_get_user(email)
+        # If the user exists and is confirmed, proceed user to login
+        if response and response.get("UserStatus") == "CONFIRMED":
+            print(f"The user {email} has already been confirmed. Proceed to Log In.")
+            return False
+        else: # The user exists but is uncofirmed. Resend verification code
+            resend_confirmation(email) # MAKE SURE TO CHECK FOR ANY ERRORS
+            print(f"The user {email} exists but is not confirmed. "
+                  f"A confirmation code has been sent to {email}.")
+            return False
+    
+    # For any other exception, return False
+    except Exception as e:
+        print(f"An error occurred during sign up: {e}")
+        return False
 
 
 def verifyemail(email) -> bool:
+    """
+    Helper function to verify if the email is a valid uoft email.
+    """
     if email.endswith("@mail.utoronto.ca"):
         return True
     else:   
         return False
-    
+
+
 def confirm_user(email, code):
+    """
+    Function to confirm user sign up with email and confirmation code.
+    Args:
+        email (str): The user's email address.
+        code (str): The confirmation code sent to the user's email.
+    Returns:
+        bool: True if the user is successfully confirmed, False otherwise.
+    """
     cog_wrapper = CognitoIdentityProviderWrapper()
 
     confirmed = cog_wrapper.confirm_user_sign_up(email, code)
     return confirmed
 
+
 def resend_confirmation(email):
+    """
+    Resends the confirmation code to the user's email.
+    Args:
+        email (str): The user's email address.
+    Returns:
+        bool: True if the confirmation code is successfully resent, False otherwise.
+    """
     cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Call the boto3 function that resends confirmation
     delivery = cog_wrapper.resend_confirmation(email)
-    if delivery is None:
+    if delivery is None: # Return False on failure
         print(f"No confirmation delivery found for {email}.")
         return False
+    
+    # Print the delivery information (Delete this later)
     print(
         f"Confirmation code sent by {delivery['DeliveryMedium']} "
         f"to {delivery['Destination']}."
     )
-    return True
+    return True # Success once code reaches here
+
 
 def call_admin_get_user(email):
     """
@@ -69,13 +125,17 @@ def get_user_sub(email):
     Retrieves the Cognito UUID (sub) for a given email.
     """
     cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Call admin_get_user to get user attributes
     response = cog_wrapper.call_admin_get_user(email)
     if response is None:
         print(f"User {email} not found.")
         return None
+    
+    # Extract the 'sub' attribute from the response
     userattribute = response.get("UserAttributes", {})
-    value = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
-    return value
+    user_sub = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
+    return user_sub
 
 if __name__ == "__main__":
     import argparse, asyncio
