@@ -209,6 +209,10 @@ class CognitoIdentityProviderWrapper:
             return response
     # snippet-end:[python.example_code.cognito-idp.AdminGetUser]
 
+    ##################################################
+    # ここに login 関連の function 追加
+    ##################################################
+
     # snippet-start:[python.example_code.cognito-idp.ListUsers]
     def list_users(self):
         """
