@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 export default function MembershipPage() {
   return (
-    <div className="w-full flex flex-col items-center justify-start text-center min-h-screen pt-16 px-4 bg-white">
+    <div className="fade-in-up w-full flex flex-col items-center justify-start text-center min-h-screen pt-16 px-4 bg-white">
       {/* ─────────── Heading ─────────── */}
       <h1 className="text-4xl md:text-5xl font-bold mb-4 text-black">Become a Member</h1>
 
@@ -28,7 +28,7 @@ export default function MembershipPage() {
         </button>
       </Link>
 
-      {/* ─────────── Background Image ───────────
+      {/* ─────────── Background Image ─────────── */}
       <div className="relative w-full h-[500px] mt-16">
         <Image
           src="/uoft-campus.jpg"
@@ -38,8 +38,7 @@ export default function MembershipPage() {
           className="object-cover"
           sizes="100vw"
         />
-      </div> */}
+      </div>
     </div>
   );
 }
-// hellooo this is a test
