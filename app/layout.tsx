@@ -2,6 +2,7 @@ import './globals.css';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import ScrollObserver from './components/ScrollObserver';
+import Footer from './components/Footer';
 import ClientLayoutWrapper from './ClientLayoutWrapper';
 import LoginButton from './components/LoginButton';
 
@@ -49,11 +50,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 gap-12 text-4xl font-semibold tracking-wide
               ">
               <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
-              <Link href="#" className="hover:text-[#1c2a52]">Member Events</Link>
-              <Link href="#" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
-              <LoginButton />
-
-
+              <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
+              <Link href="https://note.com/torontonians" target="_blank" rel="noopener noreferrer" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
+              {/* <Link href="/login" className="hover:text-[#1c2a52]">Login</Link> */}
               <div className="absolute bottom-10 flex gap-6">
                 <Link href="https://www.facebook.com/uoftjn/" target="_blank" rel="noopener noreferrer">
                   <img src="/facebook.png" alt="Facebook" className="h-6 w-6" />
@@ -97,6 +96,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               flex items-center gap-4 text-sm font-medium
             "
           >
+            {/* <Link href="/login" className="hidden md:inline text-lg font-semibold hover:text-[#1c2a52]">Login</Link> */}
             <LoginButton />
 
             <Link href="https://www.facebook.com/uoftjn/" target="_blank" rel="noopener noreferrer">
