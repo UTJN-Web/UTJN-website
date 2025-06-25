@@ -23,9 +23,10 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
-      <div className="w-full max-w-sm rounded bg-white dark:bg-black p-6 shadow text-black dark:text-white">
+      <div className="w-full max-w-md rounded bg-white dark:bg-black p-6 shadow text-black dark:text-white">
         <h1 className="mb-4 text-center text-xl font-bold">
-          Welcome to University of Toronto Japan Network
+          Welcome to University of Toronto <br />
+          Japan Network <br />
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
