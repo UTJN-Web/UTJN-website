@@ -23,8 +23,20 @@ from authentication.config import get_settings
 logger = logging.getLogger(__name__)
 
 class UsernameExistsError(Exception):
-        """Raised when the user already exists in the user pool."""
-        pass
+    """Raised when the user already exists in the user pool."""
+    pass
+
+class ExpiredCodeError(Exception):
+    """Raised when the confirmatrion code used for sign up has expired."""
+    pass
+
+class TooManyFailedAttemptsError(Exception):
+    """Raised when the user has made too many failed attempts to confirm sign up."""
+    pass
+
+class IncorrectCodeError(Exception):
+    """Raised when the confirmation code used for sign up is incorrect."""
+    pass
 
 # snippet-start:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
 # snippet-start:[python.example_code.cognito-idp.helper.CognitoIdentityProviderWrapper.decl]
@@ -173,6 +185,17 @@ class CognitoIdentityProviderWrapper:
                 kwargs["SecretHash"] = self._secret_hash(user_name)
             self.cognito_idp_client.confirm_sign_up(**kwargs)
         except ClientError as err:
+            error_code = err.response["Error"]["Code"]
+
+            if error_code == "ExpiredCodeException":
+                raise ExpiredCodeError
+            
+            elif error_code == "TooManyFailedAttemptsException":
+                raise TooManyFailedAttemptsError
+            
+            elif error_code == "CodeMismatchException":
+                raise IncorrectCodeError
+
             logger.error(
                 "Couldn't confirm sign up for %s. Here's why: %s: %s",
                 user_name,

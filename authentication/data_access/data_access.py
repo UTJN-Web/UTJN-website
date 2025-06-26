@@ -8,7 +8,7 @@ import webbrowser
 import boto3
 from pycognito import aws_srp
 from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
-from authentication.data_access.cognito_idp_actions import UsernameExistsError
+from authentication.data_access.cognito_idp_actions import UsernameExistsError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError
 from authentication import display_strings as ds
 
 def signup_user(email, password, password2):
@@ -19,7 +19,9 @@ def signup_user(email, password, password2):
         password (str): The user's password.
         password2 (str): Confirmation of the user's password.
     Returns:
-        bool: True if the user is successfully signed up, False otherwise.
+        A tuple containing...
+        - bool: True if the user is successfully signed up, False otherwise.
+        - string: A message indicating the result of the sign-up process.
     """
     # Check if the email is valid a uoft email
     if verifyemail(email) == False:
@@ -60,8 +62,7 @@ def signup_user(email, password, password2):
     
     # For any other exception, return False
     except Exception as e:
-        print(f"An error occurred during sign up: {e}")
-        return False
+        return (False, ds.GENERAL_ERROR)
 
 
 def verifyemail(email) -> bool:
@@ -81,13 +82,30 @@ def confirm_user(email, code):
         email (str): The user's email address.
         code (str): The confirmation code sent to the user's email.
     Returns:
-        bool: True if the user is successfully confirmed, False otherwise.
+        A tuple containing...
+        - bool: True if the user is successfully signed up, False otherwise.
+        - string: A message indicating the result of the sign-up process.
     """
     cog_wrapper = CognitoIdentityProviderWrapper()
+    try:
+        confirmed = cog_wrapper.confirm_user_sign_up(email, code)
+        if confirmed:
+            return (confirmed, "SUCCESS")
+        else:
+            return (confirmed, ds.GENERAL_ERROR)
+    
+    except ExpiredCodeError:
+        resend_confirmation(email)
+        return (False, ds.CONFIRMATION_CODE_EXPIRED)
+    
+    except TooManyFailedAttemptsError:
+        return (False, ds.TOO_MANY_FAILED_ATTEMPTS)
+    
+    except IncorrectCodeError:
+        return (False, ds.INVALID_CONFIRMATION_CODE)
 
-    confirmed = cog_wrapper.confirm_user_sign_up(email, code)
-    return confirmed
-
+    except Exception as e:
+        return (False, ds.GENERAL_ERROR)  
 
 def resend_confirmation(email):
     """
