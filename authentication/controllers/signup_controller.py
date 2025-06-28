@@ -1,4 +1,4 @@
-# # File: authentication/controllers/signup_controller.py
+# app/api/signup_router.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from authentication.data_access.data_access import (
