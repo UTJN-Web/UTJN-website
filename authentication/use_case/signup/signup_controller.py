@@ -22,5 +22,5 @@ async def signup(body: SignupInputData):
 async def confirm(body: ConfirmInputData):
     ok, msg = confirm_user(body.get_email, body.get_confrimationcode)
     if ok:
-        return SignupOutputData(True, "Success. Proceeding to next step.")
+        return ConfirmOutputData(True, "Success. Proceeding to next step.")
     raise HTTPException(status_code=400, detail=msg)
