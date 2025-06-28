@@ -1,5 +1,8 @@
 # Type pip install -r requirements.txt
-
+fastapi
+uvicorn[standard]
+pydantic[email]
+python-dotenv
 boto3>=1.26.79
 pytest>=7.2.1
 qrcode>=7.4.2
