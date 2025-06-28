@@ -1,30 +1,31 @@
+// app/page.tsx
+
 'use client';
 
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-
+import { NAME_MAP } from '@/lib/eventMeta';
 export default function HomePage() {
   /* ─────────────────────────────── events data */
-  const baseEvents = [
-    'halloween.png',
-    'happy-new-year.png',
-    'sports-fes.png',
-    'utjn-advice.png',
-    'ball-game.png',
-    'end-year.png',
-  ];
+  const eventMap = [
+    { slug: 'Halloween',      cover: 'halloween.png' },
+    { slug: 'New_Year_Event', cover: 'happy-new-year.png' },
+    { slug: 'Sports_Fes',     cover: 'sports-fes.png' },
+    { slug: 'Ball_Game',      cover: 'ball-game.png' },
+    { slug: 'End_of_Year',    cover: 'end-year.png' },
+  ] as const;
 
   /** 10 loops left + centre + 10 loops right  = 126 tiles */
   const loops  = 10;
-  const events = Array.from({ length: loops * 2 + 1 }, () => baseEvents).flat();
+  const events = Array.from({ length: loops * 2 + 1 }, () => eventMap).flat();
 
   /* ─────────────────────────────── layout helpers */
   const gap       = 32;   // gap-x-8  in Tailwind → 32 px
   const imgWidth  = 300;  // fixed card width
   const step      = imgWidth + gap;
-  const centerIdx = loops * baseEvents.length;
+  const centerIdx = loops * eventMap.length;
   const centerPos = centerIdx * step;
 
   const carouselRef = useRef<HTMLDivElement | null>(null);
@@ -105,20 +106,20 @@ export default function HomePage() {
             paddingRight: 'calc(50% - 150px)',
           }}
         >
-          {events.map((file, idx) => (
+          {events.map(({ slug, cover }, idx) => (
             <div
-              key={`${file}-${idx}`}
+              key={`${slug}-${idx}`}
               className="fade-in-up flex w-[300px] flex-shrink-0 snap-center flex-col items-center"
             >
               <Image
-                src={`/${file}`}
-                alt={`Event ${(idx % baseEvents.length) + 1}`}
+                src={`/${cover}`}
+                alt={NAME_MAP[slug] ?? slug.replace(/_/g, ' ')}
                 width={300}
                 height={300}
                 className="rounded-lg object-cover"
               />
               <Link
-                href="#"
+                href={`/gallery/${slug}`}
                 className="
                   mt-4 block w-full rounded-md border border-white
                   py-2 text-center font-medium transition-colors
@@ -164,8 +165,6 @@ export default function HomePage() {
           <CTA href="#" label="卒業生の方" />
         </div>
       </div>
-
-      
     </div>
   );
 }
@@ -191,19 +190,17 @@ function CTA({ href, label }: { href: string; label: string }) {
   );
 }
 
-function Social(
-  {
-    icon,
-    alt,
-    href,
-    invert = false,
-  }: {
-    icon: string;
-    alt: string;
-    href?: string;       // external or internal URL
-    invert?: boolean;    // sets the Tailwind “invert” filter
-  },
-) {
+function Social({
+  icon,
+  alt,
+  href,
+  invert = false,
+}: {
+  icon: string;
+  alt: string;
+  href?: string; // external or internal URL
+  invert?: boolean; // sets the Tailwind “invert” filter
+}) {
   const img = (
     <Image
       src={icon}

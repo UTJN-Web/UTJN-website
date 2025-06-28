@@ -1,3 +1,5 @@
+# # File: authentication/config.py
+
 from functools import lru_cache
 from os import getenv
 from dotenv import load_dotenv
