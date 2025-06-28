@@ -1,9 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ConfirmCodePage() {
   const [code, setCode] = useState('');
+  const router = useRouter();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (code.trim() !== '') {
+      router.push('/information');
+    } else {
+      alert('Please enter the confirmation code.');
+    }
+  };
 
   return (
     <div
@@ -19,7 +31,7 @@ export default function ConfirmCodePage() {
       <div className="absolute inset-0 bg-black/40 dark:bg-black/70 z-0" />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md bg-white dark:bg-[#1c1c1c] bg-opacity-95 dark:bg-opacity-100 text-black dark:text-white p-8 rounded shadow-lg backdrop-blur-sm">
+      <div className="relative z-10 w-full max-w-lg bg-white dark:bg-[#1c1c1c] bg-opacity-95 dark:bg-opacity-100 text-black dark:text-white p-8 rounded shadow-lg backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-center mb-2">
           Confirm Your Code
         </h1>
