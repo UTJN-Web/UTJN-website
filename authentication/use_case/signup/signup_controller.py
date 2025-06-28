@@ -1,4 +1,4 @@
-# app/api/signup_router.py
+# # File: authentication/controllers/signup_controller.py
 from fastapi import APIRouter, HTTPException
 from authentication.data_access.data_access import (
     signup_user,

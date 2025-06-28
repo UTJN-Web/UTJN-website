@@ -1,3 +1,4 @@
+// File: app/components/LoginButton.tsx
 'use client';
 
 export default function LoginButton() {

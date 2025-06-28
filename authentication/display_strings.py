@@ -1,3 +1,5 @@
+## authentication/display_strings.py
+
 # This file defines various kinds of strings for the authentication module.
 # Many of the strings will be displayed on screen as an error message on an unsuccesful authentication flow
 # or as a success message on a successful authentication flow.

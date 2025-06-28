@@ -1,3 +1,5 @@
+// File: app/components/LoginModal.tsx
+
 'use client';
 
 import { useState } from 'react';

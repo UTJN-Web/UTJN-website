@@ -1,3 +1,4 @@
+# # File: authentication/use_case/signup/confirm_InputData.py
 class ConfirmInputData:
     def __init__(self, email: str, confirmationcode):
         self.email = email

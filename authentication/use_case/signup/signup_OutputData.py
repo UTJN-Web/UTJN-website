@@ -1,3 +1,5 @@
+# # File: authentication/use_case/signup/signup_OutputData.py
+
 class SignupOutputData:
     def __init__(self, success: bool, message: str):
         self.success = success
