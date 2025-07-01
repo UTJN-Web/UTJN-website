@@ -33,9 +33,38 @@ export default function SignupPage() {
       className="relative min-h-screen flex items-center justify-center"
       style={{ background: "url('/UofT.jpg') center/cover no-repeat" }}
     >
+<<<<<<< Updated upstream
       <div className="absolute inset-0 bg-black/40 dark:bg-black/70" />
       <div className="relative z-10 w-full max-w-md bg-white/95 dark:bg-[#1c1c1c] p-8 rounded shadow">
         <h1 className="text-2xl font-bold text-center">Join UTJN</h1>
+=======
+      <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+      <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm">
+        <h1 className="text-2xl font-bold text-center leading-tight">
+          Join the <br />
+          University of Toronto <br />
+          Japan Network<br />
+        </h1>
+
+        <form className="mt-6 space-y-4">
+          <div className="flex space-x-4">
+            <input
+              type="text"
+              placeholder="First Name"
+              className="w-1/2 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Last Name"
+              className="w-1/2 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+>>>>>>> Stashed changes
 
         {/* ---- form ---- */}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">

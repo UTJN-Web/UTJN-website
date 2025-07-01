@@ -233,7 +233,42 @@ class CognitoIdentityProviderWrapper:
     # snippet-end:[python.example_code.cognito-idp.AdminGetUser]
 
     ##################################################
+<<<<<<< Updated upstream
     # ここに login 関連の function 追加    
+=======
+    def initiate_auth(self, email: str, password: str):
+       """
+       Attempts to log in a user using the given email and password via AWS Cognito.
+
+
+       :returns: True if authentication is successful, False otherwise.
+
+
+       This method calls the 'USER_PASSWORD_AUTH' flow in Cognito.
+       If login fails due to known issues (e.g. incorrect credentials, user not confirmed, etc.),
+       appropriate error messages are printed and False is returned.
+       """
+       try:
+           auth_params = {
+               "USERNAME": email,
+               "PASSWORD": password,
+           }
+           if self.client_secret is not None:
+               auth_params["SECRET_HASH"] = self._secret_hash(email)
+
+
+           response = self.cognito_idp_client.initiate_auth(
+               ClientId=self.client_id,
+               AuthFlow="USER_PASSWORD_AUTH",
+               AuthParameters=auth_params,
+           )
+           return True
+
+
+       except ClientError as err:
+           print(f"An error occurred during login: {err}")
+
+>>>>>>> Stashed changes
     ##################################################
 
     # snippet-start:[python.example_code.cognito-idp.ListUsers]
