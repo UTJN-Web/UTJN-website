@@ -233,9 +233,6 @@ class CognitoIdentityProviderWrapper:
     # snippet-end:[python.example_code.cognito-idp.AdminGetUser]
 
     ##################################################
-<<<<<<< Updated upstream
-    # ここに login 関連の function 追加    
-=======
     def initiate_auth(self, email: str, password: str):
        """
        Attempts to log in a user using the given email and password via AWS Cognito.
@@ -268,7 +265,6 @@ class CognitoIdentityProviderWrapper:
        except ClientError as err:
            print(f"An error occurred during login: {err}")
 
->>>>>>> Stashed changes
     ##################################################
 
     # snippet-start:[python.example_code.cognito-idp.ListUsers]
