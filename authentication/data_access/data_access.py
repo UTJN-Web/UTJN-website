@@ -18,7 +18,7 @@ def signup_user(email, password, password2):
     Args:
         email (str): The user's email address.
         password (str): The user's password.
-        password2 (str): Confirmation of the user's password.
+        password2 (str): Confirmation of the user's password.z
     Returns:
         A tuple containing...
         - bool: True if the user is successfully signed up, False otherwise.
@@ -64,6 +64,38 @@ def signup_user(email, password, password2):
     # For any other exception, return False
     except Exception as e:
         return (False, ds.GENERAL_ERROR)
+
+
+def login_user(email, password):
+    """
+    Function to log in a user with email and password.
+    Args:
+        email (str): The user's email address.
+        password (str): The user's password.
+    Returns:
+        bool: True if the user is successfully logged in, False otherwise.
+    """
+    #Check if the email is valid a uoft email
+    if verifyemail(email) == False:
+        print("Invalid email adress. Please use a email adress ending with @mail.utoronto.ca.")
+        return False
+    
+    # Initialize the CognitoIdentityProviderWrapper to call the aws related functions.
+    cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Call the login function
+    try:
+        # Call the boto3 function that logs in the user
+        login_confirmed = cog_wrapper.initiate_auth(email, password)
+        if login_confirmed:
+            print("Login successful.")
+            return True
+        else:
+            print("Login failed.")
+            return False
+    except Exception as e:
+        print(f"An error occurred during login: {e}")
+        return False
 
 
 def verifyemail(email) -> bool:
@@ -186,6 +218,13 @@ if __name__ == "__main__":
     p4 = sub.add_parser("admin_get_user")
     p4.add_argument("--email", required=True)
 
+    # login
+    p5 = sub.add_parser("login")
+    p5.add_argument("--email", required=True)
+    p5.add_argument("--pw", required=True)
+
+
+
     args = parser.parse_args()
 
     if args.cmd == "signup":
@@ -203,3 +242,7 @@ if __name__ == "__main__":
     elif args.cmd == "admin_get_user": 
         user_info = call_admin_get_user(args.email)
         print(user_info)
+
+    elif args.cmd == "login":
+        ok = login_user(args.email, args.pw)
+        print("Login OK?", ok) 
