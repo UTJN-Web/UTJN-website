@@ -6,11 +6,13 @@ from authentication.dto.signup_dto import (
     SignupRequestDTO,
     ConfirmRequestDTO,
     MessageResponseDTO,
-    ResendRequestDTO
+    ResendRequestDTO,
+    GetSubRequestDTO,
+    GetSubResponseDTO
 )
 from authentication.use_case.signup.signup_InputData import SignupInputData
 from authentication.use_case.signup.confirm_InputData import ConfirmInputData
-from authentication.data_access.data_access import signup_user, confirm_user, resend_confirmation
+from authentication.data_access.data_access import signup_user, confirm_user, resend_confirmation, get_user_sub
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -43,3 +45,10 @@ async def resend(req: ResendRequestDTO):
     if ok:
         return MessageResponseDTO(success=True, message="Code resent.")
     raise HTTPException(status_code=400, detail="Failed to resend code.")
+
+@router.post("/getsub", response_model=GetSubResponseDTO)
+async def getSub(req: GetSubRequestDTO):
+    sub = get_user_sub(req.email)
+    if sub == None:
+        raise HTTPException(status_code=400, detail="An error occurred please try again")
+    return MessageResponseDTO(sub=sub)
