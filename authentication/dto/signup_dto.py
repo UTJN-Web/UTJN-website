@@ -16,3 +16,9 @@ class MessageResponseDTO(BaseModel):
 
 class ResendRequestDTO(BaseModel):
     email: EmailStr
+
+class GetSubRequestDTO(BaseModel):
+    email: EmailStr
+
+class GetSubResponseDTO(BaseModel):
+    sub: str
