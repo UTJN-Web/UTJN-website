@@ -9,7 +9,7 @@ import webbrowser
 import boto3
 from pycognito import aws_srp
 from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
-from authentication.data_access.cognito_idp_actions import UsernameExistsError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError
+from authentication.data_access.cognito_idp_actions import UsernameExistsError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError
 from authentication import display_strings as ds
 
 def signup_user(email, password, password2):
@@ -26,12 +26,10 @@ def signup_user(email, password, password2):
     """
     # Check if the email is valid a uoft email
     if verifyemail(email) == False:
-        print(ds.INVALID_EMAIL)
         return (False, ds.INVALID_EMAIL)
     
     # Check if the password matches
     if password != password2:
-        print(ds.PASSWORD_MISMATCH)
         return (False, ds.PASSWORD_MISMATCH)
     
     # Check if password is strong enough
@@ -66,19 +64,20 @@ def signup_user(email, password, password2):
         return (False, ds.GENERAL_ERROR)
 
 
-def login_user(email, password):
+def login_user(email, password) -> tuple:
     """
     Function to log in a user with email and password.
     Args:
         email (str): The user's email address.
         password (str): The user's password.
     Returns:
-        bool: True if the user is successfully logged in, False otherwise.
+        A tuple containing...
+        - bool: True if the user was successfully able to log in, False otherwise.
+        - string: A message indicating the result of the log-in process.
     """
     #Check if the email is valid a uoft email
     if verifyemail(email) == False:
-        print("Invalid email adress. Please use a email adress ending with @mail.utoronto.ca.")
-        return False
+        return (False, ds.INVALID_EMAIL)
     
     # Initialize the CognitoIdentityProviderWrapper to call the aws related functions.
     cog_wrapper = CognitoIdentityProviderWrapper()
@@ -88,14 +87,21 @@ def login_user(email, password):
         # Call the boto3 function that logs in the user
         login_confirmed = cog_wrapper.initiate_auth(email, password)
         if login_confirmed:
-            print("Login successful.")
-            return True
+            return (True, "Login successful.")
         else:
-            print("Login failed.")
-            return False
+            return (False, ds.LOGIN_UNSUCCESSFUL)
+    
+    except EmailNotFoundError:
+        return (False, ds.INVALID_EMAIL)
+    
+    except UserNotConfirmedError:
+        return (False, ds.USER_UNCONFIRMED)
+    
+    except IncorrectParameterError:
+        return (False, ds.INVALID_PARAMETER)
+
     except Exception as e:
-        print(f"An error occurred during login: {e}")
-        return False
+        return (False, ds.GENERAL_ERROR)
 
 
 def verifyemail(email) -> bool:

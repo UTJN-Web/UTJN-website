@@ -19,3 +19,6 @@ TOO_MANY_FAILED_ATTEMPTS = "Too many failed attempts. Please try again later."
 INCORRECT_CONFIRMATION_CODE = "The confirmation code you entered is incorrect. Please try again."
 
 # ─── Login Related Errors ─────────────────────────────────────────────────────────
+INVALID_EMAIL = "The email you entered is not found. Please try again."
+LOGIN_UNSUCCESSFUL = "Login unsuccessful. Please try again."
+INVALID_PARAMETER = "One of the information you entered is incorrect. Please try again."
