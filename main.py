@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 
 # 認証ルーターを読み込む
-from authentication.controllers.signup_controller import router as signup_router
+from authentication.use_case.signup.signup_controller import router as signup_router
 
 app = FastAPI()
 
