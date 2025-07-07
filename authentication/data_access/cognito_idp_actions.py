@@ -38,6 +38,18 @@ class IncorrectCodeError(Exception):
     """Raised when the confirmation code used for sign up is incorrect."""
     pass
 
+class EmailNotFoundError(Exception):
+    """Raised when the email adress a user enetered for login is not found."""
+    pass
+
+class UserNotConfirmedError(Exception):
+    """Raised when the user is not confirmed yet."""
+    pass
+
+class IncorrectParameterError(Exception): 
+    """Raised when the user enters an incorrect parameter for login, such as an incorrect email or password."""
+    pass
+
 # snippet-start:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
 # snippet-start:[python.example_code.cognito-idp.helper.CognitoIdentityProviderWrapper.decl]
 class CognitoIdentityProviderWrapper:
@@ -263,7 +275,25 @@ class CognitoIdentityProviderWrapper:
 
 
        except ClientError as err:
-           print(f"An error occurred during login: {err}")
+            error_code = err.response["Error"]["Code"]
+            if error_code == "UserNotFoundException":
+                # User is not found, so email adress is incorrect
+                raise EmailNotFoundError("This email does not exist.")
+
+            if error_code == "UserNotConfirmedException":
+                raise UserNotConfirmedError()
+            
+            if error_code == "NotAuthorizedException":
+                raise IncorrectParameterError("The email or password you entered is incorrect.")
+           
+           # Any other unexpected error → re-raise
+            logger.error(
+               "Couldn't sign up %s. Here's why: %s: %s",
+               email,
+               error_code,
+               err.response["Error"]["Message"],
+            )
+            return False
 
     ##################################################
 
