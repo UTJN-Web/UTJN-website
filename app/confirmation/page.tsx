@@ -19,10 +19,20 @@ export default function ConfirmPage() {
     setError(null);
     setLoading(true);
     try {
-      await post('/auth/confirm', { email, code });
+      await post('/auth/confirm', { email, confirmationcode: code });
       router.push('/information');                   // 次のステップへ
     } catch (err: any) {
-      setError(err.message);
+      // コードが期限切れの場合、新しいコードを再送信
+      if (err.message.includes('expired')) {
+        try {
+          await post('/auth/resend', { email });
+          setError('Code expired. A new code has been sent to your email.');
+        } catch (resendErr: any) {
+          setError('Code expired. Please try resending the code manually.');
+        }
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

@@ -22,6 +22,11 @@ export default function SignupPage() {
       // 成功したら確認ページへ email をクエリに添付
       router.push(`/confirmation?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
+      // ユーザーが未確認の場合、確認画面にリダイレクト
+      if (err.message.includes('You are not confirmed yet')) {
+        router.push(`/confirmation?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError(err.message);
     } finally {
       setLoading(false);
