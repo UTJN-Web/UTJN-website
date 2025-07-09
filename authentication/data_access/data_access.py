@@ -24,9 +24,9 @@ def signup_user(email, password, password2):
         - bool: True if the user is successfully signed up, False otherwise.
         - string: A message indicating the result of the sign-up process.
     """
-    # Check if the email is valid a uoft email
-    if verifyemail(email) == False:
-        return (False, ds.INVALID_EMAIL)
+    # Check if the email is valid a uoft email (REMOVED BY REQUEST)
+    #if verifyemail(email) == False:
+    #    return (False, ds.INVALID_EMAIL)
     
     # Check if the password matches
     if password != password2:
@@ -75,10 +75,6 @@ def login_user(email, password) -> tuple:
         - bool: True if the user was successfully able to log in, False otherwise.
         - string: A message indicating the result of the log-in process.
     """
-    #Check if the email is valid a uoft email
-    if verifyemail(email) == False:
-        return (False, ds.INVALID_EMAIL)
-    
     # Initialize the CognitoIdentityProviderWrapper to call the aws related functions.
     cog_wrapper = CognitoIdentityProviderWrapper()
 
