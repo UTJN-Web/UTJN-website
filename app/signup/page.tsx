@@ -75,7 +75,7 @@ export default function SignupPage() {
           <ul className="text-sm text-gray-700 dark:text-white pl-5 list-disc space-y-1 text-left">
             <li>At least 8 characters</li>
             <li>Includes both uppercase and lowercase letters</li>
-            <li>Includes a number or special character</li>
+            <li>Includes a number and special character</li>
           </ul>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
