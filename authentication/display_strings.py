@@ -11,6 +11,7 @@ INVALID_EMAIL = "Invalid email address. Please use a @mail.utoronto.ca email."
 PASSWORD_MISMATCH = "Passwords do not match. Please try again."
 USER_ALREADY_CONFIRMED = "This user has already been confirmed. Proceed to Log In."
 USER_UNCONFIRMED = "You are not confirmed yet. A confirmation code has been re-sent to your email."
+INVALID_PASSWORD = "Password does not meet the requirements.\n Please try a new password."
 
 # ─── Confirm Signup Related Errors ────────────────────────────────────────────────────────
 INVALID_CONFIRMATION_CODE = "Invalid confirmation code. Please try again."

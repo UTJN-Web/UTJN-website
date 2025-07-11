@@ -26,6 +26,10 @@ class UsernameExistsError(Exception):
     """Raised when the user already exists in the user pool."""
     pass
 
+class InvalidPasswordError(Exception):
+    """Raised when the password does not meet the requirements for signup."""
+    pass
+
 class ExpiredCodeError(Exception):
     """Raised when the confirmatrion code used for sign up has expired."""
     pass
@@ -137,6 +141,10 @@ class CognitoIdentityProviderWrapper:
                 # User already exists, so not a new sign-up
                 logger.warning("User %s already exists in user pool.", user_name)
                 raise UsernameExistsError("The username already exists.")
+            
+            if error_code == "InvalidPasswordException":
+                # Password doesn't meet the requirements
+                raise InvalidPasswordError("The password does not meet the requirements.")
 
             # Any other unexpected error → re-raise
             logger.error(
