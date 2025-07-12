@@ -5,12 +5,13 @@ import { useState } from 'react';
 export default function ProfileInfoPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [university, setUniversity] = useState('');
   const [major, setMajor] = useState('');
   const [gradYear, setGradYear] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ firstName, lastName, major, gradYear });
+    console.log({ firstName, lastName, university, major, gradYear });
   };
 
   return (
@@ -28,7 +29,7 @@ export default function ProfileInfoPage() {
       <div className="relative z-10 w-full max-w-md bg-white dark:bg-[#1c1c1c] bg-opacity-95 dark:bg-opacity-100 text-black dark:text-white p-8 rounded shadow-lg backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-center mb-2">Personal Info</h1>
         <p className="text-sm text-center text-gray-700 dark:text-gray-300 mb-6">
-          Please provide your name, major, and expected graduation year.
+          Please provide your name, university, major, and expected graduation year.
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -52,6 +53,24 @@ export default function ProfileInfoPage() {
               className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] text-black dark:text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
               required
             />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-left">University</label>
+            <select
+              value={university}
+              onChange={(e) => setUniversity(e.target.value)}
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] text-black dark:text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+              required
+            >
+              <option value="" disabled hidden>
+                -- Select your university --
+              </option>
+              <option>University of Toronto</option>
+              <option>Exchange Program</option>
+              <option>Other Universities</option>
+              <option>Other</option>
+            </select>
           </div>
 
           <div>
