@@ -40,7 +40,7 @@ export default function ConfirmPage() {
 
   return (
     <div
-      className="relative min-h-screen flex items-center justify-center"
+      className="relative min-h-screen w-full flex items-center justify-center"
       style={{ background: "url('/UofT.jpg') center/cover no-repeat" }}
     >
       <div className="absolute inset-0 bg-black/40 dark:bg-black/70" />
