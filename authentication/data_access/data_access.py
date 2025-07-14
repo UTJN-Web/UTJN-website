@@ -9,7 +9,7 @@ import webbrowser
 import boto3
 from pycognito import aws_srp
 from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
-from authentication.data_access.cognito_idp_actions import UsernameExistsError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError
+from authentication.data_access.cognito_idp_actions import UsernameExistsError, InvalidPasswordError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError
 from authentication import display_strings as ds
 
 def signup_user(email, password, password2):
@@ -58,6 +58,10 @@ def signup_user(email, password, password2):
             resend_confirmation(email) # MAKE SURE TO CHECK FOR ANY ERRORS
             print(ds.USER_UNCONFIRMED)
             return (False, ds.USER_UNCONFIRMED)
+    
+    except InvalidPasswordError:
+        # If the password is invalid, return False with an error message indicating that password doesn't meet requirements
+        return (False, ds.INVALID_PASSWORD)
     
     # For any other exception, return False
     except Exception as e:
