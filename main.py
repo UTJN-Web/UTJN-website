@@ -6,6 +6,7 @@ import os
 # 認証ルーターを読み込む
 from authentication.use_case.signup.signup_controller import router as signup_router
 from authentication.use_case.login.login_controller import login_router
+from authentication.controllers.contact_controller import router as contact_router
 
 app = FastAPI()
 
@@ -24,6 +25,7 @@ app.add_middleware(
 # ─── ルーター登録 ─────────────────────────────────────
 app.include_router(signup_router)
 app.include_router(login_router)
+app.include_router(contact_router)
 
 # 健康チェック用
 @app.get("/ping")
