@@ -1,4 +1,4 @@
-# authentication/controllers/login_controller.py
+# authentication/use_case/login/login_controller.py
 from fastapi import APIRouter, HTTPException
 
 # --- DTO & Use-case imports ---
@@ -11,11 +11,11 @@ from authentication.data_access.data_access import login_user
 login_router = APIRouter(prefix="/auth", tags=["auth"])
 
 # ── /auth/login ───────────────────────────────────────────
-@router.post("/login", response_model=LoginResponseDTO)
+@login_router.post("/login", response_model=LoginResponseDTO)
 async def login(req: LoginRequestDTO):
-    ok, msg = login_user(
+    ok, msg, user_data = login_user(
         req.email, req.password
     )
     if ok:
-        return LoginResponseDTO(success=True, message=msg)
+        return LoginResponseDTO(success=True, message=msg, user=user_data)
     raise HTTPException(status_code=400, detail=msg)

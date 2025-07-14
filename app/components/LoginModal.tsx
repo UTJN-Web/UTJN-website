@@ -3,23 +3,45 @@
 'use client';
 
 import { useState } from 'react';
+import { useUser } from '../contexts/UserContext';
 
 export default function LoginModal({ onClose }: { onClose: () => void }) {
+  const { login } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-      headers: { 'Content-Type': 'application/json' },
-    });
+    setError(null);
+    setLoading(true);
+    
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-    if (res.ok) {
-      window.location.href = '/';
-    } else {
-      alert('You entered an invalid email or password.');
+      if (res.ok) {
+        const data = await res.json();
+        // ログイン成功後、ユーザーコンテキストを更新
+        if (data.user) {
+          login({ email: data.user.email, name: data.user.name });
+        } else {
+          login({ email });
+        }
+        onClose();
+        window.location.href = '/';
+      } else {
+        const data = await res.json();
+        setError(data.detail || 'You entered an invalid email or password.');
+      }
+    } catch (err: any) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,6 +59,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded border p-2"
+            required
           />
           <input
             type="password"
@@ -44,12 +67,15 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded border p-2"
+            required
           />
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            className="w-full rounded bg-gray-800 py-2 text-white"
+            disabled={loading}
+            className="w-full rounded bg-gray-800 py-2 text-white disabled:opacity-50"
           >
-            Log in
+            {loading ? 'Logging in...' : 'Log in'}
           </button>
         </form>
         <div className="mt-4 text-sm text-center text-gray-500">

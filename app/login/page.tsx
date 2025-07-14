@@ -3,10 +3,43 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { post } from '@/lib/api';
+import { useUser } from '../contexts/UserContext';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await post<{ user?: { email: string; name?: string } }>('/auth/login', { email, password });
+      // ログイン成功後、ユーザーコンテキストを更新
+      if (response.user) {
+        login({ email: response.user.email, name: response.user.name });
+      } else {
+        login({ email });
+      }
+      // ホームページにリダイレクト
+      router.push('/');
+    } catch (err: any) {
+      // ユーザーが未確認の場合、確認画面にリダイレクト
+      if (err.message.includes('You are not confirmed yet')) {
+        router.push(`/confirmation?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -29,13 +62,14 @@ export default function LoginPage() {
           <span className="text-lg font-medium">Japan Network</span>
         </h1>
 
-        <form className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
             type="email"
             placeholder="Email"
             className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
 
           <input
@@ -44,18 +78,27 @@ export default function LoginPage() {
             className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
             type="submit"
-            className="w-full bg-[#2e2e2e] hover:bg-[#1c2a52] text-white py-2 rounded font-semibold transition"
+            disabled={loading}
+            className="w-full bg-[#2e2e2e] hover:bg-[#1c2a52] text-white py-2 rounded font-semibold transition disabled:opacity-50"
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <div className="text-sm text-center text-gray-600 mt-4">
-          Don't have an account? <a href="/signup" className="hover:underline">Sign Up</a>
+        <div className="text-sm text-center text-gray-600 mt-4 space-y-2">
+          <div>
+            Don't have an account? <a href="/signup" className="hover:underline">Sign Up</a>
+          </div>
+          <div>
+            <a href="/forgot-password" className="hover:underline">Forgot Password?</a>
+          </div>
         </div>
       </div>
     </div>

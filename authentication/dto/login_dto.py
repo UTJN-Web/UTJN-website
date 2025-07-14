@@ -1,4 +1,4 @@
-# authentication/dto/signup_dto.py
+# authentication/dto/login_dto.py
 from pydantic import BaseModel, EmailStr
 
 class LoginRequestDTO(BaseModel):
@@ -8,3 +8,4 @@ class LoginRequestDTO(BaseModel):
 class LoginResponseDTO(BaseModel):
     success: bool
     message: str
+    user: dict | None = None

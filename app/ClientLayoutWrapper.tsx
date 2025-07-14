@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import LoginModal from './components/LoginModal';
+import { UserProvider } from './contexts/UserContext';
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [showLogin, setShowLogin] = useState(false);
@@ -15,9 +16,9 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   }, []);
 
   return (
-    <>
+    <UserProvider>
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
       {children}
-    </>
+    </UserProvider>
   );
 }
