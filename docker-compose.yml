@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   web:
     build:
@@ -12,7 +10,7 @@ services:
       - .:/app
       - node_deps:/app/node_modules
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+      - NEXT_PUBLIC_BACKEND_URL=http://api:8000
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_ENV=development
     depends_on:

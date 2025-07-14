@@ -78,6 +78,7 @@ def login_user(email, password) -> tuple:
         A tuple containing...
         - bool: True if the user was successfully able to log in, False otherwise.
         - string: A message indicating the result of the log-in process.
+        - dict: User information if login is successful, None otherwise.
     """
     # Initialize the CognitoIdentityProviderWrapper to call the aws related functions.
     cog_wrapper = CognitoIdentityProviderWrapper()
@@ -87,21 +88,32 @@ def login_user(email, password) -> tuple:
         # Call the boto3 function that logs in the user
         login_confirmed = cog_wrapper.initiate_auth(email, password)
         if login_confirmed:
-            return (True, "Login successful.")
+            # Get user information
+            user_info = call_admin_get_user(email)
+            user_data = {
+                "email": email,
+                "name": email.split('@')[0]  # Use email prefix as name for now
+            }
+            if user_info and user_info.get("UserAttributes"):
+                for attr in user_info["UserAttributes"]:
+                    if attr["Name"] == "name":
+                        user_data["name"] = attr["Value"]
+                        break
+            return (True, "Login successful.", user_data)
         else:
-            return (False, ds.LOGIN_UNSUCCESSFUL)
+            return (False, ds.LOGIN_UNSUCCESSFUL, None)
     
     except EmailNotFoundError:
-        return (False, ds.INVALID_EMAIL)
+        return (False, ds.LOGIN_INVALID_EMAIL, None)
     
     except UserNotConfirmedError:
-        return (False, ds.USER_UNCONFIRMED)
+        return (False, ds.USER_UNCONFIRMED, None)
     
     except IncorrectParameterError:
-        return (False, ds.INVALID_PARAMETER)
+        return (False, ds.INVALID_PARAMETER, None)
 
     except Exception as e:
-        return (False, ds.GENERAL_ERROR)
+        return (False, ds.GENERAL_ERROR, None)
 
 
 def verifyemail(email) -> bool:
@@ -189,7 +201,7 @@ def get_user_sub(email):
     cog_wrapper = CognitoIdentityProviderWrapper()
 
     # Call admin_get_user to get user attributes
-    response = cog_wrapper.call_admin_get_user(email)
+    response = cog_wrapper.admin_get_user(email)
     if response is None:
         print(f"User {email} not found.")
         return None
