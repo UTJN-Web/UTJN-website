@@ -13,7 +13,7 @@ login_router = APIRouter(prefix="/auth", tags=["auth"])
 # ── /auth/login ───────────────────────────────────────────
 @login_router.post("/login", response_model=LoginResponseDTO)
 async def login(req: LoginRequestDTO):
-    ok, msg, user_data = login_user(
+    ok, msg, user_data = await login_user(
         req.email, req.password
     )
     if ok:

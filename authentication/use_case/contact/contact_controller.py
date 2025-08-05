@@ -1,14 +1,15 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
+# authentication/use_case/contact/contact_controller.py
+from fastapi import APIRouter
+from pydantic import BaseModel
 
-router = APIRouter(prefix="", tags=["contact"])
+contact_router = APIRouter(prefix="/contact", tags=["contact"])
 
 class ContactIn(BaseModel):
     name: str
-    email: EmailStr
+    email: str
     message: str
 
-@router.post("/contact")
+@contact_router.post("/contact")
 async def contact(body: ContactIn):
     # TODO: Send email to UTJN admin
     print(f"[Contact] Name: {body.name}, Email: {body.email}, Message: {body.message}")
