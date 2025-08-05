@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function ProfileInfoPage() {
@@ -15,6 +15,33 @@ export default function ProfileInfoPage() {
   const [gradYear, setGradYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Load existing user data if available
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!email) return;
+      
+      try {
+        const response = await fetch(`/api/users/profile?email=${encodeURIComponent(email)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setFirstName(data.user.firstName || '');
+            setLastName(data.user.lastName || '');
+            setMajor(data.user.major || '');
+            setGradYear(data.user.graduationYear?.toString() || '');
+            setUniversity(data.user.university || '');
+            setIsEditing(true);
+          }
+        }
+      } catch (err) {
+        console.log('No existing profile found, creating new one');
+      }
+    };
+
+    loadUserData();
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +64,8 @@ export default function ProfileInfoPage() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('User profile created:', data);
-        // Redirect to home page or membership page
+        console.log('User profile saved:', data);
+        // Redirect to home page
         router.push('/');
       } else {
         const data = await response.json();
@@ -65,9 +92,14 @@ export default function ProfileInfoPage() {
       <div className="absolute inset-0 bg-black/40 dark:bg-black/70 z-0" />
 
       <div className="relative z-10 w-full max-w-lg bg-white/95 dark:bg-[#1c1c1c] p-8 rounded shadow">
-        <h1 className="text-2xl font-bold text-center mb-2">Personal Info</h1>
+        <h1 className="text-2xl font-bold text-center mb-2">
+          {isEditing ? 'Edit Profile' : 'Personal Info'}
+        </h1>
         <p className="text-sm text-center text-gray-700 dark:text-gray-300 mb-6">
-          Please provide your name, university, major, and expected graduation year.
+          {isEditing 
+            ? 'Update your personal information below.'
+            : 'Please provide your name, university, major, and expected graduation year.'
+          }
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -138,9 +170,9 @@ export default function ProfileInfoPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#2e2e2e] hover:bg-[#1c2a52] text-white py-2 rounded font-semibold transition disabled:opacity-50"
+            className="w-full bg-[#1c2a52] text-white py-2 px-4 rounded hover:bg-[#152238] disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
-            {loading ? 'Saving...' : 'Submit'}
+            {loading ? 'Saving...' : (isEditing ? 'Update Profile' : 'Save Profile')}
           </button>
         </form>
       </div>

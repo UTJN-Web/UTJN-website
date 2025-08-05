@@ -91,7 +91,14 @@ class UserRepository:
         try:
             # Try to get database URL from AWS Secrets Manager
             database_url = self.get_database_url_from_secrets()
-            print("✅ Retrieved database credentials from AWS Secrets Manager")
+            if database_url:
+                print("✅ Retrieved database credentials from AWS Secrets Manager")
+            else:
+                # Fallback to environment variable if AWS fails
+                database_url = os.getenv("DATABASE_URL")
+                if not database_url:
+                    raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
+                print("⚠️ Using DATABASE_URL from environment variable")
         except Exception as e:
             # Fallback to environment variable if AWS fails
             database_url = os.getenv("DATABASE_URL")
@@ -195,4 +202,42 @@ class UserRepository:
                 return None
         except Exception as e:
             print(f"Error getting user by cognito sub: {e}")
+            raise e 
+
+    async def update_user(self, user_data: dict) -> Dict[str, Any]:
+        """Update an existing user in the database"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                UPDATE "User" 
+                SET "firstName" = $1, "lastName" = $2, major = $3, "graduationYear" = $4, "cognitoSub" = $5
+                WHERE email = $6
+                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "cognitoSub", "joinedAt"
+                """
+                
+                row = await conn.fetchrow(
+                    query,
+                    user_data["firstName"],
+                    user_data["lastName"],
+                    user_data["major"],
+                    user_data["graduationYear"],
+                    user_data["cognitoSub"],
+                    user_data["email"]
+                )
+                
+                if not row:
+                    raise Exception("User not found for update")
+                
+                return {
+                    "id": row["id"],
+                    "firstName": row["firstName"],
+                    "lastName": row["lastName"],
+                    "email": row["email"],
+                    "major": row["major"],
+                    "graduationYear": row["graduationYear"],
+                    "cognitoSub": row["cognitoSub"],
+                    "joinedAt": row["joinedAt"]
+                }
+        except Exception as e:
+            print(f"Error updating user: {e}")
             raise e 

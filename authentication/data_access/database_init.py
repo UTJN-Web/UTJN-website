@@ -88,7 +88,15 @@ async def init_database():
     try:
         # Get database URL from AWS Secrets Manager
         database_url = get_database_url_from_secrets()
-        print("✅ Retrieved database credentials from AWS Secrets Manager")
+        if database_url:
+            print("✅ Retrieved database credentials from AWS Secrets Manager")
+        else:
+            # Fallback to environment variable if AWS fails
+            database_url = os.getenv("DATABASE_URL")
+            if not database_url:
+                raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
+            print("⚠️ Using DATABASE_URL from environment variable")
+            print(f"🔗 Database URL: {database_url[:database_url.find('@')]}@***:***/***")
     except Exception as e:
         # Fallback to environment variable if AWS fails
         database_url = os.getenv("DATABASE_URL")
@@ -113,8 +121,9 @@ async def init_database():
         """)
         
         if table_exists:
-            print("🔄 Dropping existing User table to recreate with correct structure...")
-            await conn.execute('DROP TABLE IF EXISTS "User" CASCADE;')
+            print("✅ User table already exists, skipping initialization")
+            await conn.close()
+            return
         
         # Create the User table with explicit column names
         print("📋 Creating User table with correct structure...")
