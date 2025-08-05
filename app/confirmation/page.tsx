@@ -25,7 +25,7 @@ export default function ConfirmPage() {
       });
       
       if (response.ok) {
-        router.push('/information');                   // 次のステップへ
+        router.push(`/information?email=${encodeURIComponent(email)}`);  // Pass email to information page
       } else {
         const data = await response.json();
         // コードが期限切れの場合、新しいコードを再送信

@@ -11,18 +11,18 @@ export async function post<T>(path: string, data: unknown): Promise<T> {
   
   try {
     const res = await fetch(fullUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
     
     console.log('Response status:', res.status);
     
-    if (!res.ok) {
-      const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
       console.error('Response error:', json);
-      throw new Error(json.detail ?? "Server error");
-    }
+    throw new Error(json.detail ?? "Server error");
+  }
     
     const result = await res.json();
     console.log('Response success:', result);

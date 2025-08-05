@@ -29,6 +29,10 @@ services:
       - "8000:8000"
     environment:
       - CORS_ORIGINS=http://localhost:3000
+      - DATABASE_URL=postgresql://postgres:MyNewPassword123!@utjn-db.ch68m8sgy7on.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
 
 volumes:
   node_deps: {}

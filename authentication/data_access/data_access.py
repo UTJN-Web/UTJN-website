@@ -68,7 +68,7 @@ def signup_user(email, password, password2):
         return (False, ds.GENERAL_ERROR)
 
 
-def login_user(email, password) -> tuple:
+async def login_user(email, password) -> tuple:
     """
     Function to log in a user with email and password.
     Args:
@@ -88,7 +88,7 @@ def login_user(email, password) -> tuple:
         # Call the boto3 function that logs in the user
         login_confirmed = cog_wrapper.initiate_auth(email, password)
         if login_confirmed:
-            # Get user information
+            # Get user information from Cognito
             user_info = call_admin_get_user(email)
             user_data = {
                 "email": email,
@@ -99,6 +99,34 @@ def login_user(email, password) -> tuple:
                     if attr["Name"] == "name":
                         user_data["name"] = attr["Value"]
                         break
+            
+            # Try to get additional user data from database
+            try:
+                from authentication.data_access.user_repository import UserRepository
+                user_repo = UserRepository()
+                await user_repo.connect()
+                
+                db_user = await user_repo.get_user_by_email(email)
+                if db_user:
+                    # Merge database data with Cognito data
+                    user_data.update({
+                        "id": db_user["id"],
+                        "firstName": db_user["firstName"],
+                        "lastName": db_user["lastName"],
+                        "major": db_user["major"],
+                        "graduationYear": db_user["graduationYear"],
+                        "cognitoSub": db_user["cognitoSub"],
+                        "joinedAt": db_user["joinedAt"].isoformat() if db_user["joinedAt"] else None,
+                        "hasProfile": True
+                    })
+                else:
+                    user_data["hasProfile"] = False
+                
+                await user_repo.disconnect()
+            except Exception as db_error:
+                print(f"Warning: Could not retrieve database user data: {db_error}")
+                user_data["hasProfile"] = False
+            
             return (True, "Login successful.", user_data)
         else:
             return (False, ds.LOGIN_UNSUCCESSFUL, None)
@@ -110,9 +138,10 @@ def login_user(email, password) -> tuple:
         return (False, ds.USER_UNCONFIRMED, None)
     
     except IncorrectParameterError:
-        return (False, ds.INVALID_PARAMETER, None)
+        return (False, ds.LOGIN_INVALID_EMAIL, None)
 
     except Exception as e:
+        print(f"Login error: {e}")
         return (False, ds.GENERAL_ERROR, None)
 
 
@@ -208,8 +237,12 @@ def get_user_sub(email):
     
     # Extract the 'sub' attribute from the response
     userattribute = response.get("UserAttributes", {})
-    user_sub = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
-    return user_sub
+    try:
+        user_sub = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
+        return user_sub
+    except StopIteration:
+        print(f"Sub attribute not found for user {email}")
+        return None
 
 if __name__ == "__main__":
     import argparse, asyncio

@@ -18,13 +18,13 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     setLoading(true);
     
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-      if (res.ok) {
+    if (res.ok) {
         const data = await res.json();
         // ログイン成功後、ユーザーコンテキストを更新
         if (data.user) {
@@ -33,8 +33,8 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
           login({ email });
         }
         onClose();
-        window.location.href = '/';
-      } else {
+      window.location.href = '/';
+    } else {
         const data = await res.json();
         setError(data.detail || 'You entered an invalid email or password.');
       }
