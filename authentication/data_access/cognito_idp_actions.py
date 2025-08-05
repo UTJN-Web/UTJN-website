@@ -301,8 +301,61 @@ class CognitoIdentityProviderWrapper:
                error_code,
                err.response["Error"]["Message"],
             )
-            return False
+            return False    
+       
+    def forgot_password(self, email: str):
+        """
+        Initiates the password reset process for a user by sending a verification code to their email.
 
+        :param email: The email address of the user who wants to reset their password.
+        :return: True if the request was successful, False otherwise.
+        """
+        try:
+            kwargs = {
+                "ClientId": self.client_id,
+                "Username": email,
+            }
+            if self.client_secret is not None:
+                kwargs["SecretHash"] = self._secret_hash(email)
+            self.cognito_idp_client.forgot_password(**kwargs)
+            return True
+        except ClientError as err:
+            logger.error(
+                "Couldn't initiate password reset for %s. Here's why: %s: %s",
+                email,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            return False
+        
+    def confirm_forgot_password(self, email: str, confirmation_code: str, new_password: str):
+        """
+        Confirms the new password for a user after they have received a verification code.
+
+        :param email: The email address of the user who is resetting their password.
+        :param confirmation_code: The verification code sent to the user's email.
+        :param new_password: The new password to set for the user.
+        :return: True if the password was successfully changed, False otherwise.
+        """
+        try:
+            kwargs = {
+                "ClientId": self.client_id,
+                "Username": email,
+                "ConfirmationCode": confirmation_code,
+                "Password": new_password,
+            }
+            if self.client_secret is not None:
+                kwargs["SecretHash"] = self._secret_hash(email)
+            self.cognito_idp_client.confirm_forgot_password(**kwargs)
+            return True
+        except ClientError as err:
+            logger.error(
+                "Couldn't confirm forgot password for %s. Here's why: %s: %s",
+                email,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            return False
     ##################################################
 
     # snippet-start:[python.example_code.cognito-idp.ListUsers]

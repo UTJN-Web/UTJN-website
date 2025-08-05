@@ -99,7 +99,13 @@ export default function SignupPage() {
         </form>
 
         <p className="text-sm text-center mt-4">
-          Already have an account? <a href="/login" className="underline">Login</a>
+          Already have an account? <button
+                                    type="button"
+                                    onClick={() => window.dispatchEvent(new Event('open-login-modal'))}
+                                    className="underline text-blue-600"
+                                  >
+                                    Login
+                                  </button>
         </p>
       </div>
     </div>
