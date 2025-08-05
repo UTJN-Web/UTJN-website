@@ -210,6 +210,54 @@ def resend_confirmation(email):
     )
     return True # Success once code reaches here
 
+def request_password_reset(email):
+    """
+    Requests a password reset for the user with the given email.
+    Args:
+        email (str): The user's email address.
+    Returns:
+        bool: True if the password reset request is successful, False otherwise.
+    """
+    cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Call the boto3 function that requests password reset
+    try:
+        response = cog_wrapper.request_password_reset(email)
+        if response:
+            print(f"Password reset requested for {email}.")
+            return True
+        else:
+            print(f"Failed to request password reset for {email}.")
+            return False
+    except EmailNotFoundError:
+        print(f"Email {email} not found.")
+        return False
+    
+def reset_password(email, code, new_password):
+    """
+    Resets the password for the user with the given email.
+    Args:
+        email (str): The user's email address.
+        code (str): The confirmation code sent to the user's email.
+        new_password (str): The new password to set for the user.
+    Returns:
+        bool: True if the password reset is successful, False otherwise.
+    """
+    cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Call the boto3 function that resets the password
+    try:
+        response = cog_wrapper.reset_password(email, code, new_password)
+        if response:
+            print(f"Password reset successful for {email}.")
+            return True
+        else:
+            print(f"Failed to reset password for {email}.")
+            return False
+    except EmailNotFoundError:
+        print(f"Email {email} not found.")
+        return False
+
 
 def call_admin_get_user(email):
     """

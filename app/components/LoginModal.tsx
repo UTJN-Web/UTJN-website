@@ -79,7 +79,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
           </button>
         </form>
         <div className="mt-4 text-sm text-center text-gray-500">
-          <a href="#" className="underline mr-4">Forgot Password?</a>
+          <a href="/forgot-password" className="underline mr-4">Forgot Password?</a>
           <a href="/signup" className="underline">Create account</a>
         </div>
         <button
