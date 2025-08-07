@@ -1,170 +1,124 @@
 // app/events/page.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
-import Image from 'next/image';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useMemo, useEffect, useContext } from 'react';
+import { ChevronDown, ChevronUp, CreditCard, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { UserContext } from '../contexts/UserContext';
 
-interface EventItem {
+interface Event {
   id: number;
-  date: string;
-  seats: number;
-  capacity: number;
-  type: 'career' | 'social';
-  title: string;
+  name: string;
   description: string;
-  years: string;
-  image: string;
-  archived?: boolean;
-  registered?: boolean;
+  targetYear: string;
+  fee: number;
+  capacity: number;
+  isArchived: boolean;
+  date: string;
+  type: string;
+  image?: string;
+  remainingSeats: number;
+  registeredUsers: any[];
+  registrations?: any[];
+  registration_count?: number;
 }
 
-const eventsData: EventItem[] = [
-  {
-    id: 1,
-    date: '2025-09-02',
-    seats: 12,
-    capacity: 40,
-    type: 'career',
-    title: '外資コンサルティング企業説明会',
-    description:
-      'KPMGやPwCなど外資系コンサルの採用担当者とのネットワーキング。',
-    years: 'All years',
-    image: '/events/event1.jpg',
-    registered: true,
-  },
-  {
-    id: 2,
-    date: '2025-09-05',
-    seats: 5,
-    capacity: 25,
-    type: 'social',
-    title: '秋の新歓BBQ',
-    description:
-      'トロントの湖畔で新入生歓迎BBQ！日本食も用意します。',
-    years: '1st–2nd year',
-    image: '/events/event2.jpg',
-  },
-  {
-    id: 3,
-    date: '2025-09-10',
-    seats: 0,
-    capacity: 30,
-    type: 'social',
-    title: 'トロント・アイススケート交流会',
-    description:
-      'ダウンタウンのスケートリンクを貸し切り！初心者歓迎。',
-    years: 'All years',
-    image: '/events/event3.jpg',
-  },
-  {
-    id: 4,
-    date: '2025-09-15',
-    seats: 18,
-    capacity: 50,
-    type: 'career',
-    title: '就活ワークショップ：履歴書の書き方',
-    description: 'カナダ企業向けレジュメの書き方をプロが指導。',
-    years: '3rd–4th year',
-    image: '/events/event4.jpg',
-  },
-  {
-    id: 5,
-    date: '2025-09-20',
-    seats: 2,
-    capacity: 20,
-    type: 'career',
-    title: 'OB・OG座談会 〜キャリアパスを語ろう〜',
-    description:
-      '卒業生からリアルなキャリア体験を聞ける少人数座談会。',
-    years: 'All years',
-    image: '/events/event5.jpg',
-  },
-  {
-    id: 6,
-    date: '2025-04-05',
-    seats: 0,
-    capacity: 35,
-    type: 'social',
-    title: '桜鑑賞ピクニック',
-    description: 'ハイパークでお花見＆お弁当交流会を開催しました。',
-    years: 'All years',
-    image: '/events/event6.jpg',
-    archived: true,
-  },
-  {
-    id: 7,
-    date: '2024-08-12',
-    seats: 0,
-    capacity: 60,
-    type: 'social',
-    title: '夏祭り in Toronto',
-    description: '盆踊りと屋台で日本の夏を再現！400名超が参加。',
-    years: 'All years',
-    image: '/events/event7.jpg',
-    archived: true,
-  },
-  {
-    id: 8,
-    date: '2024-01-15',
-    seats: 0,
-    capacity: 45,
-    type: 'career',
-    title: 'インターン面接対策セミナー',
-    description:
-      '現役リクルーターによる模擬面接＆フィードバック。',
-    years: '2nd–3rd year',
-    image: '/events/event8.jpg',
-    archived: true,
-  },
-  {
-    id: 9,
-    date: '2023-10-30',
-    seats: 0,
-    capacity: 80,
-    type: 'social',
-    title: 'ハロウィン・コスチュームパーティー',
-    description: '仮装コンテストで盛り上がったナイトイベント。',
-    years: 'All years',
-    image: '/events/event9.jpg',
-    archived: true,
-  },
-  {
-    id: 10,
-    date: '2023-11-20',
-    seats: 0,
-    capacity: 55,
-    type: 'career',
-    title: '金融業界パネルディスカッション',
-    description:
-      '大手銀行・証券のプロがキャリアについてパネル形式で議論。',
-    years: 'All years',
-    image: '/events/event10.jpg',
-    archived: true,
-  },
-];
-
 export default function EventsPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<'all' | 'career' | 'social'>('all');
   const [showArchived, setShowArchived] = useState(false);
+  const [registering, setRegistering] = useState<number | null>(null);
+  const userContext = useContext(UserContext);
+  const user = userContext?.user;
+
+  useEffect(() => {
+    fetchEvents();
+    
+    // Set up polling for real-time updates
+    const pollInterval = setInterval(() => {
+      if (!registering) {
+        fetchEvents();
+      }
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [registering]);
+
+  const fetchEvents = async () => {
+    try {
+      console.log('🔍 Fetching events...');
+      const response = await fetch('/api/events');
+      console.log('📡 Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📅 Received events:', data);
+        setEvents(data);
+      } else {
+        console.error('❌ Failed to fetch events:', response.status);
+      }
+    } catch (error) {
+      console.error('💥 Error fetching events:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredEvents = useMemo(() => {
-    return eventsData.filter((ev) => {
-      if (keyword && !ev.title.toLowerCase().includes(keyword.toLowerCase()))
+    return events.filter((ev) => {
+      if (keyword && !ev.name.toLowerCase().includes(keyword.toLowerCase()))
         return false;
       if (category !== 'all' && ev.type !== category) return false;
       return true;
     });
-  }, [keyword, category]);
+  }, [events, keyword, category]);
 
-  const liveEvents = filteredEvents.filter((e) => !e.archived);
-  const archivedEvents = filteredEvents.filter((e) => e.archived);
+  const liveEvents = filteredEvents.filter((e) => !e.isArchived);
+  const archivedEvents = filteredEvents.filter((e) => e.isArchived);
+
+  // Debug logging
+  console.log('🔍 Events filtering debug:', {
+    totalEvents: events.length,
+    filteredEvents: filteredEvents.length,
+    liveEvents: liveEvents.length,
+    archivedEvents: archivedEvents.length,
+    keyword,
+    category,
+    eventsDetail: events.map(e => ({
+      id: e.id,
+      name: e.name,
+      type: e.type,
+      isArchived: e.isArchived,
+      date: e.date
+    }))
+  });
+
+  const handleRegister = (eventId: number) => {
+    if (!user) {
+      alert('Please log in to register for events');
+      return;
+    }
+
+    // Redirect to payment page
+    window.location.href = `/payment?eventId=${eventId}&userId=${user.id}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <section className="fade-in-up w-full max-w-4xl px-4 pb-20">
-      <h1 className="mb-8 text-center text-4xl font-bold">Member Events</h1>
+    <div className="min-h-screen p-8">
+      <h1 className="text-4xl font-bold text-center mb-8">Member Events</h1>
 
       <div className="mb-10 flex justify-center gap-2">
         <label htmlFor="filter" className="sr-only">
@@ -202,12 +156,29 @@ export default function EventsPage() {
 
       <div className="space-y-8">
         {liveEvents.length === 0 && (
-          <p className="text-center text-gray-500">
-            No events found.
-          </p>
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 10V11m6 0v6m-6-4h6" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No events found</h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              {keyword || category !== 'all' 
+                ? 'Try adjusting your search filters.'
+                : 'Check back soon for upcoming events!'
+              }
+            </p>
+          </div>
         )}
         {liveEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
+          <EventCard 
+            key={event.id} 
+            event={event} 
+            user={user}
+            onRegister={handleRegister}
+            registering={registering === event.id}
+          />
         ))}
       </div>
 
@@ -230,74 +201,171 @@ export default function EventsPage() {
 
       {showArchived && (
         <div className="mt-10 space-y-8">
-          {archivedEvents.map((event) => (
-            <EventCard key={event.id} event={event} archived />
-          ))}
-        </div>
-      )}
-    </section>
-  );
+          <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-300 mb-6">
+            Archived Events
+          </h2>
+          {archivedEvents.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              <p>No archived events found.</p>
+            </div>
+          ) : (
+            archivedEvents.map((event) => (
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                archived 
+                user={user}
+                onRegister={handleRegister}
+                registering={false}
+              />
+            ))
+                   )}
+       </div>
+     )}
+   </div>
+ );
 }
 
 function EventCard({
   event,
-  archived,
+  archived = false,
+  user,
+  onRegister,
+  registering
 }: {
-  event: EventItem;
+  event: Event;
   archived?: boolean;
+  user: any;
+  onRegister: (eventId: number) => void;
+  registering: boolean;
 }) {
   const date = new Date(event.date);
   const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+  
+  const isUserRegistered = user && (event.registeredUsers || event.registrations || []).some(
+    (registration: any) => {
+      const registeredUser = registration.user || registration;
+      return registeredUser.id === user.id;
+    }
+  );
+  
+  const isFull = event.remainingSeats <= 0;
 
   return (
-    <article className="flex flex-col rounded-lg border border-gray-300 p-4 shadow-sm md:flex-row md:items-center md:gap-4">
+    <article className={`flex flex-col rounded-lg border p-4 shadow-sm transition-all hover:shadow-md md:flex-row md:items-center md:gap-4 ${
+      archived 
+        ? 'border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600' 
+        : 'border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700'
+    }`}>
       <div className="flex w-full items-center justify-between md:w-[120px] md:flex-col md:justify-center">
-        <span className="text-2xl font-bold md:text-3xl">{dateLabel}</span>
-        <span className="text-sm text-gray-500">
-          Seats {event.seats}/{event.capacity}
+        <span className="text-2xl font-bold md:text-3xl text-[#1c2a52] dark:text-blue-400">
+          {dateLabel}
         </span>
+        <div className="text-center">
+          <span className="text-sm text-gray-500 block">
+            Seats {event.capacity - event.remainingSeats}/{event.capacity}
+          </span>
+          {!archived && (
+            <div className={`mt-1 w-full bg-gray-200 rounded-full h-2 ${
+              isFull ? 'bg-red-200' : event.remainingSeats <= 5 ? 'bg-yellow-200' : 'bg-green-200'
+            }`}>
+              <div 
+                className={`h-2 rounded-full ${
+                  isFull ? 'bg-red-500' : event.remainingSeats <= 5 ? 'bg-yellow-500' : 'bg-green-500'
+                }`}
+                style={{ width: `${((event.capacity - event.remainingSeats) / event.capacity) * 100}%` }}
+              ></div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-3 grow md:mt-0">
-        <h2 className="text-lg font-semibold">{event.title}</h2>
+        <div className="flex items-start justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{event.name}</h2>
+          <span
+            className={`ml-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+              event.type === 'career'
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+            }`}
+          >
+            {event.type === 'career' ? '💼 Career' : '🎉 Social'}
+          </span>
+        </div>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           {event.description}
         </p>
-        <p className="mt-1 text-xs text-gray-500">For: {event.years}</p>
+        <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+          <span className="flex items-center gap-1">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+            For: {event.targetYear}
+          </span>
+          {event.fee > 0 && (
+            <span className="flex items-center gap-1 text-green-600 font-medium">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clipRule="evenodd" />
+              </svg>
+              Fee: ${event.fee}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            {date.toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              month: 'short', 
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </span>
+        </div>
       </div>
 
       <div className="mt-4 flex shrink-0 flex-col items-end gap-2 md:mt-0 md:w-[150px]">
-        <span
-          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-            event.type === 'career'
-              ? 'bg-red-100 text-red-600'
-              : 'bg-blue-100 text-blue-600'
-          }`}
-        >
-          {event.type === 'career' ? 'Career' : 'Social'}
-        </span>
-
         {archived ? (
-          <Link
-            href="#"
-            className="w-full rounded-md border border-gray-400 py-2 text-center text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
-          >
-            View report
-          </Link>
-        ) : event.registered ? (
-          <Link
-            href="#"
-            className="w-full rounded-md border border-[#1c2a52] bg-[#1c2a52] py-2 text-center text-sm text-white transition hover:opacity-90"
-          >
-            View receipt
-          </Link>
+          <div className="w-full text-center">
+            <span className="inline-block rounded-full bg-gray-500 px-3 py-1 text-xs text-white mb-2">
+              Archived
+            </span>
+            <Link
+              href="#"
+              className="w-full block rounded-md border border-gray-400 py-2 text-center text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
+            >
+              View Report
+            </Link>
+          </div>
+        ) : isUserRegistered ? (
+          <div className="w-full rounded-md border border-green-600 bg-green-50 py-2 text-center text-sm text-green-700 flex items-center justify-center gap-1">
+            <CheckCircle size={16} />
+            Registered
+          </div>
+        ) : isFull ? (
+          <div className="w-full rounded-md border border-red-400 bg-red-50 py-2 text-center text-sm text-red-700">
+            Event Full
+          </div>
         ) : (
-          <Link
-            href="#"
-            className="w-full rounded-md border border-[#1c2a52] py-2 text-center text-sm text-[#1c2a52] transition hover:bg-[#1c2a52] hover:text-white"
+          <button
+            onClick={() => onRegister(event.id)}
+            disabled={registering || !user}
+            className="w-full rounded-md border border-[#1c2a52] py-2 text-center text-sm text-[#1c2a52] transition hover:bg-[#1c2a52] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           >
-            Register
-          </Link>
+            {registering ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard size={16} />
+                Register {event.fee > 0 && `($${event.fee})`}
+              </>
+            )}
+          </button>
         )}
       </div>
     </article>

@@ -9,6 +9,7 @@ from authentication.use_case.signup.signup_controller import router as signup_ro
 from authentication.use_case.login.login_controller import login_router
 from authentication.use_case.contact.contact_controller import contact_router
 from authentication.use_case.user.user_controller import user_router
+from authentication.use_case.event.event_controller import event_router
 from authentication.data_access.database_init import init_database
 
 app = FastAPI()
@@ -30,6 +31,7 @@ app.include_router(signup_router)
 app.include_router(login_router)
 app.include_router(contact_router)
 app.include_router(user_router)
+app.include_router(event_router)
 
 @app.on_event("startup")
 async def startup_event():
