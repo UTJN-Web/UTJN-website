@@ -16,4 +16,38 @@ model User {
   graduationYear   Int
   cognitoSub        String   @unique
   joinedAt         DateTime @default(now())
+  
+  // Event relationships
+  registeredEvents EventRegistration[]
+}
+
+model Event {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String
+  targetYear      String   // e.g., "All years", "1st-2nd year", etc.
+  fee             Float    @default(0)
+  capacity        Int
+  isArchived      Boolean  @default(false)
+  date            DateTime
+  type            String   // e.g., "career", "social"
+  image           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Event relationships
+  registrations   EventRegistration[]
+}
+
+model EventRegistration {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  eventId         Int
+  registeredAt    DateTime @default(now())
+  paymentStatus   String   @default("pending") // "pending", "completed", "failed"
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, eventId])
 }

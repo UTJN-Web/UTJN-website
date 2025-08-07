@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/events/[id] - Fetch single event
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const eventId = params.id;
+    const { id } = await params;
+    const eventId = id;
     
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
     console.log('API route: forwarding event fetch to backend at:', backendUrl);
