@@ -46,6 +46,12 @@ class DirectSquareClient {
   payments = {
     create: (paymentRequest: any) => this.makeRequest('/payments', 'POST', paymentRequest)
   };
+
+  // Refunds API
+  refunds = {
+    create: (refundRequest: any) => this.makeRequest('/refunds', 'POST', refundRequest),
+    get: (refundId: string) => this.makeRequest(`/refunds/${refundId}`)
+  };
 }
 
 // Export the direct client
