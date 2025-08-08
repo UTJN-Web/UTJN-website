@@ -31,6 +31,7 @@ interface Event {
   fee: number;
   capacity: number;
   isArchived: boolean;
+  isUofTOnly?: boolean;
   date: string;
   type: string;
   image?: string;
@@ -50,6 +51,7 @@ interface EventFormData {
   type: string;
   image: string;
   refundDeadline: string;
+  isUofTOnly: boolean;
 }
 
 type NotificationType = 'success' | 'error' | 'info';
@@ -84,7 +86,8 @@ export default function AdminEventsPage() {
     date: '',
     type: 'social',
     image: '',
-    refundDeadline: ''
+    refundDeadline: '',
+    isUofTOnly: false
   });
 
   useEffect(() => {
@@ -170,22 +173,36 @@ export default function AdminEventsPage() {
       date: '',
       type: 'social',
       image: '',
-      refundDeadline: ''
+      refundDeadline: '',
+      isUofTOnly: false
     });
   };
 
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
+    
+    // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
+    const formatDateForInput = (dateString: string) => {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
     setFormData({
       name: event.name,
       description: event.description,
       targetYear: event.targetYear,
       fee: event.fee.toString(),
       capacity: event.capacity.toString(),
-      date: event.date.split('T')[0],
+      date: formatDateForInput(event.date),
       type: event.type,
       image: event.image || '',
-      refundDeadline: event.refundDeadline ? event.refundDeadline.split('T')[0] : event.date.split('T')[0]
+      refundDeadline: event.refundDeadline ? formatDateForInput(event.refundDeadline) : formatDateForInput(event.date),
+      isUofTOnly: event.isUofTOnly !== undefined ? event.isUofTOnly : false
     });
     setShowForm(true);
   };
@@ -462,7 +479,7 @@ export default function AdminEventsPage() {
 
           {/* Form Modal */}
           {showForm && (
-            <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
@@ -587,6 +604,28 @@ export default function AdminEventsPage() {
                         className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
                         placeholder="50"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        UofT Students Only
+                      </label>
+                      <div className="flex items-center space-x-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={formData.isUofTOnly}
+                            onChange={(e) => setFormData({ ...formData, isUofTOnly: e.target.checked })}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Restrict to UofT students only
+                          </span>
+                        </label>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        If checked, only University of Toronto students can see and register for this event.
+                      </p>
                     </div>
 
                     <div>

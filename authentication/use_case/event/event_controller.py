@@ -18,6 +18,7 @@ class EventRequest(BaseModel):
     image: Optional[str] = None
     refundDeadline: Optional[str] = None  # ISO format
     isArchived: bool = False
+    isUofTOnly: bool = False
 
 class EventRegistrationRequest(BaseModel):
     userId: int
@@ -40,17 +41,49 @@ async def simulate_payment(amount: float) -> bool:
     return is_successful
 
 @event_router.get("")
-async def get_all_events():
-    """Get all events"""
+async def get_all_events(user_email: Optional[str] = None):
+    """Get all events, filtered by user's university if provided"""
     try:
-        print("📅 Getting all events...")
+        print(f"📅 Getting all events for user: {user_email}")
         
         event_repo = EventRepository()
         await event_repo.connect()
         
         try:
             await event_repo.ensure_tables_exist()
+            
+            # If user_email is provided, get user info to check university
+            user_university = None
+            if user_email:
+                from authentication.data_access.user_repository import UserRepository
+                user_repo = UserRepository()
+                await user_repo.connect()
+                try:
+                    user = await user_repo.get_user_by_email(user_email)
+                    if user:
+                        user_university = user.get('university', 'University of Toronto')
+                        print(f"🎓 User university: {user_university}")
+                    else:
+                        print(f"⚠️ User not found: {user_email}")
+                finally:
+                    await user_repo.disconnect()
+            
             events = await event_repo.get_all_events()
+            
+            # Filter events based on user's university
+            if user_university:
+                filtered_events = []
+                for event in events:
+                    # If event is UofT-only and user is not from UofT, skip it
+                    if event.get('isUofTOnly', True) and user_university != 'University of Toronto':
+                        print(f"🚫 Skipping UofT-only event '{event['name']}' for non-UofT user")
+                        continue
+                    filtered_events.append(event)
+                events = filtered_events
+                print(f"✅ Filtered to {len(events)} events for {user_university} user")
+            else:
+                print(f"✅ Retrieved {len(events)} events (no user filter)")
+            
             await event_repo.disconnect()
             
             # Convert datetime objects to ISO strings for JSON serialization
@@ -64,7 +97,6 @@ async def get_all_events():
                 if event.get('updatedAt'):
                     event['updatedAt'] = event['updatedAt'].isoformat()
             
-            print(f"✅ Retrieved {len(events)} events")
             return events
             
         except Exception as e:

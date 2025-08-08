@@ -14,6 +14,7 @@ model User {
   email             String   @unique
   major             String
   graduationYear   Int
+  university        String   @default("University of Toronto")
   cognitoSub        String   @unique
   joinedAt         DateTime @default(now())
   
@@ -29,6 +30,7 @@ model Event {
   fee             Float    @default(0)
   capacity        Int
   isArchived      Boolean  @default(false)
+  isUofTOnly      Boolean  @default(false)  // If true, only UofT students can see/register
   date            DateTime
   type            String   // e.g., "career", "social"
   image           String?

@@ -54,6 +54,7 @@ async def create_user_profile(user_data: UserProfileRequest):
                     "email": user_data.email,
                     "major": user_data.major,
                     "graduationYear": user_data.graduationYear,
+                    "university": user_data.university,
                     "cognitoSub": cognito_sub,
                 })
                 message = "User profile updated successfully"
@@ -66,6 +67,7 @@ async def create_user_profile(user_data: UserProfileRequest):
                     "email": user_data.email,
                     "major": user_data.major,
                     "graduationYear": user_data.graduationYear,
+                    "university": user_data.university,
                     "cognitoSub": cognito_sub,
                 })
                 message = "User profile created successfully"

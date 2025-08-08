@@ -90,7 +90,15 @@ export default function EventsPage() {
   const fetchEvents = async () => {
     try {
       console.log('🔍 Fetching events...');
-      const response = await fetch('/api/events');
+      
+      // Build URL with user email if available
+      let url = '/api/events';
+      if (user?.email) {
+        url += `?user_email=${encodeURIComponent(user.email)}`;
+        console.log('🎓 Fetching events for user:', user.email);
+      }
+      
+      const response = await fetch(url);
       console.log('📡 Response status:', response.status);
       
       if (response.ok) {

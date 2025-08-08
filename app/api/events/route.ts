@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const userEmail = searchParams.get('user_email');
+    
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
     console.log('API route: forwarding events fetch to backend at:', backendUrl);
     
-    const response = await fetch(`${backendUrl}/events`, {
+    // Build URL with user email if provided
+    let url = `${backendUrl}/events`;
+    if (userEmail) {
+      url += `?user_email=${encodeURIComponent(userEmail)}`;
+      console.log('API route: fetching events for user:', userEmail);
+    }
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -156,6 +156,7 @@ class EventRepository:
                             fee DECIMAL(10,2) DEFAULT 0,
                             capacity INTEGER NOT NULL,
                             "isArchived" BOOLEAN DEFAULT FALSE,
+                            "isUofTOnly" BOOLEAN DEFAULT FALSE,
                             date TIMESTAMP NOT NULL,
                             type TEXT NOT NULL,
                             image TEXT,
@@ -192,6 +193,26 @@ class EventRepository:
                         print("✅ refundDeadline column added to Event table")
                     else:
                         print("✅ refundDeadline column already exists in Event table")
+                    
+                    # Check if isUofTOnly column exists and add it if not
+                    is_uof_t_only_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'Event'
+                            AND column_name = 'isUofTOnly'
+                        );
+                    """)
+                    
+                    if not is_uof_t_only_exists:
+                        print("🆕 Adding isUofTOnly column to Event table...")
+                        await conn.execute("""
+                            ALTER TABLE "Event" 
+                            ADD COLUMN "isUofTOnly" BOOLEAN DEFAULT FALSE;
+                        """)
+                        print("✅ isUofTOnly column added to Event table")
+                    else:
+                        print("✅ isUofTOnly column already exists in Event table")
                 
                 # Check if EventRegistration table exists
                 registration_table_exists = await conn.fetchval("""
@@ -362,52 +383,8 @@ class EventRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived")
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                RETURNING *
-                """
-                
-                # Parse refundDeadline if provided, otherwise use event date
-                refund_deadline = None
-                if event_data.get("refundDeadline"):
-                    refund_deadline = datetime.fromisoformat(event_data["refundDeadline"].replace('Z', '+00:00'))
-                else:
-                    refund_deadline = datetime.fromisoformat(event_data["date"].replace('Z', '+00:00'))
-                
-                row = await conn.fetchrow(
-                    query,
-                    event_data["name"],
-                    event_data["description"],
-                    event_data["targetYear"],
-                    float(event_data.get("fee", 0)),
-                    int(event_data["capacity"]),
-                    datetime.fromisoformat(event_data["date"].replace('Z', '+00:00')),
-                    event_data["type"],
-                    event_data.get("image"),
-                    refund_deadline,
-                    event_data.get("isArchived", False)
-                )
-                
-                event_dict = dict(row)
-                event_dict['registrations'] = []
-                event_dict['registeredUsers'] = []
-                event_dict['remainingSeats'] = event_dict['capacity']
-                
-                return event_dict
-        except Exception as e:
-            print(f"❌ Error creating event: {e}")
-            raise e
-    
-    async def update_event(self, event_id: int, event_data: dict) -> Dict[str, Any]:
-        """Update an existing event"""
-        try:
-            async with self.pool.acquire() as conn:
-                query = """
-                UPDATE "Event" 
-                SET name = $1, description = $2, "targetYear" = $3, fee = $4, 
-                    capacity = $5, date = $6, type = $7, image = $8, "refundDeadline" = $9, 
-                    "isArchived" = $10, "updatedAt" = NOW()
-                WHERE id = $11
+                INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived", "isUofTOnly")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 RETURNING *
                 """
                 
@@ -430,6 +407,52 @@ class EventRepository:
                     event_data.get("image"),
                     refund_deadline,
                     event_data.get("isArchived", False),
+                    event_data.get("isUofTOnly", False)
+                )
+                
+                event_dict = dict(row)
+                event_dict['registrations'] = []
+                event_dict['registeredUsers'] = []
+                event_dict['remainingSeats'] = event_dict['capacity']
+                
+                return event_dict
+        except Exception as e:
+            print(f"❌ Error creating event: {e}")
+            raise e
+    
+    async def update_event(self, event_id: int, event_data: dict) -> Dict[str, Any]:
+        """Update an existing event"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                UPDATE "Event" 
+                SET name = $1, description = $2, "targetYear" = $3, fee = $4, 
+                    capacity = $5, date = $6, type = $7, image = $8, "refundDeadline" = $9, 
+                    "isArchived" = $10, "isUofTOnly" = $11, "updatedAt" = NOW()
+                WHERE id = $12
+                RETURNING *
+                """
+                
+                # Parse refundDeadline if provided, otherwise use event date
+                refund_deadline = None
+                if event_data.get("refundDeadline"):
+                    refund_deadline = datetime.fromisoformat(event_data["refundDeadline"].replace('Z', '+00:00'))
+                else:
+                    refund_deadline = datetime.fromisoformat(event_data["date"].replace('Z', '+00:00'))
+                
+                row = await conn.fetchrow(
+                    query,
+                    event_data["name"],
+                    event_data["description"],
+                    event_data["targetYear"],
+                    float(event_data.get("fee", 0)),
+                    int(event_data["capacity"]),
+                    datetime.fromisoformat(event_data["date"].replace('Z', '+00:00')),
+                    event_data["type"],
+                    event_data.get("image"),
+                    refund_deadline,
+                    event_data.get("isArchived", False),
+                    event_data.get("isUofTOnly", False),
                     event_id
                 )
                 
