@@ -39,6 +39,9 @@ async def create_user_profile(user_data: UserProfileRequest):
         await user_repo.connect()
         
         try:
+            # Ensure tables exist with proper constraints
+            await user_repo.ensure_tables_exist()
+            
             # Check if user already exists
             existing_user = await user_repo.get_user_by_email(user_data.email)
             
@@ -139,3 +142,20 @@ async def get_user_profile(email: str):
 async def get_current_user_profile(email: str):
     """Get current user profile (requires email as query parameter)"""
     return await get_user_profile(email) 
+
+@user_router.get("/majors")
+async def get_major_options():
+    """Get available major options for user selection"""
+    try:
+        print("📋 Getting major options for user selection")
+        
+        # Import the major options from user_repository
+        from authentication.data_access.user_repository import MAJOR_OPTIONS
+        
+        return {
+            "success": True,
+            "majors": MAJOR_OPTIONS
+        }
+    except Exception as e:
+        print(f"❌ Error getting major options: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get major options: {str(e)}") 

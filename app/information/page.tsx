@@ -145,13 +145,46 @@ export default function ProfileInfoPage() {
 
           <div>
             <label className="block mb-1 text-sm font-medium text-left">Major</label>
-            <input
-              type="text"
+            <select
               value={major}
               onChange={(e) => setMajor(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] text-black dark:text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
               required
-            />
+            >
+              <option value="" disabled hidden>
+                -- Select your major --
+              </option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Computer Engineering">Computer Engineering</option>
+              <option value="Electrical Engineering">Electrical Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+              <option value="Chemical Engineering">Chemical Engineering</option>
+              <option value="Industrial Engineering">Industrial Engineering</option>
+              <option value="Materials Science & Engineering">Materials Science & Engineering</option>
+              <option value="Mineral Engineering">Mineral Engineering</option>
+              <option value="Engineering Science">Engineering Science</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Biology">Biology</option>
+              <option value="Psychology">Psychology</option>
+              <option value="Economics">Economics</option>
+              <option value="Business Administration">Business Administration</option>
+              <option value="Commerce">Commerce</option>
+              <option value="Arts & Science">Arts & Science</option>
+              <option value="Architecture">Architecture</option>
+              <option value="Urban Planning">Urban Planning</option>
+              <option value="Forestry">Forestry</option>
+              <option value="Kinesiology">Kinesiology</option>
+              <option value="Nursing">Nursing</option>
+              <option value="Pharmacy">Pharmacy</option>
+              <option value="Medicine">Medicine</option>
+              <option value="Law">Law</option>
+              <option value="Education">Education</option>
+              <option value="Social Work">Social Work</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
 
           <div>

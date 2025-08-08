@@ -6,6 +6,40 @@ import boto3
 import json
 from typing import Optional, Dict, Any
 
+# Major options for user selection
+MAJOR_OPTIONS = [
+    "Computer Science",
+    "Computer Engineering", 
+    "Electrical Engineering",
+    "Mechanical Engineering",
+    "Civil Engineering",
+    "Chemical Engineering",
+    "Industrial Engineering",
+    "Materials Science & Engineering",
+    "Mineral Engineering",
+    "Engineering Science",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Psychology",
+    "Economics",
+    "Business Administration",
+    "Commerce",
+    "Arts & Science",
+    "Architecture",
+    "Urban Planning",
+    "Forestry",
+    "Kinesiology",
+    "Nursing",
+    "Pharmacy",
+    "Medicine",
+    "Law",
+    "Education",
+    "Social Work",
+    "Other"
+]
+
 class UserRepository:
     def __init__(self):
         self.pool = None
@@ -112,6 +146,126 @@ class UserRepository:
         """Disconnect from the database"""
         if self.pool:
             await self.pool.close()
+    
+    async def ensure_tables_exist(self):
+        """Ensure User table exists with proper major constraints"""
+        if not self.pool:
+            raise Exception("Database not connected")
+        
+        async with self.pool.acquire() as conn:
+            try:
+                # Check if User table exists
+                table_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'User'
+                    );
+                """)
+                
+                if not table_exists:
+                    print("🆕 Creating User table...")
+                    await conn.execute("""
+                        CREATE TABLE "User" (
+                            id SERIAL PRIMARY KEY,
+                            "firstName" VARCHAR(255) NOT NULL,
+                            "lastName" VARCHAR(255) NOT NULL,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            major VARCHAR(255) NOT NULL CHECK (major IN (
+                                'Computer Science', 'Computer Engineering', 'Electrical Engineering',
+                                'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering',
+                                'Industrial Engineering', 'Materials Science & Engineering', 'Mineral Engineering',
+                                'Engineering Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                                'Psychology', 'Economics', 'Business Administration', 'Commerce',
+                                'Arts & Science', 'Architecture', 'Urban Planning', 'Forestry',
+                                'Kinesiology', 'Nursing', 'Pharmacy', 'Medicine', 'Law', 'Education',
+                                'Social Work', 'Other'
+                            )),
+                            "graduationYear" INTEGER NOT NULL,
+                            "cognitoSub" VARCHAR(255) UNIQUE NOT NULL,
+                            "joinedAt" TIMESTAMP DEFAULT NOW()
+                        );
+                    """)
+                    
+                    # Create indexes for better performance
+                    await conn.execute('CREATE INDEX idx_user_email ON "User"(email);')
+                    await conn.execute('CREATE INDEX idx_user_cognito_sub ON "User"("cognitoSub");')
+                    
+                    print("✅ User table created with major constraints")
+                else:
+                    print("✅ User table already exists")
+                    # Check if major constraint exists
+                    constraint_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.check_constraints 
+                            WHERE constraint_name LIKE '%major%'
+                        );
+                    """)
+                    
+                    if not constraint_exists:
+                        print("🆕 Adding major constraint to existing User table...")
+                        
+                        # First, check for any existing data that would violate the constraint
+                        invalid_majors = await conn.fetch("""
+                            SELECT id, email, major FROM "User" 
+                            WHERE major NOT IN (
+                                'Computer Science', 'Computer Engineering', 'Electrical Engineering',
+                                'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering',
+                                'Industrial Engineering', 'Materials Science & Engineering', 'Mineral Engineering',
+                                'Engineering Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                                'Psychology', 'Economics', 'Business Administration', 'Commerce',
+                                'Arts & Science', 'Architecture', 'Urban Planning', 'Forestry',
+                                'Kinesiology', 'Nursing', 'Pharmacy', 'Medicine', 'Law', 'Education',
+                                'Social Work', 'Other'
+                            )
+                        """)
+                        
+                        if invalid_majors:
+                            print(f"🔍 Found {len(invalid_majors)} user(s) with invalid majors:")
+                            for user in invalid_majors:
+                                print(f"  - ID: {user['id']}, Email: {user['email']}, Major: {user['major']}")
+                            
+                            # Fix common abbreviations
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Computer Science' WHERE major = 'CS'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Computer Engineering' WHERE major = 'CE'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Electrical Engineering' WHERE major = 'EE'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Mechanical Engineering' WHERE major = 'ME'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Civil Engineering' WHERE major = 'CivE'
+                            """)
+                            
+                            print("✅ Fixed common major abbreviations")
+                        
+                        # Now add the constraint
+                        await conn.execute("""
+                            ALTER TABLE "User" 
+                            ADD CONSTRAINT check_major 
+                            CHECK (major IN (
+                                'Computer Science', 'Computer Engineering', 'Electrical Engineering',
+                                'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering',
+                                'Industrial Engineering', 'Materials Science & Engineering', 'Mineral Engineering',
+                                'Engineering Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                                'Psychology', 'Economics', 'Business Administration', 'Commerce',
+                                'Arts & Science', 'Architecture', 'Urban Planning', 'Forestry',
+                                'Kinesiology', 'Nursing', 'Pharmacy', 'Medicine', 'Law', 'Education',
+                                'Social Work', 'Other'
+                            ));
+                        """)
+                        print("✅ Major constraint added to User table")
+                    else:
+                        print("✅ Major constraint already exists")
+                        
+            except Exception as e:
+                print(f"❌ Error ensuring tables exist: {e}")
+                raise e
     
     async def create_user(self, user_data: dict) -> Dict[str, Any]:
         """Create a new user in the database"""
