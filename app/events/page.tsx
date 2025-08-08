@@ -2,9 +2,11 @@
 'use client';
 
 import { useState, useMemo, useEffect, useContext } from 'react';
-import { ChevronDown, ChevronUp, CreditCard, CheckCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import { UserContext } from '../contexts/UserContext';
+import ConfirmationModal from '../components/ConfirmationModal';
+import Toast from '../components/Toast';
 
 interface Event {
   id: number;
@@ -30,8 +32,31 @@ export default function EventsPage() {
   const [category, setCategory] = useState<'all' | 'career' | 'social'>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [registering, setRegistering] = useState<number | null>(null);
+
+  // Modal and Toast states
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    eventId: number;
+    eventName: string;
+  }>({ isOpen: false, eventId: 0, eventName: '' });
+
+  const [toast, setToast] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning';
+  }>({ isOpen: false, title: '', message: '', type: 'success' });
   const userContext = useContext(UserContext);
   const user = userContext?.user;
+
+  // Helper functions for notifications
+  const showToast = (title: string, message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ isOpen: true, title, message, type });
+  };
+
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     fetchEvents();
@@ -103,6 +128,116 @@ export default function EventsPage() {
 
     // Redirect to payment page
     window.location.href = `/payment?eventId=${eventId}&userId=${user.id}`;
+  };
+
+  const handleFreeEventRegistration = async (eventId: number) => {
+    if (!user) {
+      showToast('Authentication Required', 'Please log in to register for events', 'warning');
+      return;
+    }
+
+    setRegistering(eventId);
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showToast(
+          'Registration Successful!', 
+          `Successfully registered for ${data.registration?.eventName || 'the event'}! No payment required.`, 
+          'success'
+        );
+        // Refresh events to update registration status
+        fetchEvents();
+      } else {
+        const errorData = await response.json();
+        showToast(
+          'Registration Failed', 
+          errorData.error || 'Failed to register for the event', 
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Free registration error:', error);
+      showToast(
+        'Error', 
+        'An error occurred while registering', 
+        'error'
+      );
+    } finally {
+      setRegistering(null);
+    }
+  };
+
+  const handleCancelRegistration = (eventId: number, eventName: string) => {
+    if (!user) {
+      showToast('Authentication Required', 'Please log in to cancel registration', 'warning');
+      return;
+    }
+
+    // Show confirmation modal
+    setConfirmModal({
+      isOpen: true,
+      eventId,
+      eventName
+    });
+  };
+
+  const confirmCancelRegistration = async () => {
+    const { eventId, eventName } = confirmModal;
+    
+    setRegistering(eventId);
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}/cancel`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user!.id,
+          email: user!.email,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showToast(
+          'Registration Cancelled', 
+          `Successfully cancelled registration for "${eventName}"`, 
+          'success'
+        );
+        // Refresh events to update registration status
+        fetchEvents();
+      } else {
+        const errorData = await response.json();
+        showToast(
+          'Cancellation Failed', 
+          errorData.error || 'Failed to cancel registration', 
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Cancellation error:', error);
+      showToast(
+        'Error', 
+        'An error occurred while cancelling registration', 
+        'error'
+      );
+    } finally {
+      setRegistering(null);
+    }
   };
 
   if (loading) {
@@ -177,6 +312,8 @@ export default function EventsPage() {
             event={event} 
             user={user}
             onRegister={handleRegister}
+            onFreeRegister={handleFreeEventRegistration}
+            onCancel={handleCancelRegistration}
             registering={registering === event.id}
           />
         ))}
@@ -216,14 +353,38 @@ export default function EventsPage() {
                 archived 
                 user={user}
                 onRegister={handleRegister}
+                onFreeRegister={handleFreeEventRegistration}
+                onCancel={handleCancelRegistration}
                 registering={false}
               />
             ))
                    )}
        </div>
-     )}
-   </div>
- );
+           )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmCancelRegistration}
+        title="Cancel Registration"
+        message={`Are you sure you want to cancel your registration for "${confirmModal.eventName}"? This action cannot be undone.`}
+        confirmText="Yes, Cancel Registration"
+        cancelText="Keep Registration"
+        type="danger"
+        loading={registering === confirmModal.eventId}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={closeToast}
+        title={toast.title}
+        message={toast.message}
+        type={toast.type}
+      />
+    </div>
+  );
 }
 
 function EventCard({
@@ -231,12 +392,16 @@ function EventCard({
   archived = false,
   user,
   onRegister,
+  onFreeRegister,
+  onCancel,
   registering
 }: {
   event: Event;
   archived?: boolean;
   user: any;
   onRegister: (eventId: number) => void;
+  onFreeRegister?: (eventId: number) => Promise<void>;
+  onCancel?: (eventId: number, eventName: string) => void;
   registering: boolean;
 }) {
   const date = new Date(event.date);
@@ -340,32 +505,61 @@ function EventCard({
             </Link>
           </div>
         ) : isUserRegistered ? (
-          <div className="w-full rounded-md border border-green-600 bg-green-50 py-2 text-center text-sm text-green-700 flex items-center justify-center gap-1">
-            <CheckCircle size={16} />
-            Registered
+          <div className="w-full space-y-2">
+            <div className="w-full rounded-md border border-green-600 bg-green-50 py-2 text-center text-sm text-green-700 flex items-center justify-center gap-1">
+              <CheckCircle size={16} />
+              Registered
+            </div>
+            {!archived && onCancel && (
+              <button
+                onClick={() => onCancel(event.id, event.name)}
+                disabled={registering}
+                className="w-full rounded-md border border-red-400 py-1 text-center text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+              >
+                {registering ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <X size={12} />
+                    Cancel Registration
+                  </>
+                )}
+              </button>
+            )}
           </div>
         ) : isFull ? (
           <div className="w-full rounded-md border border-red-400 bg-red-50 py-2 text-center text-sm text-red-700">
             Event Full
           </div>
-        ) : (
+        ) : event.fee === 0 ? (
           <button
-            onClick={() => onRegister(event.id)}
+            onClick={() => onFreeRegister?.(event.id)}
             disabled={registering || !user}
-            className="w-full rounded-md border border-[#1c2a52] py-2 text-center text-sm text-[#1c2a52] transition hover:bg-[#1c2a52] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+            className="w-full rounded-md border border-green-600 py-2 text-center text-sm text-green-600 transition hover:bg-green-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           >
             {registering ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                Processing...
+                Registering...
               </>
             ) : (
               <>
-                <CreditCard size={16} />
-                Register {event.fee > 0 && `($${event.fee})`}
+                <CheckCircle size={16} />
+                Register FREE
               </>
             )}
           </button>
+        ) : (
+          <Link
+            href={`/payment?eventId=${event.id}&userId=${user?.id}`}
+            className="w-full rounded-md border border-[#1c2a52] py-2 text-center text-sm text-[#1c2a52] transition hover:bg-[#1c2a52] hover:text-white flex items-center justify-center gap-1"
+          >
+            <CreditCard size={16} />
+            Pay & Register (${event.fee})
+          </Link>
         )}
       </div>
     </article>

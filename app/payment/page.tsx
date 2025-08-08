@@ -30,6 +30,15 @@ export default function PaymentPage() {
       if (response.ok) {
         const data = await response.json();
         setEventData(data);
+        
+        // Redirect free events to direct registration
+        if (data.fee === 0) {
+          setErrorMessage('This is a free event. Redirecting to direct registration...');
+          setTimeout(() => {
+            router.push(`/events#event-${eventId}`);
+          }, 2000);
+          return;
+        }
       }
     } catch (error) {
       console.error('Failed to fetch event data:', error);
