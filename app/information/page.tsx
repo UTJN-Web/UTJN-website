@@ -12,6 +12,7 @@ export default function ProfileInfoPage() {
   const [lastName, setLastName] = useState('');
   const [university, setUniversity] = useState('');
   const [major, setMajor] = useState('');
+  const [currentYear, setCurrentYear] = useState('1st year');
   const [gradYear, setGradYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function ProfileInfoPage() {
             setFirstName(data.user.firstName || '');
             setLastName(data.user.lastName || '');
             setMajor(data.user.major || '');
+            setCurrentYear(data.user.currentYear || '');
             setGradYear(data.user.graduationYear?.toString() || '');
             setUniversity(data.user.university || '');
             setIsEditing(true);
@@ -57,6 +59,7 @@ export default function ProfileInfoPage() {
           lastName,
           email,
           major,
+          currentYear,
           graduationYear: parseInt(gradYear),
           university,
         }),
@@ -98,7 +101,7 @@ export default function ProfileInfoPage() {
         <p className="text-sm text-center text-gray-700 dark:text-gray-300 mb-6">
           {isEditing 
             ? 'Update your personal information below.'
-            : 'Please provide your name, university, major, and expected graduation year.'
+            : 'Please provide your name, university, major, current year, and expected graduation year.'
           }
         </p>
 
@@ -184,6 +187,24 @@ export default function ProfileInfoPage() {
               <option value="Education">Education</option>
               <option value="Social Work">Social Work</option>
               <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-left">Current Year</label>
+            <select
+              value={currentYear}
+              onChange={(e) => setCurrentYear(e.target.value)}
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] text-black dark:text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+              required
+            >
+              <option value="" disabled hidden>
+                -- Select your current year --
+              </option>
+              <option value="1st year">1st year</option>
+              <option value="2nd year">2nd year</option>
+              <option value="3rd year">3rd year</option>
+              <option value="4th year">4th year</option>
             </select>
           </div>
 

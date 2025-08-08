@@ -77,6 +77,18 @@ export default function AdminEventsPage() {
   const [filterArchived, setFilterArchived] = useState<'all' | 'active' | 'archived'>('active');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  
+  // Target year options
+  const targetYearOptions = [
+    { value: '1st year', label: '1st year' },
+    { value: '2nd year', label: '2nd year' },
+    { value: '3rd year', label: '3rd year' },
+    { value: '4th year', label: '4th year' },
+    { value: 'All years', label: 'All years' }
+  ];
+  
+  const [selectedTargetYears, setSelectedTargetYears] = useState<string[]>(['All years']);
+  
   const [formData, setFormData] = useState<EventFormData>({
     name: '',
     description: '',
@@ -104,6 +116,35 @@ export default function AdminEventsPage() {
 
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleTargetYearChange = (year: string, checked: boolean) => {
+    let newSelectedYears: string[];
+    
+    if (year === 'All years') {
+      if (checked) {
+        // If "All years" is selected, clear other selections
+        newSelectedYears = ['All years'];
+      } else {
+        // If "All years" is unchecked, don't allow unchecking it
+        return;
+      }
+    } else {
+      if (checked) {
+        // Add the year and remove "All years" if it was selected
+        newSelectedYears = selectedTargetYears.filter(y => y !== 'All years').concat(year);
+      } else {
+        // Remove the year
+        newSelectedYears = selectedTargetYears.filter(y => y !== year);
+        // If no years selected, default to "All years"
+        if (newSelectedYears.length === 0) {
+          newSelectedYears = ['All years'];
+        }
+      }
+    }
+    
+    setSelectedTargetYears(newSelectedYears);
+    setFormData({ ...formData, targetYear: newSelectedYears.join(', ') });
   };
 
   const fetchEvents = async () => {
@@ -164,6 +205,7 @@ export default function AdminEventsPage() {
   };
 
   const resetForm = () => {
+    setSelectedTargetYears(['All years']);
     setFormData({
       name: '',
       description: '',
@@ -191,6 +233,10 @@ export default function AdminEventsPage() {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
+    
+    // Parse target years from the event
+    const targetYears = event.targetYear.split(', ').filter(year => year.trim() !== '');
+    setSelectedTargetYears(targetYears.length > 0 ? targetYears : ['All years']);
     
     setFormData({
       name: event.name,
@@ -532,20 +578,24 @@ export default function AdminEventsPage() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Target Year *
                       </label>
-                      <select
-                        value={formData.targetYear}
-                        onChange={(e) => setFormData({ ...formData, targetYear: e.target.value })}
-                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
-                      >
-                        <option value="All years">All years</option>
-                        <option value="1st year">1st year</option>
-                        <option value="2nd year">2nd year</option>
-                        <option value="3rd year">3rd year</option>
-                        <option value="4th year">4th year</option>
-                        <option value="1st-2nd year">1st-2nd year</option>
-                        <option value="2nd-3rd year">2nd-3rd year</option>
-                        <option value="3rd-4th year">3rd-4th year</option>
-                      </select>
+                      <div className="grid grid-cols-2 gap-3 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                        {targetYearOptions.map((option) => (
+                          <label key={option.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedTargetYears.includes(option.value)}
+                              onChange={(e) => handleTargetYearChange(option.value, e.target.checked)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              {option.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Select target years for this event. "All years" overrides other selections.
+                      </p>
                     </div>
 
                     <div>

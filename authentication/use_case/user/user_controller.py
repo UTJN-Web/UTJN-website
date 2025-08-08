@@ -12,6 +12,7 @@ class UserProfileRequest(BaseModel):
     email: str
     major: str
     graduationYear: int
+    currentYear: str
     university: str
 
 class UserProfileResponse(BaseModel):
@@ -21,6 +22,7 @@ class UserProfileResponse(BaseModel):
     email: str
     major: str
     graduationYear: int
+    currentYear: str
     university: str
     cognitoSub: str
     joinedAt: str
@@ -54,6 +56,7 @@ async def create_user_profile(user_data: UserProfileRequest):
                     "email": user_data.email,
                     "major": user_data.major,
                     "graduationYear": user_data.graduationYear,
+                    "currentYear": user_data.currentYear,
                     "university": user_data.university,
                     "cognitoSub": cognito_sub,
                 })
@@ -67,6 +70,7 @@ async def create_user_profile(user_data: UserProfileRequest):
                     "email": user_data.email,
                     "major": user_data.major,
                     "graduationYear": user_data.graduationYear,
+                    "currentYear": user_data.currentYear,
                     "university": user_data.university,
                     "cognitoSub": cognito_sub,
                 })
@@ -84,6 +88,7 @@ async def create_user_profile(user_data: UserProfileRequest):
                     "email": db_user["email"],
                     "major": db_user["major"],
                     "graduationYear": db_user["graduationYear"],
+                    "currentYear": db_user["currentYear"],
                     "university": user_data.university,
                     "cognitoSub": db_user["cognitoSub"]
                 }

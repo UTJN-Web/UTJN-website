@@ -52,8 +52,9 @@ async def get_all_events(user_email: Optional[str] = None):
         try:
             await event_repo.ensure_tables_exist()
             
-            # If user_email is provided, get user info to check university
+            # If user_email is provided, get user info to check university and current year
             user_university = None
+            user_current_year = None
             if user_email:
                 from authentication.data_access.user_repository import UserRepository
                 user_repo = UserRepository()
@@ -62,7 +63,8 @@ async def get_all_events(user_email: Optional[str] = None):
                     user = await user_repo.get_user_by_email(user_email)
                     if user:
                         user_university = user.get('university', 'University of Toronto')
-                        print(f"🎓 User university: {user_university}")
+                        user_current_year = user.get('currentYear', '1st year')
+                        print(f"🎓 User university: {user_university}, current year: {user_current_year}")
                     else:
                         print(f"⚠️ User not found: {user_email}")
                 finally:
@@ -70,17 +72,27 @@ async def get_all_events(user_email: Optional[str] = None):
             
             events = await event_repo.get_all_events()
             
-            # Filter events based on user's university
-            if user_university:
+            # Filter events based on user's university and current year
+            if user_university or user_current_year:
                 filtered_events = []
                 for event in events:
                     # If event is UofT-only and user is not from UofT, skip it
-                    if event.get('isUofTOnly', True) and user_university != 'University of Toronto':
+                    if event.get('isUofTOnly', False) and user_university != 'University of Toronto':
                         print(f"🚫 Skipping UofT-only event '{event['name']}' for non-UofT user")
                         continue
+                    
+                    # If event has specific target years, check if user's current year matches
+                    target_year = event.get('targetYear', 'All years')
+                    if target_year != 'All years' and user_current_year:
+                        # Check if user's current year is in the target years
+                        target_years = [year.strip() for year in target_year.split(',')]
+                        if user_current_year not in target_years:
+                            print(f"🚫 Skipping year-restricted event '{event['name']}' (target: {target_year}, user: {user_current_year})")
+                            continue
+                    
                     filtered_events.append(event)
                 events = filtered_events
-                print(f"✅ Filtered to {len(events)} events for {user_university} user")
+                print(f"✅ Filtered to {len(events)} events for {user_university} user (year: {user_current_year})")
             else:
                 print(f"✅ Retrieved {len(events)} events (no user filter)")
             

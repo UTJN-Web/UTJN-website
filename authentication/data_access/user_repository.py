@@ -283,6 +283,26 @@ class UserRepository:
                         print("✅ university column added to User table")
                     else:
                         print("✅ university column already exists in User table")
+                    
+                    # Check if currentYear column exists and add it if not
+                    current_year_column_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'User'
+                            AND column_name = 'currentYear'
+                        );
+                    """)
+                    
+                    if not current_year_column_exists:
+                        print("🆕 Adding currentYear column to User table...")
+                        await conn.execute("""
+                            ALTER TABLE "User" 
+                            ADD COLUMN "currentYear" VARCHAR(255) NOT NULL DEFAULT '1st year';
+                        """)
+                        print("✅ currentYear column added to User table")
+                    else:
+                        print("✅ currentYear column already exists in User table")
                         
             except Exception as e:
                 print(f"❌ Error ensuring tables exist: {e}")
@@ -293,9 +313,9 @@ class UserRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                INSERT INTO "User" ("firstName", "lastName", email, major, "graduationYear", university, "cognitoSub", "joinedAt")
-                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-                RETURNING id, "firstName", "lastName", email, major, "graduationYear", university, "cognitoSub", "joinedAt"
+                INSERT INTO "User" ("firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 """
                 
                 row = await conn.fetchrow(
@@ -305,6 +325,7 @@ class UserRepository:
                     user_data["email"],
                     user_data["major"],
                     user_data["graduationYear"],
+                    user_data.get("currentYear", "1st year"),
                     user_data.get("university", "University of Toronto"),
                     user_data["cognitoSub"]
                 )
@@ -316,6 +337,7 @@ class UserRepository:
                     "email": row["email"],
                     "major": row["major"],
                     "graduationYear": row["graduationYear"],
+                    "currentYear": row["currentYear"],
                     "university": row["university"],
                     "cognitoSub": row["cognitoSub"],
                     "joinedAt": row["joinedAt"]
@@ -329,7 +351,7 @@ class UserRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                SELECT id, "firstName", "lastName", email, major, "graduationYear", university, "cognitoSub", "joinedAt"
+                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 FROM "User"
                 WHERE email = $1
                 """
@@ -344,6 +366,7 @@ class UserRepository:
                         "email": row["email"],
                         "major": row["major"],
                         "graduationYear": row["graduationYear"],
+                        "currentYear": row["currentYear"],
                         "university": row["university"],
                         "cognitoSub": row["cognitoSub"],
                         "joinedAt": row["joinedAt"]
@@ -359,7 +382,7 @@ class UserRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                SELECT id, "firstName", "lastName", email, major, "graduationYear", university, "cognitoSub", "joinedAt"
+                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 FROM "User"
                 WHERE "cognitoSub" = $1
                 """
@@ -374,6 +397,7 @@ class UserRepository:
                         "email": row["email"],
                         "major": row["major"],
                         "graduationYear": row["graduationYear"],
+                        "currentYear": row["currentYear"],
                         "university": row["university"],
                         "cognitoSub": row["cognitoSub"],
                         "joinedAt": row["joinedAt"]
@@ -389,9 +413,9 @@ class UserRepository:
             async with self.pool.acquire() as conn:
                 query = """
                 UPDATE "User" 
-                SET "firstName" = $1, "lastName" = $2, major = $3, "graduationYear" = $4, university = $5, "cognitoSub" = $6
-                WHERE email = $7
-                RETURNING id, "firstName", "lastName", email, major, "graduationYear", university, "cognitoSub", "joinedAt"
+                SET "firstName" = $1, "lastName" = $2, major = $3, "graduationYear" = $4, "currentYear" = $5, university = $6, "cognitoSub" = $7
+                WHERE email = $8
+                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 """
                 
                 row = await conn.fetchrow(
@@ -400,6 +424,7 @@ class UserRepository:
                     user_data["lastName"],
                     user_data["major"],
                     user_data["graduationYear"],
+                    user_data.get("currentYear", "1st year"),
                     user_data.get("university", "University of Toronto"),
                     user_data["cognitoSub"],
                     user_data["email"]
@@ -415,6 +440,7 @@ class UserRepository:
                     "email": row["email"],
                     "major": row["major"],
                     "graduationYear": row["graduationYear"],
+                    "currentYear": row["currentYear"],
                     "university": row["university"],
                     "cognitoSub": row["cognitoSub"],
                     "joinedAt": row["joinedAt"]

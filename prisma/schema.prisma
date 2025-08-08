@@ -14,6 +14,7 @@ model User {
   email             String   @unique
   major             String
   graduationYear   Int
+  currentYear      String   @default("1st year") // Current academic year (1st, 2nd, 3rd, 4th)
   university        String   @default("University of Toronto")
   cognitoSub        String   @unique
   joinedAt         DateTime @default(now())
