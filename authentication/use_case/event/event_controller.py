@@ -16,6 +16,7 @@ class EventRequest(BaseModel):
     date: str  # ISO format
     type: str
     image: Optional[str] = None
+    refundDeadline: Optional[str] = None  # ISO format
     isArchived: bool = False
 
 class EventRegistrationRequest(BaseModel):
@@ -56,6 +57,8 @@ async def get_all_events():
             for event in events:
                 if event.get('date'):
                     event['date'] = event['date'].isoformat()
+                if event.get('refundDeadline'):
+                    event['refundDeadline'] = event['refundDeadline'].isoformat()
                 if event.get('createdAt'):
                     event['createdAt'] = event['createdAt'].isoformat()
                 if event.get('updatedAt'):

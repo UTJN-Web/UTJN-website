@@ -34,6 +34,24 @@ export async function POST(
 
     const event = await eventResponse.json();
 
+    // Check if refund is allowed (before refund deadline)
+    const now = new Date();
+    const refundDeadline = event.refundDeadline ? new Date(event.refundDeadline) : new Date(event.date);
+    
+    if (now > refundDeadline) {
+      console.log(`⚠️ Refund deadline passed: ${refundDeadline.toISOString()}`);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Refund period has expired',
+          refundDeadline: refundDeadline.toISOString()
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log(`✅ Refund allowed until: ${refundDeadline.toISOString()}`);
+
     // FIRST: Get the payment ID before canceling the registration
     console.log('🔍 Getting payment ID before cancellation...');
     let paymentId = null;

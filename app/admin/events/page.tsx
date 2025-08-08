@@ -34,6 +34,7 @@ interface Event {
   date: string;
   type: string;
   image?: string;
+  refundDeadline?: string;
   remainingSeats: number;
   registeredUsers: any[];
   registrations?: any[];
@@ -48,6 +49,7 @@ interface EventFormData {
   date: string;
   type: string;
   image: string;
+  refundDeadline: string;
 }
 
 type NotificationType = 'success' | 'error' | 'info';
@@ -81,7 +83,8 @@ export default function AdminEventsPage() {
     capacity: '50',
     date: '',
     type: 'social',
-    image: ''
+    image: '',
+    refundDeadline: ''
   });
 
   useEffect(() => {
@@ -166,7 +169,8 @@ export default function AdminEventsPage() {
       capacity: '50',
       date: '',
       type: 'social',
-      image: ''
+      image: '',
+      refundDeadline: ''
     });
   };
 
@@ -180,7 +184,8 @@ export default function AdminEventsPage() {
       capacity: event.capacity.toString(),
       date: event.date.split('T')[0],
       type: event.type,
-      image: event.image || ''
+      image: event.image || '',
+      refundDeadline: event.refundDeadline ? event.refundDeadline.split('T')[0] : event.date.split('T')[0]
     });
     setShowForm(true);
   };
@@ -537,6 +542,21 @@ export default function AdminEventsPage() {
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Refund Deadline
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={formData.refundDeadline}
+                        onChange={(e) => setFormData({ ...formData, refundDeadline: e.target.value })}
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
+                      />
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Deadline for refund requests. If not set, defaults to event date.
+                      </p>
                     </div>
 
                     <div>

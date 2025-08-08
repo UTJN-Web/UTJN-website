@@ -20,6 +20,7 @@ interface Event {
   date: string;
   type: string;
   image?: string;
+  refundDeadline?: string;
   remainingSeats: number;
   registeredUsers: any[];
   registrations?: any[];
@@ -64,6 +65,13 @@ export default function EventsPage() {
 
   const closeToast = () => {
     setToast(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // Helper function to check if refund is still allowed
+  const isRefundAllowed = (event: any) => {
+    const now = new Date();
+    const refundDeadline = event.refundDeadline ? new Date(event.refundDeadline) : new Date(event.date);
+    return now <= refundDeadline;
   };
 
   useEffect(() => {
@@ -496,6 +504,13 @@ function EventCard({
   
   const isFull = event.remainingSeats <= 0;
 
+  // Helper function to check if refund is still allowed
+  const isRefundAllowed = () => {
+    const now = new Date();
+    const refundDeadline = event.refundDeadline ? new Date(event.refundDeadline) : new Date(event.date);
+    return now <= refundDeadline;
+  };
+
   return (
     <article className={`flex flex-col rounded-lg border p-4 shadow-sm transition-all hover:shadow-md md:flex-row md:items-center md:gap-4 ${
       archived 
@@ -590,7 +605,7 @@ function EventCard({
               <CheckCircle size={16} />
               Registered
             </div>
-            {!archived && onCancel && (
+            {!archived && onCancel && isRefundAllowed() && (
               <button
                 onClick={() => onCancel(event.id, event.name)}
                 disabled={registering}
@@ -608,6 +623,11 @@ function EventCard({
                   </>
                 )}
               </button>
+            )}
+            {!archived && onCancel && !isRefundAllowed() && (
+              <div className="w-full rounded-md border border-gray-400 bg-gray-50 py-1 text-center text-xs text-gray-600">
+                Refund period expired
+              </div>
             )}
           </div>
         ) : isFull ? (
