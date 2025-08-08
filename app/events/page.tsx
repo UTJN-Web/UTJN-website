@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, CreditCard, CheckCircle, X } from 'lucide-react
 import Link from 'next/link';
 import { UserContext } from '../contexts/UserContext';
 import ConfirmationModal from '../components/ConfirmationModal';
+import RefundRequestModal from '../components/RefundRequestModal';
 import Toast from '../components/Toast';
 
 interface Event {
@@ -39,6 +40,13 @@ export default function EventsPage() {
     eventId: number;
     eventName: string;
   }>({ isOpen: false, eventId: 0, eventName: '' });
+
+  const [refundModal, setRefundModal] = useState<{
+    isOpen: boolean;
+    eventId: number;
+    eventName: string;
+    amount: number;
+  }>({ isOpen: false, eventId: 0, eventName: '', amount: 0 });
 
   const [toast, setToast] = useState<{
     isOpen: boolean;
@@ -185,12 +193,25 @@ export default function EventsPage() {
       return;
     }
 
-    // Show confirmation modal
-    setConfirmModal({
-      isOpen: true,
-      eventId,
-      eventName
-    });
+    // Find the event to check if it's paid
+    const event = events.find(e => e.id === eventId);
+    
+    if (event && event.fee > 0) {
+      // Paid event - show refund request modal
+      setRefundModal({
+        isOpen: true,
+        eventId,
+        eventName,
+        amount: event.fee
+      });
+    } else {
+      // Free event - show simple confirmation
+      setConfirmModal({
+        isOpen: true,
+        eventId,
+        eventName
+      });
+    }
   };
 
   const confirmCancelRegistration = async () => {
@@ -233,6 +254,55 @@ export default function EventsPage() {
       showToast(
         'Error', 
         'An error occurred while cancelling registration', 
+        'error'
+      );
+    } finally {
+      setRegistering(null);
+    }
+  };
+
+  const handleRefundRequest = async (reason: string) => {
+    const { eventId, eventName, amount } = refundModal;
+    
+    setRegistering(eventId);
+    setRefundModal(prev => ({ ...prev, isOpen: false }));
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user!.id,
+          email: user!.email,
+          reason: reason,
+          paymentAmount: amount
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showToast(
+          'Refund Request Submitted', 
+          `Your refund request for "${eventName}" ($${amount}) has been submitted for admin review.`, 
+          'success'
+        );
+        // Refresh events to update registration status
+        fetchEvents();
+      } else {
+        const errorData = await response.json();
+        showToast(
+          'Refund Request Failed', 
+          errorData.error || 'Failed to submit refund request', 
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Refund request error:', error);
+      showToast(
+        'Error', 
+        'An error occurred while submitting refund request', 
         'error'
       );
     } finally {
@@ -373,6 +443,16 @@ export default function EventsPage() {
         cancelText="Keep Registration"
         type="danger"
         loading={registering === confirmModal.eventId}
+      />
+
+      {/* Refund Request Modal */}
+      <RefundRequestModal
+        isOpen={refundModal.isOpen}
+        onClose={() => setRefundModal(prev => ({ ...prev, isOpen: false }))}
+        onSubmit={handleRefundRequest}
+        eventName={refundModal.eventName}
+        amount={refundModal.amount}
+        loading={registering === refundModal.eventId}
       />
 
       {/* Toast Notification */}

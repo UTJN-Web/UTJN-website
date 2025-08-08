@@ -15,9 +15,9 @@ export default function AdminLink() {
 
   return (
     <Link 
-      href="/admin/events" 
+      href="/admin" 
       className="text-lg font-semibold hover:text-[#1c2a52] text-orange-600"
-      title="Event Management"
+      title="Admin Dashboard"
     >
       Admin
     </Link>

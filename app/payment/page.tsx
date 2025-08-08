@@ -50,13 +50,20 @@ export default function PaymentPage() {
 
   const handlePaymentSuccess = async () => {
     try {
+      // Get payment ID from window if available
+      const paymentId = (window as any).lastPaymentId;
+      console.log('Processing registration with payment ID:', paymentId);
+      
       // Process the actual registration
-      const response = await fetch(`/api/events/${eventId}/register`, {
+      const response = await fetch(`/api/events/${eventId}/register/paid`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: parseInt(userId || '0') }),
+        body: JSON.stringify({ 
+          userId: parseInt(userId || '0'),
+          paymentId: paymentId
+        }),
       });
 
       if (response.ok) {

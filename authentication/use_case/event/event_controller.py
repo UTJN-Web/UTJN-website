@@ -20,6 +20,7 @@ class EventRequest(BaseModel):
 
 class EventRegistrationRequest(BaseModel):
     userId: int
+    paymentId: Optional[str] = None
 
 # Dummy payment simulation
 async def simulate_payment(amount: float) -> bool:
@@ -217,6 +218,9 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
         await event_repo.connect()
         
         try:
+            # Ensure tables exist (important for paymentId column migration)
+            await event_repo.ensure_tables_exist()
+            
             # Get event to check fee
             event = await event_repo.get_event_by_id(event_id)
             if not event:
@@ -229,7 +233,11 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                 raise HTTPException(status_code=400, detail="Payment failed")
             
             # Register user
-            registration = await event_repo.register_for_event(registration_data.userId, event_id)
+            registration = await event_repo.register_for_event(
+                registration_data.userId, 
+                event_id, 
+                registration_data.paymentId
+            )
             await event_repo.disconnect()
             
             print(f"✅ Registration successful for user {registration_data.userId}")
@@ -277,6 +285,43 @@ async def cancel_registration(event_id: int, registration_data: EventRegistratio
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=f"Failed to cancel registration: {str(e)}")
+
+@event_router.get("/{event_id}/payment-id")
+async def get_payment_id_for_event(event_id: int, userId: int):
+    """Get payment ID for a user's event registration (used before cancellation for refunds)"""
+    try:
+        print(f"🔍 Getting payment ID for user {userId}, event {event_id}")
+        
+        event_repo = EventRepository()
+        await event_repo.connect()
+        
+        try:
+            await event_repo.ensure_tables_exist()
+            
+            payment_id = await event_repo.get_payment_id_for_registration(userId, event_id)
+            await event_repo.disconnect()
+            
+            if payment_id:
+                print(f"✅ Found payment ID for user {userId}, event {event_id}")
+                return {
+                    "success": True,
+                    "paymentId": payment_id
+                }
+            else:
+                print(f"⚠️ No payment ID found for user {userId}, event {event_id}")
+                return {
+                    "success": False,
+                    "paymentId": None,
+                    "message": "No payment ID found"
+                }
+                
+        except Exception as e:
+            await event_repo.disconnect()
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Error getting payment ID: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get payment ID: {str(e)}")
 
 @event_router.post("/seed")
 async def seed_events():

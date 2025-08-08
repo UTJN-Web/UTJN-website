@@ -193,6 +193,27 @@ class EventRepository:
                     print("✅ EventRegistration table created")
                 else:
                     print("✅ EventRegistration table already exists")
+                    # Check if paymentId column exists and add it if not
+                    payment_id_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'EventRegistration'
+                            AND column_name = 'paymentId'
+                        );
+                    """)
+                    
+                    print(f"🔍 PaymentId column exists check: {payment_id_exists}")
+                    
+                    if not payment_id_exists:
+                        print("🆕 Adding paymentId column to EventRegistration table...")
+                        await conn.execute("""
+                            ALTER TABLE "EventRegistration" 
+                            ADD COLUMN "paymentId" VARCHAR(255);
+                        """)
+                        print("✅ paymentId column added to EventRegistration table")
+                    else:
+                        print("✅ paymentId column already exists in EventRegistration table")
                     
         except Exception as e:
             print(f"❌ Error ensuring tables exist: {e}")
@@ -391,7 +412,7 @@ class EventRepository:
             print(f"❌ Error deleting event: {e}")
             raise e
     
-    async def register_for_event(self, user_id: int, event_id: int) -> Dict[str, Any]:
+    async def register_for_event(self, user_id: int, event_id: int, payment_id: str = None) -> Dict[str, Any]:
         """Register a user for an event"""
         try:
             async with self.pool.acquire() as conn:
@@ -423,11 +444,13 @@ class EventRepository:
                     raise Exception("User already registered for this event")
                 
                 # Create registration
+                print(f"🔍 Inserting registration: user_id={user_id}, event_id={event_id}, payment_id={payment_id}")
                 registration = await conn.fetchrow("""
-                    INSERT INTO "EventRegistration" ("userId", "eventId", "paymentStatus")
-                    VALUES ($1, $2, 'completed')
+                    INSERT INTO "EventRegistration" ("userId", "eventId", "paymentStatus", "paymentId")
+                    VALUES ($1, $2, 'completed', $3)
                     RETURNING *
-                """, user_id, event_id)
+                """, user_id, event_id, payment_id)
+                print(f"✅ Registration created with paymentId: {registration['paymentId']}")
                 
                 return {
                     'id': registration['id'],
@@ -435,11 +458,34 @@ class EventRepository:
                     'eventId': registration['eventId'],
                     'registeredAt': registration['registeredAt'].isoformat(),
                     'paymentStatus': registration['paymentStatus'],
+                    'paymentId': registration['paymentId'],
                     'fee': float(event['fee'])
                 }
         except Exception as e:
             print(f"❌ Error registering for event: {e}")
             raise e
+
+    async def get_payment_id_for_registration(self, user_id: int, event_id: int) -> Optional[str]:
+        """Get the payment ID for a user's event registration"""
+        try:
+            async with self.pool.acquire() as conn:
+                print(f"🔍 Looking for payment ID: user_id={user_id}, event_id={event_id}")
+                result = await conn.fetchrow("""
+                    SELECT "paymentId" FROM "EventRegistration" 
+                    WHERE "userId" = $1 AND "eventId" = $2
+                """, user_id, event_id)
+                print(f"🔍 Query result: {result}")
+                
+                if result and result['paymentId']:
+                    print(f"✅ Found payment ID {result['paymentId']} for user {user_id}, event {event_id}")
+                    return result['paymentId']
+                else:
+                    print(f"⚠️ No payment ID found for user {user_id}, event {event_id}")
+                    return None
+                    
+        except Exception as e:
+            print(f"❌ Error getting payment ID: {e}")
+            return None
     
     async def cancel_registration(self, user_id: int, event_id: int) -> bool:
         """Cancel a user's registration for an event"""

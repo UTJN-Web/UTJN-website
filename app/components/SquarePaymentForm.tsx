@@ -187,7 +187,13 @@ export default function SquarePaymentForm({
         console.log('Payment API response data:', data);
 
         if (response.ok && data.success) {
-          console.log('Payment successful!');
+          console.log('Payment successful!', data);
+          // Pass payment ID to success handler if available
+          if (data.paymentId) {
+            console.log('Payment ID received:', data.paymentId);
+            // Store payment ID for registration
+            (window as any).lastPaymentId = data.paymentId;
+          }
           onPaymentSuccess();
         } else {
           console.error('Payment failed:', data.error);
