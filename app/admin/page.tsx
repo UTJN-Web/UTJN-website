@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, DollarSign, Users, Settings, BarChart3, Shield, TrendingUp, Activity } from 'lucide-react';
+import { Calendar, DollarSign, Users, FileText, BarChart3, Shield, TrendingUp, Activity } from 'lucide-react';
 
 interface DashboardStats {
   activeEvents: number;
@@ -266,24 +266,24 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
-          {/* Settings */}
-          <Link href="/admin/settings" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow opacity-50">
+          {/* Forms */}
+          <Link href="/admin/forms" className="group">
+            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
               <div className="flex items-center mb-4">
-                <div className="p-3 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                  <Settings className="w-8 h-8 text-gray-600" />
+                <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                  <FileText className="w-8 h-8 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
-                  <p className="text-sm text-gray-500">Platform configuration</p>
+                  <h3 className="text-lg font-semibold text-gray-900">Forms</h3>
+                  <p className="text-sm text-gray-500">Event forms & feedback</p>
                 </div>
               </div>
               <p className="text-gray-600 mb-4">
-                Configure platform settings, payment processors, and system preferences.
+                Design feedback forms for events, manage submissions, and create discount coupons.
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-400">Coming Soon</span>
-                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">Config</span>
+                <span className="text-sm font-medium text-purple-600">Active</span>
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Design</span>
               </div>
             </div>
           </Link>

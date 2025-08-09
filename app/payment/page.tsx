@@ -16,6 +16,13 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [paymentResult, setPaymentResult] = useState<'success' | 'failed' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  
+  // Coupon state
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponError, setCouponError] = useState<string>('');
+  const [finalPrice, setFinalPrice] = useState<number>(0);
 
   const eventId = searchParams.get('eventId');
   const userId = searchParams.get('userId');
@@ -29,6 +36,71 @@ export default function PaymentPage() {
     }
   }, [eventId]);
 
+  const validateCoupon = async () => {
+    if (!couponCode.trim() || !eventId || !userId) return;
+    
+    setCouponValidating(true);
+    setCouponError('');
+    
+    try {
+      const response = await fetch('/api/forms/coupons/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          couponCode: couponCode.trim(),
+          userId: parseInt(userId),
+          eventId: parseInt(eventId)
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.valid) {
+        setAppliedCoupon(data.coupon);
+        setCouponError('');
+        
+        // Calculate discount
+        const originalPrice = price ? parseFloat(price) : eventData?.fee || 0;
+        let discountAmount = 0;
+        
+        if (data.coupon.discountType === 'percentage') {
+          discountAmount = originalPrice * (data.coupon.discountValue / 100);
+        } else {
+          discountAmount = data.coupon.discountValue;
+        }
+        
+        // Apply minimum amount check
+        if (data.coupon.minAmount && originalPrice < data.coupon.minAmount) {
+          setCouponError(`Minimum order amount is $${data.coupon.minAmount}`);
+          setAppliedCoupon(null);
+          return;
+        }
+        
+        const newPrice = Math.max(0, originalPrice - discountAmount);
+        setFinalPrice(newPrice);
+      } else {
+        setCouponError(data.message || 'Invalid coupon code');
+        setAppliedCoupon(null);
+        setFinalPrice(price ? parseFloat(price) : eventData?.fee || 0);
+      }
+    } catch (error) {
+      console.error('Error validating coupon:', error);
+      setCouponError('Error validating coupon. Please try again.');
+      setAppliedCoupon(null);
+    } finally {
+      setCouponValidating(false);
+    }
+  };
+  
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+    setFinalPrice(price ? parseFloat(price) : eventData?.fee || 0);
+  };
+
   const fetchEventData = async () => {
     try {
       const response = await fetch(`/api/events/${eventId}`);
@@ -38,6 +110,7 @@ export default function PaymentPage() {
         
         // Get the actual price from URL params or calculate effective price
         const effectivePrice = price ? parseFloat(price) : data.fee;
+        setFinalPrice(effectivePrice);
         
         // Redirect free events to direct registration (only if no price override)
         if (effectivePrice === 0) {
@@ -312,30 +385,121 @@ export default function PaymentPage() {
                 </div>
               )}
               
+              {/* Coupon Section */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">🎟️ Discount Coupon</h4>
+                {!appliedCoupon ? (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter coupon code"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={couponValidating}
+                      />
+                      <button
+                        onClick={validateCoupon}
+                        disabled={!couponCode.trim() || couponValidating}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {couponValidating ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          'Apply'
+                        )}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-sm text-red-600">{couponError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-green-900">{appliedCoupon.name}</p>
+                        <p className="text-sm text-green-700">
+                          Code: {appliedCoupon.code} • 
+                          {appliedCoupon.discountType === 'percentage' 
+                            ? ` ${appliedCoupon.discountValue}% off`
+                            : ` $${appliedCoupon.discountValue} off`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={removeCoupon}
+                        className="p-1 text-green-600 hover:text-green-800"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               <div className="border-t pt-4">
+                {appliedCoupon && (
+                  <div className="space-y-2 mb-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span>${price ? parseFloat(price).toFixed(2) : eventData.fee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Discount ({appliedCoupon.code}):</span>
+                      <span>-${((price ? parseFloat(price) : eventData.fee) - finalPrice).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-medium text-gray-900">Total Amount:</span>
                   <span className="text-2xl font-bold text-blue-600">
-                    ${price ? parseFloat(price).toFixed(2) : eventData.fee.toFixed(2)}
+                    ${finalPrice.toFixed(2)}
                   </span>
                 </div>
-                {(price ? parseFloat(price) : eventData.fee) === 0 && (
-                  <p className="text-sm text-green-600 mt-1">This is a free event!</p>
+                {finalPrice === 0 && (
+                  <p className="text-sm text-green-600 mt-1">
+                    {appliedCoupon ? 'Free with coupon!' : 'This is a free event!'}
+                  </p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Payment Form */}
-          <SquarePaymentForm
-            eventData={{
-              ...eventData,
-              fee: price ? parseFloat(price) : eventData.fee
-            }}
-            userId={userId!}
-            onPaymentSuccess={handlePaymentSuccess}
-            onPaymentError={handlePaymentError}
-          />
+          {finalPrice > 0 ? (
+            <SquarePaymentForm
+              eventData={{
+                ...eventData,
+                fee: finalPrice
+              }}
+              userId={userId!}
+              onPaymentSuccess={handlePaymentSuccess}
+              onPaymentError={handlePaymentError}
+            />
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Free Registration</h2>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Payment Required</h3>
+                <p className="text-gray-600 mb-6">
+                  {appliedCoupon ? 'Your coupon covers the full amount!' : 'This is a free event.'}
+                </p>
+                <button
+                  onClick={() => {
+                    // Direct registration for free events
+                    handlePaymentSuccess();
+                  }}
+                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Complete Free Registration
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

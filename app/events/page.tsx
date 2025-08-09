@@ -991,6 +991,16 @@ function EventCard({
                 Pay & Register (${getCurrentPrice()})
               </Link>
             )}
+            
+            {/* Feedback Form Button - show for registered users or archived events */}
+            {(isUserRegistered || archived) && (
+              <Link
+                href={`/events/${event.id}/form`}
+                className="w-full rounded-md border border-purple-600 bg-purple-50 py-2 text-center text-sm text-purple-600 transition hover:bg-purple-600 hover:text-white flex items-center justify-center gap-1 mt-2"
+              >
+                📝 Fill Feedback Form
+              </Link>
+            )}
           </div>
         )}
       </div>
