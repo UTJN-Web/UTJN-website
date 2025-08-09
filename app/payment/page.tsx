@@ -11,12 +11,17 @@ export default function PaymentPage() {
   const router = useRouter();
   
   const [eventData, setEventData] = useState<any>(null);
+  const [ticketTierData, setTicketTierData] = useState<any>(null);
+  const [subEventData, setSubEventData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentResult, setPaymentResult] = useState<'success' | 'failed' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const eventId = searchParams.get('eventId');
   const userId = searchParams.get('userId');
+  const tierId = searchParams.get('tierId');
+  const subEventIds = searchParams.get('subEventIds');
+  const price = searchParams.get('price');
 
   useEffect(() => {
     if (eventId) {
@@ -31,13 +36,47 @@ export default function PaymentPage() {
         const data = await response.json();
         setEventData(data);
         
-        // Redirect free events to direct registration
-        if (data.fee === 0) {
+        // Get the actual price from URL params or calculate effective price
+        const effectivePrice = price ? parseFloat(price) : data.fee;
+        
+        // Redirect free events to direct registration (only if no price override)
+        if (effectivePrice === 0) {
           setErrorMessage('This is a free event. Redirecting to direct registration...');
           setTimeout(() => {
             router.push(`/events#event-${eventId}`);
           }, 2000);
           return;
+        }
+
+        // Fetch tier data if tierId is provided
+        if (tierId && tierId !== '') {
+          try {
+            const tierResponse = await fetch(`/api/events/${eventId}/ticket-options`);
+            if (tierResponse.ok) {
+              const tierData = await tierResponse.json();
+              const selectedTier = tierData.ticketTiers?.find((tier: any) => tier.id.toString() === tierId);
+              setTicketTierData(selectedTier);
+            }
+          } catch (error) {
+            console.error('Failed to fetch tier data:', error);
+          }
+        }
+
+        // Fetch sub-event data if subEventIds are provided
+        if (subEventIds && subEventIds !== '') {
+          try {
+            const subEventResponse = await fetch(`/api/events/${eventId}/ticket-options`);
+            if (subEventResponse.ok) {
+              const subEventData = await subEventResponse.json();
+              const selectedSubEventIds = subEventIds.split(',').map(id => parseInt(id));
+              const selectedSubEvents = subEventData.subEvents?.filter((se: any) => 
+                selectedSubEventIds.includes(se.id)
+              ) || [];
+              setSubEventData(selectedSubEvents);
+            }
+          } catch (error) {
+            console.error('Failed to fetch sub-event data:', error);
+          }
         }
       }
     } catch (error) {
@@ -62,7 +101,9 @@ export default function PaymentPage() {
         },
         body: JSON.stringify({ 
           userId: parseInt(userId || '0'),
-          paymentId: paymentId
+          paymentId: paymentId,
+          tierId: tierId ? parseInt(tierId) : null,
+          subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : []
         }),
       });
 
@@ -127,11 +168,16 @@ export default function PaymentPage() {
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-green-700">
-              <strong>Amount Paid:</strong> ${eventData.fee.toFixed(2)}
+              <strong>Amount Paid:</strong> ${price ? parseFloat(price).toFixed(2) : eventData.fee.toFixed(2)}
             </p>
             <p className="text-sm text-green-700">
               <strong>Transaction ID:</strong> TXN-{Date.now()}
             </p>
+            {ticketTierData && (
+              <p className="text-sm text-green-700">
+                <strong>Ticket Tier:</strong> {ticketTierData.name}
+              </p>
+            )}
           </div>
           <p className="text-sm text-gray-500 mb-4">
             Redirecting to events page in 3 seconds...
@@ -238,12 +284,42 @@ export default function PaymentPage() {
                 </div>
               </div>
               
+              {/* Ticket Details */}
+              {ticketTierData && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">🎫 Ticket Tier</h4>
+                  <div className="text-sm text-blue-800">
+                    <p><strong>{ticketTierData.name}</strong></p>
+                    <p>Price: ${ticketTierData.price}</p>
+                    {ticketTierData.targetYear !== 'All years' && (
+                      <p>Target: {ticketTierData.targetYear}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {subEventData.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-medium text-green-900 mb-2">🎊 Sub-Events</h4>
+                  <div className="space-y-1 text-sm text-green-800">
+                    {subEventData.map((subEvent, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span>{subEvent.name}</span>
+                        <span>${subEvent.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-medium text-gray-900">Total Amount:</span>
-                  <span className="text-2xl font-bold text-blue-600">${eventData.fee.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    ${price ? parseFloat(price).toFixed(2) : eventData.fee.toFixed(2)}
+                  </span>
                 </div>
-                {eventData.fee === 0 && (
+                {(price ? parseFloat(price) : eventData.fee) === 0 && (
                   <p className="text-sm text-green-600 mt-1">This is a free event!</p>
                 )}
               </div>
@@ -252,7 +328,10 @@ export default function PaymentPage() {
 
           {/* Payment Form */}
           <SquarePaymentForm
-            eventData={eventData}
+            eventData={{
+              ...eventData,
+              fee: price ? parseFloat(price) : eventData.fee
+            }}
             userId={userId!}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentError={handlePaymentError}

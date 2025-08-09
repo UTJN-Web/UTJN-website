@@ -32,6 +32,8 @@ interface Event {
   capacity: number;
   isArchived: boolean;
   isUofTOnly?: boolean;
+  enableAdvancedTicketing?: boolean;
+  enableSubEvents?: boolean;
   date: string;
   type: string;
   image?: string;
@@ -52,6 +54,8 @@ interface EventFormData {
   image: string;
   refundDeadline: string;
   isUofTOnly: boolean;
+  enableAdvancedTicketing: boolean;
+  enableSubEvents: boolean;
 }
 
 type NotificationType = 'success' | 'error' | 'info';
@@ -64,6 +68,28 @@ interface Notification {
 
 type SortField = 'name' | 'date' | 'capacity' | 'registrations';
 type SortDirection = 'asc' | 'desc';
+
+interface TicketTier {
+  id?: number;
+  name: string;
+  price: number;
+  capacity: number;
+  targetYear: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  subEventPrices?: number[]; // Added for complex pricing
+}
+
+interface SubEvent {
+  id?: number;
+  name: string;
+  description: string;
+  price: number;
+  capacity: number;
+  isStandalone: boolean;
+  isComboOption: boolean;
+}
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -89,6 +115,12 @@ export default function AdminEventsPage() {
   
   const [selectedTargetYears, setSelectedTargetYears] = useState<string[]>(['All years']);
   
+  // Advanced ticketing state
+  const [ticketTiers, setTicketTiers] = useState<TicketTier[]>([]);
+  const [subEvents, setSubEvents] = useState<SubEvent[]>([]);
+  const [showTierConfig, setShowTierConfig] = useState(false);
+  const [showSubEventConfig, setShowSubEventConfig] = useState(false);
+  
   const [formData, setFormData] = useState<EventFormData>({
     name: '',
     description: '',
@@ -99,7 +131,9 @@ export default function AdminEventsPage() {
     type: 'social',
     image: '',
     refundDeadline: '',
-    isUofTOnly: false
+    isUofTOnly: false,
+    enableAdvancedTicketing: false,
+    enableSubEvents: false
   });
 
   useEffect(() => {
@@ -175,7 +209,9 @@ export default function AdminEventsPage() {
       
       const payload = {
         ...formData,
-        isArchived: editingEvent?.isArchived || false
+        isArchived: editingEvent?.isArchived || false,
+        ticketTiers: formData.enableAdvancedTicketing ? ticketTiers : [],
+        subEvents: formData.enableSubEvents ? subEvents : []
       };
 
       const response = await fetch(url, {
@@ -216,11 +252,13 @@ export default function AdminEventsPage() {
       type: 'social',
       image: '',
       refundDeadline: '',
-      isUofTOnly: false
+      isUofTOnly: false,
+      enableAdvancedTicketing: false,
+      enableSubEvents: false
     });
   };
 
-  const handleEdit = (event: Event) => {
+  const handleEdit = async (event: Event) => {
     setEditingEvent(event);
     
     // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
@@ -248,8 +286,63 @@ export default function AdminEventsPage() {
       type: event.type,
       image: event.image || '',
       refundDeadline: event.refundDeadline ? formatDateForInput(event.refundDeadline) : formatDateForInput(event.date),
-      isUofTOnly: event.isUofTOnly !== undefined ? event.isUofTOnly : false
+      isUofTOnly: event.isUofTOnly !== undefined ? event.isUofTOnly : false,
+      enableAdvancedTicketing: event.enableAdvancedTicketing !== undefined ? event.enableAdvancedTicketing : false,
+      enableSubEvents: event.enableSubEvents !== undefined ? event.enableSubEvents : false
     });
+
+    // Load existing ticket tiers and sub-events if advanced features are enabled
+    if (event.enableAdvancedTicketing || event.enableSubEvents) {
+      try {
+        const response = await fetch(`/api/events/${event.id}/ticket-options`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Load existing ticket tiers
+            if (data.ticketTiers && data.ticketTiers.length > 0) {
+              const formattedTiers = data.ticketTiers.map((tier: any) => ({
+                name: tier.name,
+                price: tier.price,
+                capacity: tier.capacity,
+                targetYear: tier.targetYear || 'All years',
+                startDate: tier.startDate ? new Date(tier.startDate).toISOString().slice(0, 16) : '',
+                endDate: tier.endDate ? new Date(tier.endDate).toISOString().slice(0, 16) : '',
+                isActive: tier.isActive !== undefined ? tier.isActive : true,
+                subEventPrices: tier.subEventPrices || undefined // Handle complex pricing
+              }));
+              setTicketTiers(formattedTiers);
+            } else {
+              setTicketTiers([]);
+            }
+
+            // Load existing sub-events
+            if (data.subEvents && data.subEvents.length > 0) {
+              const formattedSubEvents = data.subEvents.map((subEvent: any) => ({
+                name: subEvent.name,
+                description: subEvent.description || '',
+                price: subEvent.price,
+                capacity: subEvent.capacity,
+                isStandalone: subEvent.isStandalone !== undefined ? subEvent.isStandalone : true,
+                isComboOption: subEvent.isComboOption !== undefined ? subEvent.isComboOption : false
+              }));
+              setSubEvents(formattedSubEvents);
+            } else {
+              setSubEvents([]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load ticket options for editing:', error);
+        // Reset to empty arrays if fetch fails
+        setTicketTiers([]);
+        setSubEvents([]);
+      }
+    } else {
+      // Reset arrays if advanced features are not enabled
+      setTicketTiers([]);
+      setSubEvents([]);
+    }
+
     setShowForm(true);
   };
 
@@ -680,6 +773,110 @@ export default function AdminEventsPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Event Pricing Configuration
+                      </label>
+                      <div className="space-y-4">
+                        {/* Simple Pricing Option */}
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <label className="flex items-start space-x-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="pricingMode"
+                              checked={!formData.enableSubEvents}
+                              onChange={() => {
+                                setFormData({ 
+                                  ...formData, 
+                                  enableAdvancedTicketing: true,
+                                  enableSubEvents: false 
+                                });
+                                // Don't clear existing data when switching modes
+                              }}
+                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  Simple Pricing
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Early Bird → Regular pricing. One price per person.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Complex Pricing Option */}
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <label className="flex items-start space-x-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="pricingMode"
+                              checked={formData.enableSubEvents}
+                              onChange={() => {
+                                setFormData({ 
+                                  ...formData, 
+                                  enableAdvancedTicketing: true,
+                                  enableSubEvents: true 
+                                });
+                                // Don't clear existing data when switching modes
+                              }}
+                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  Matrix Pricing
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Multiple sub-events with flexible pricing matrix.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Configuration Links */}
+                        {(formData.enableAdvancedTicketing || formData.enableSubEvents) && (
+                          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {formData.enableSubEvents ? 'Price Matrix Configuration' : 'Tier Configuration'}
+                                </h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {formData.enableSubEvents 
+                                    ? `${ticketTiers.length} tiers × ${subEvents.length} sub-events = ${ticketTiers.length * subEvents.length} price points`
+                                    : `${ticketTiers.length} ticket tiers configured`
+                                  }
+                                </p>
+                              </div>
+                              <div className="flex space-x-2">
+                                {formData.enableSubEvents && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowSubEventConfig(true)}
+                                    className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-50"
+                                  >
+                                    Configure Sub-Events ({subEvents.length})
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setShowTierConfig(true)}
+                                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                  {formData.enableSubEvents ? 'Configure Price Matrix' : 'Configure Tiers'} 
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Image URL
                       </label>
                       <input
@@ -899,8 +1096,12 @@ export default function AdminEventsPage() {
                             <div className="flex items-center text-gray-500 dark:text-gray-400">
                               <DollarSign size={16} className="mr-2 text-yellow-500" />
                               <div>
-                                <div className="font-medium">${event.fee}</div>
-                                <div className="text-xs">Registration fee</div>
+                                <div className="font-medium">
+                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : `$${event.fee}`}
+                                </div>
+                                <div className="text-xs">
+                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Pricing' : 'Registration fee'}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center text-gray-500 dark:text-gray-400">
@@ -911,6 +1112,65 @@ export default function AdminEventsPage() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Advanced Configuration Details */}
+                          {(event.enableAdvancedTicketing || event.enableSubEvents) && (
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-3 flex items-center">
+                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13z" clipRule="evenodd" />
+                                </svg>
+                                Advanced Configuration
+                              </h4>
+                              
+                              {(event as any).ticketTiers && (event as any).ticketTiers.length > 0 && (
+                                <div className="mb-3">
+                                  <h5 className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-2">🎫 Ticket Tiers:</h5>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {(event as any).ticketTiers.map((tier: any, index: number) => (
+                                      <div key={index} className="bg-white dark:bg-gray-800 rounded-md p-2 border border-blue-200 dark:border-blue-600">
+                                        <div className="text-xs">
+                                          <div className="font-medium text-gray-900 dark:text-white">{tier.name}</div>
+                                          <div className="text-gray-600 dark:text-gray-400">
+                                            ${tier.price} • {tier.capacity} spots
+                                          </div>
+                                          {tier.targetYear !== 'All years' && (
+                                            <div className="text-blue-600 dark:text-blue-400 text-[10px]">
+                                              Target: {tier.targetYear}
+                                            </div>
+                                          )}
+                                          <div className={`text-[10px] mt-1 ${tier.isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                                            {tier.remaining_capacity || 0} remaining
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {(event as any).subEvents && (event as any).subEvents.length > 0 && (
+                                <div>
+                                  <h5 className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-2">🎊 Sub-Events:</h5>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {(event as any).subEvents.map((subEvent: any, index: number) => (
+                                      <div key={index} className="bg-white dark:bg-gray-800 rounded-md p-2 border border-blue-200 dark:border-blue-600">
+                                        <div className="text-xs">
+                                          <div className="font-medium text-gray-900 dark:text-white">{subEvent.name}</div>
+                                          <div className="text-gray-600 dark:text-gray-400">
+                                            ${subEvent.price} • {subEvent.capacity} spots
+                                          </div>
+                                          <div className={`text-[10px] mt-1 ${subEvent.isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                                            {subEvent.remaining_capacity || 0} remaining
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {registrationCount > 0 && (
                             <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -975,6 +1235,589 @@ export default function AdminEventsPage() {
           </div>
         </div>
       </div>
+
+      {/* Ticket Tier Configuration Modal */}
+      {showTierConfig && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Configure Ticket Tiers
+                {formData.enableSubEvents && (
+                  <span className="text-sm font-normal text-blue-600 ml-2">
+                    (with Sub-Events Pricing)
+                  </span>
+                )}
+              </h3>
+              <button
+                onClick={() => setShowTierConfig(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Configuration Mode Info */}
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-600 dark:text-blue-400 mt-1">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                      {formData.enableSubEvents ? 'Complex Pricing Mode' : 'Simple Pricing Mode'}
+                    </h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      {formData.enableSubEvents 
+                        ? 'Each tier can have different prices for each sub-event (1st party, 2nd party, combo)'
+                        : 'Simple Early Bird → Regular → Walk-in progression with fixed pricing'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {!formData.enableSubEvents ? (
+                // Simple Mode: Traditional tier configuration
+                <div className="space-y-4">
+                  {ticketTiers.map((tier, index) => (
+                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {tier.name} Tier
+                        </h4>
+                        <button
+                          onClick={() => {
+                            const newTiers = ticketTiers.filter((_, i) => i !== index);
+                            setTicketTiers(newTiers);
+                          }}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          🗑️ 削除
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Tier Name
+                          </label>
+                          <input
+                            type="text"
+                            value={tier.name}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              newTiers[index].name = e.target.value;
+                              setTicketTiers(newTiers);
+                            }}
+                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                            placeholder="e.g., Early Bird"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Price ($)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={tier.price === 0 ? '' : tier.price}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              newTiers[index].price = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              setTicketTiers(newTiers);
+                            }}
+                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Capacity
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={tier.capacity === 0 ? '' : tier.capacity}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              const newValue = e.target.value === '' ? 0 : parseInt(e.target.value);
+                              newTiers[index].capacity = newValue;
+                              setTicketTiers(newTiers);
+                            }}
+                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Target Year
+                          </label>
+                          <select
+                            value={tier.targetYear}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              newTiers[index].targetYear = e.target.value;
+                              setTicketTiers(newTiers);
+                            }}
+                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                          >
+                            <option value="All years">All years</option>
+                            <option value="1st year">1st year</option>
+                            <option value="2nd year">2nd year</option>
+                            <option value="3rd year">3rd year</option>
+                            <option value="4th year">4th year</option>
+                            <option value="1st-2nd year">1st-2nd year</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Start Date & Time
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={tier.startDate}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              newTiers[index].startDate = e.target.value;
+                              setTicketTiers(newTiers);
+                            }}
+                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            End Date & Time
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={tier.endDate}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              newTiers[index].endDate = e.target.value;
+                              setTicketTiers(newTiers);
+                            }}
+                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={tier.isActive}
+                            onChange={(e) => {
+                              const newTiers = [...ticketTiers];
+                              newTiers[index].isActive = e.target.checked;
+                              setTicketTiers(newTiers);
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Active</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Complex Mode: Tier + Sub-Event matrix pricing
+                <div className="space-y-6">
+                  {ticketTiers.length > 0 && subEvents.length > 0 ? (
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+                        Pricing Matrix: Tiers × Sub-Events
+                      </h4>
+                      
+                      {/* Pricing Matrix Table */}
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-200 dark:border-gray-700">
+                          <thead className="bg-gray-100 dark:bg-gray-800">
+                            <tr>
+                              <th className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white">
+                                Tier / Sub-Event
+                              </th>
+                              {subEvents.map((subEvent, subIndex) => (
+                                <th key={subIndex} className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-white">
+                                  {subEvent.name}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {ticketTiers.map((tier, tierIndex) => (
+                              <tr key={tierIndex}>
+                                <td className="border border-gray-200 dark:border-gray-700 px-4 py-2 font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">
+                                  {tier.name}
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    Capacity: {tier.capacity}
+                                  </div>
+                                </td>
+                                {subEvents.map((subEvent, subIndex) => (
+                                  <td key={subIndex} className="border border-gray-200 dark:border-gray-700 px-2 py-2">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={tier.subEventPrices?.[subIndex] !== undefined 
+                                        ? (tier.subEventPrices[subIndex] === 0 ? '' : tier.subEventPrices[subIndex])
+                                        : ''
+                                      }
+                                      onChange={(e) => {
+                                        const newTiers = [...ticketTiers];
+                                        const newValue = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                        
+                                        if (!newTiers[tierIndex].subEventPrices) {
+                                          newTiers[tierIndex].subEventPrices = subEvents.map((_, i) => 
+                                            i === subIndex ? newValue : 0
+                                          );
+                                        } else {
+                                          newTiers[tierIndex].subEventPrices[subIndex] = newValue;
+                                        }
+                                        setTicketTiers(newTiers);
+                                      }}
+                                      className="w-full text-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                    />
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        💡 <strong>Tip:</strong> Set different prices for each tier-subevent combination. 
+                        Early Bird 1次会 might be $30, while Regular 1次会 is $35.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                        ⚠️ Please configure both ticket tiers and sub-events first to set up the pricing matrix.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Tier Configuration for Complex Mode */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-4">Tier Capacity Settings</h4>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-gray-600 dark:text-gray-400 mt-1">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-gray-200">How Tier Capacity Works</h5>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Early Bird gets first X spots, then Regular gets next Y spots. 
+                            When Early Bird sells out, registration automatically moves to Regular pricing.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {ticketTiers.map((tier, index) => (
+                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Tier Name
+                              </label>
+                              <input
+                                type="text"
+                                value={tier.name}
+                                onChange={(e) => {
+                                  const newTiers = [...ticketTiers];
+                                  newTiers[index].name = e.target.value;
+                                  setTicketTiers(newTiers);
+                                }}
+                                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Capacity
+                                <span className="text-xs text-gray-500 ml-1">(shared across all sub-events)</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={tier.capacity === 0 ? '' : tier.capacity}
+                                onChange={(e) => {
+                                  const newTiers = [...ticketTiers];
+                                  newTiers[index].capacity = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                  setTicketTiers(newTiers);
+                                }}
+                                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Target Year
+                              </label>
+                              <select
+                                value={tier.targetYear}
+                                onChange={(e) => {
+                                  const newTiers = [...ticketTiers];
+                                  newTiers[index].targetYear = e.target.value;
+                                  setTicketTiers(newTiers);
+                                }}
+                                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                              >
+                                <option value="All years">All years</option>
+                                <option value="1st year">1st year</option>
+                                <option value="2nd year">2nd year</option>
+                                <option value="3rd year">3rd year</option>
+                                <option value="4th year">4th year</option>
+                                <option value="1st-2nd year">1st-2nd year</option>
+                              </select>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <label className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={tier.isActive}
+                                  onChange={(e) => {
+                                    const newTiers = [...ticketTiers];
+                                    newTiers[index].isActive = e.target.checked;
+                                    setTicketTiers(newTiers);
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Active</span>
+                              </label>
+                            </div>
+                                                         <button
+                               onClick={() => {
+                                 const newTiers = ticketTiers.filter((_, i) => i !== index);
+                                 setTicketTiers(newTiers);
+                               }}
+                               className="text-red-600 hover:text-red-800 text-sm font-medium"
+                             >
+                               🗑️ 削除
+                             </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Add Tier Button */}
+              <button
+                onClick={() => {
+                  const newTier = {
+                    name: '',
+                    price: 0,
+                    capacity: 0,
+                    targetYear: 'All years',
+                    startDate: '',
+                    endDate: '',
+                    isActive: true,
+                    subEventPrices: formData.enableSubEvents ? [] : undefined
+                  };
+                  setTicketTiers([...ticketTiers, newTier]);
+                }}
+                className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg py-4 text-gray-500 dark:text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+              >
+                + Add New Tier
+              </button>
+            </div>
+            
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowTierConfig(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setShowTierConfig(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Save Configuration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-Event Configuration Modal */}
+      {showSubEventConfig && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Configure Sub-Events
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  (Set capacity for each part)
+                </span>
+              </h3>
+              <button
+                onClick={() => setShowSubEventConfig(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-600 dark:text-blue-400 mt-1">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">Sub-Event Capacity Settings</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      Set the maximum number of people for each part of your event. Prices will be configured in the Price Matrix.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {subEvents.map((subEvent, index) => (
+                <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      Sub-Event {index + 1}
+                    </h4>
+                    <button
+                      onClick={() => {
+                        const newSubEvents = subEvents.filter((_, i) => i !== index);
+                        setSubEvents(newSubEvents);
+                        
+                        // Update all ticket tiers to remove the corresponding sub-event price
+                        const newTiers = ticketTiers.map(tier => {
+                          if (tier.subEventPrices && tier.subEventPrices.length > index) {
+                            const newPrices = [...tier.subEventPrices];
+                            newPrices.splice(index, 1);
+                            return { ...tier, subEventPrices: newPrices };
+                          }
+                          return tier;
+                        });
+                        setTicketTiers(newTiers);
+                      }}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                      🗑️ 削除
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Event Name
+                      </label>
+                      <input
+                        type="text"
+                        value={subEvent.name}
+                        onChange={(e) => {
+                          const newSubEvents = [...subEvents];
+                          newSubEvents[index].name = e.target.value;
+                          setSubEvents(newSubEvents);
+                        }}
+                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                        placeholder="e.g., 1次会 (1st Party)"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Maximum Capacity
+                      </label>
+                                              <input
+                          type="number"
+                          min="0"
+                          value={subEvent.capacity === 0 ? '' : subEvent.capacity}
+                          onChange={(e) => {
+                            const newSubEvents = [...subEvents];
+                            newSubEvents[index].capacity = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            setSubEvents(newSubEvents);
+                          }}
+                          className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                        />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Description (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={subEvent.description}
+                        onChange={(e) => {
+                          const newSubEvents = [...subEvents];
+                          newSubEvents[index].description = e.target.value;
+                          setSubEvents(newSubEvents);
+                        }}
+                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                        placeholder="Brief description"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <button
+                onClick={() => {
+                  setSubEvents([...subEvents, {
+                    name: '',
+                    description: '',
+                    price: 0,
+                    capacity: 0,
+                    isStandalone: true,
+                    isComboOption: false
+                  }]);
+                }}
+                className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg py-4 text-gray-500 dark:text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+              >
+                + Add Sub-Event
+              </button>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-yellow-600 dark:text-yellow-400 mt-1">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-900 dark:text-yellow-200">💡 Pro Tip</h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                      Capacity is per sub-event, but tiers (Early Bird/Regular) share the same pool. 
+                      Set conservative capacities - you can always increase later!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowSubEventConfig(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setShowSubEventConfig(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Save Sub-Events
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

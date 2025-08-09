@@ -6,7 +6,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { userId, paymentId } = await request.json();
+    const { userId, paymentId, tierId, subEventIds } = await request.json();
 
     console.log('Paid event registration request:', {
       eventId: id,
@@ -30,8 +30,8 @@ export async function POST(
       body: JSON.stringify({
         userId: parseInt(userId),
         paymentId: paymentId || null,
-        registrationType: 'paid',
-        registrationTime: new Date().toISOString()
+        tierId: tierId ? parseInt(tierId) : null,
+        subEventIds: subEventIds || []
       })
     });
 

@@ -213,6 +213,27 @@ class EventRepository:
                         print("✅ isUofTOnly column added to Event table")
                     else:
                         print("✅ isUofTOnly column already exists in Event table")
+                    
+                    # Check if advanced ticketing columns exist and add them if not
+                    enable_advanced_ticketing_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'Event'
+                            AND column_name = 'enableAdvancedTicketing'
+                        );
+                    """)
+                    
+                    if not enable_advanced_ticketing_exists:
+                        print("🆕 Adding advanced ticketing columns to Event table...")
+                        await conn.execute("""
+                            ALTER TABLE "Event" 
+                            ADD COLUMN "enableAdvancedTicketing" BOOLEAN DEFAULT FALSE,
+                            ADD COLUMN "enableSubEvents" BOOLEAN DEFAULT FALSE;
+                        """)
+                        print("✅ Advanced ticketing columns added to Event table")
+                    else:
+                        print("✅ Advanced ticketing columns already exist in Event table")
                 
                 # Check if EventRegistration table exists
                 registration_table_exists = await conn.fetchval("""
@@ -261,6 +282,127 @@ class EventRepository:
                         print("✅ paymentId column added to EventRegistration table")
                     else:
                         print("✅ paymentId column already exists in EventRegistration table")
+                    
+                    # Check if advanced ticketing columns exist in EventRegistration
+                    ticket_tier_id_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'EventRegistration'
+                            AND column_name = 'ticketTierId'
+                        );
+                    """)
+                    
+                    if not ticket_tier_id_exists:
+                        print("🆕 Adding advanced ticketing columns to EventRegistration table...")
+                        await conn.execute("""
+                            ALTER TABLE "EventRegistration" 
+                            ADD COLUMN "ticketTierId" INTEGER,
+                            ADD COLUMN "subEventId" INTEGER,
+                            ADD COLUMN "finalPrice" DECIMAL(10,2);
+                        """)
+                        print("✅ Advanced ticketing columns added to EventRegistration table")
+                    else:
+                        print("✅ Advanced ticketing columns already exist in EventRegistration table")
+                
+                # Check if TicketTier table exists
+                ticket_tier_table_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'TicketTier'
+                    );
+                """)
+                
+                if not ticket_tier_table_exists:
+                    print("🆕 Creating TicketTier table...")
+                    await conn.execute("""
+                        CREATE TABLE "TicketTier" (
+                            id SERIAL PRIMARY KEY,
+                            "eventId" INTEGER NOT NULL,
+                            name TEXT NOT NULL,
+                            price DECIMAL(10,2) NOT NULL,
+                            capacity INTEGER NOT NULL,
+                            "targetYear" TEXT DEFAULT 'All years',
+                            "startDate" TIMESTAMP,
+                            "endDate" TIMESTAMP,
+                            "isActive" BOOLEAN DEFAULT TRUE,
+                            "subEventPrices" TEXT, -- JSON array for complex pricing
+                            FOREIGN KEY ("eventId") REFERENCES "Event"(id) ON DELETE CASCADE,
+                            UNIQUE ("eventId", name)
+                        );
+                    """)
+                    print("✅ TicketTier table created")
+                else:
+                    print("✅ TicketTier table already exists")
+                    # Check if targetYear column exists and add it if not
+                    target_year_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'TicketTier'
+                            AND column_name = 'targetYear'
+                        );
+                    """)
+                    
+                    if not target_year_exists:
+                        print("🆕 Adding targetYear column to TicketTier table...")
+                        await conn.execute("""
+                            ALTER TABLE "TicketTier" 
+                            ADD COLUMN "targetYear" TEXT DEFAULT 'All years';
+                        """)
+                        print("✅ targetYear column added to TicketTier table")
+                    else:
+                        print("✅ targetYear column already exists in TicketTier table")
+                    
+                    # Check if subEventPrices column exists and add it if not
+                    sub_event_prices_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'TicketTier'
+                            AND column_name = 'subEventPrices'
+                        );
+                    """)
+                    
+                    if not sub_event_prices_exists:
+                        print("🆕 Adding subEventPrices column to TicketTier table...")
+                        await conn.execute("""
+                            ALTER TABLE "TicketTier" 
+                            ADD COLUMN "subEventPrices" TEXT;
+                        """)
+                        print("✅ subEventPrices column added to TicketTier table")
+                    else:
+                        print("✅ subEventPrices column already exists in TicketTier table")
+                
+                # Check if SubEvent table exists
+                sub_event_table_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'SubEvent'
+                    );
+                """)
+                
+                if not sub_event_table_exists:
+                    print("🆕 Creating SubEvent table...")
+                    await conn.execute("""
+                        CREATE TABLE "SubEvent" (
+                            id SERIAL PRIMARY KEY,
+                            "eventId" INTEGER NOT NULL,
+                            name TEXT NOT NULL,
+                            description TEXT,
+                            price DECIMAL(10,2) NOT NULL,
+                            capacity INTEGER NOT NULL,
+                            "isStandalone" BOOLEAN DEFAULT TRUE,
+                            "isComboOption" BOOLEAN DEFAULT FALSE,
+                            FOREIGN KEY ("eventId") REFERENCES "Event"(id) ON DELETE CASCADE,
+                            UNIQUE ("eventId", name)
+                        );
+                    """)
+                    print("✅ SubEvent table created")
+                else:
+                    print("✅ SubEvent table already exists")
                     
         except Exception as e:
             print(f"❌ Error ensuring tables exist: {e}")
@@ -383,53 +525,8 @@ class EventRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived", "isUofTOnly")
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-                RETURNING *
-                """
-                
-                # Parse refundDeadline if provided, otherwise use event date
-                refund_deadline = None
-                if event_data.get("refundDeadline"):
-                    refund_deadline = datetime.fromisoformat(event_data["refundDeadline"].replace('Z', '+00:00'))
-                else:
-                    refund_deadline = datetime.fromisoformat(event_data["date"].replace('Z', '+00:00'))
-                
-                row = await conn.fetchrow(
-                    query,
-                    event_data["name"],
-                    event_data["description"],
-                    event_data["targetYear"],
-                    float(event_data.get("fee", 0)),
-                    int(event_data["capacity"]),
-                    datetime.fromisoformat(event_data["date"].replace('Z', '+00:00')),
-                    event_data["type"],
-                    event_data.get("image"),
-                    refund_deadline,
-                    event_data.get("isArchived", False),
-                    event_data.get("isUofTOnly", False)
-                )
-                
-                event_dict = dict(row)
-                event_dict['registrations'] = []
-                event_dict['registeredUsers'] = []
-                event_dict['remainingSeats'] = event_dict['capacity']
-                
-                return event_dict
-        except Exception as e:
-            print(f"❌ Error creating event: {e}")
-            raise e
-    
-    async def update_event(self, event_id: int, event_data: dict) -> Dict[str, Any]:
-        """Update an existing event"""
-        try:
-            async with self.pool.acquire() as conn:
-                query = """
-                UPDATE "Event" 
-                SET name = $1, description = $2, "targetYear" = $3, fee = $4, 
-                    capacity = $5, date = $6, type = $7, image = $8, "refundDeadline" = $9, 
-                    "isArchived" = $10, "isUofTOnly" = $11, "updatedAt" = NOW()
-                WHERE id = $12
+                INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived", "isUofTOnly", "enableAdvancedTicketing", "enableSubEvents")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                 RETURNING *
                 """
                 
@@ -453,6 +550,339 @@ class EventRepository:
                     refund_deadline,
                     event_data.get("isArchived", False),
                     event_data.get("isUofTOnly", False),
+                    event_data.get("enableAdvancedTicketing", False),
+                    event_data.get("enableSubEvents", False)
+                )
+                
+                event_dict = dict(row)
+                event_dict['registrations'] = []
+                event_dict['registeredUsers'] = []
+                event_dict['remainingSeats'] = event_dict['capacity']
+                
+                return event_dict
+        except Exception as e:
+            print(f"❌ Error creating event: {e}")
+            raise e
+    
+    async def create_ticket_tier(self, tier_data: dict) -> Dict[str, Any]:
+        """Create a new ticket tier for an event"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                INSERT INTO "TicketTier" ("eventId", name, price, capacity, "targetYear", "startDate", "endDate", "isActive", "subEventPrices")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING *
+                """
+                
+                start_date = None
+                end_date = None
+                if tier_data.get("startDate"):
+                    start_date = datetime.fromisoformat(tier_data["startDate"].replace('Z', '+00:00'))
+                if tier_data.get("endDate"):
+                    end_date = datetime.fromisoformat(tier_data["endDate"].replace('Z', '+00:00'))
+                
+                # Handle subEventPrices as JSON
+                sub_event_prices_json = None
+                if tier_data.get("subEventPrices"):
+                    import json
+                    sub_event_prices_json = json.dumps(tier_data["subEventPrices"])
+                
+                row = await conn.fetchrow(
+                    query,
+                    tier_data["eventId"],
+                    tier_data["name"],
+                    float(tier_data["price"]),
+                    int(tier_data["capacity"]),
+                    tier_data.get("targetYear", "All years"),
+                    start_date,
+                    end_date,
+                    tier_data.get("isActive", True),
+                    sub_event_prices_json
+                )
+                
+                return dict(row)
+        except Exception as e:
+            print(f"Error creating ticket tier: {e}")
+            raise e
+    
+    async def create_sub_event(self, sub_event_data: dict) -> Dict[str, Any]:
+        """Create a new sub-event for an event"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                INSERT INTO "SubEvent" ("eventId", name, description, price, capacity, "isStandalone", "isComboOption")
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *
+                """
+                
+                row = await conn.fetchrow(
+                    query,
+                    sub_event_data["eventId"],
+                    sub_event_data["name"],
+                    sub_event_data.get("description"),
+                    float(sub_event_data["price"]),
+                    int(sub_event_data["capacity"]),
+                    sub_event_data.get("isStandalone", True),
+                    sub_event_data.get("isComboOption", False)
+                )
+                
+                return dict(row)
+        except Exception as e:
+            print(f"Error creating sub-event: {e}")
+            raise e
+    
+    async def get_ticket_tiers(self, event_id: int) -> List[Dict[str, Any]]:
+        """Get all ticket tiers for an event"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                SELECT * FROM "TicketTier" 
+                WHERE "eventId" = $1 AND "isActive" = TRUE
+                ORDER BY price ASC
+                """
+                rows = await conn.fetch(query, event_id)
+                return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Error getting ticket tiers: {e}")
+            raise e
+    
+    async def get_available_ticket_tiers(self, event_id: int) -> List[Dict[str, Any]]:
+        """Get available ticket tiers with automatic progression logic"""
+        try:
+            from datetime import datetime
+            
+            async with self.pool.acquire() as conn:
+                # Get all tiers with current registration counts
+                query = """
+                SELECT 
+                    tt.*,
+                    COUNT(er.id) as registered_count,
+                    (tt.capacity - COUNT(er.id)) as remaining_capacity
+                FROM "TicketTier" tt
+                LEFT JOIN "EventRegistration" er ON tt.id = er."ticketTierId"
+                WHERE tt."eventId" = $1 AND tt."isActive" = TRUE
+                GROUP BY tt.id
+                ORDER BY tt.price ASC
+                """
+                rows = await conn.fetch(query, event_id)
+                
+                tiers = []
+                current_time = datetime.now()
+                
+                for row in rows:
+                    tier = dict(row)
+                    
+                    # Parse subEventPrices JSON if present
+                    if tier.get('subEventPrices'):
+                        import json
+                        try:
+                            tier['subEventPrices'] = json.loads(tier['subEventPrices'])
+                        except (json.JSONDecodeError, TypeError):
+                            tier['subEventPrices'] = None
+                    else:
+                        tier['subEventPrices'] = None
+                    
+                    # Check if tier is within date range
+                    is_date_available = True
+                    if tier['startDate'] and current_time < tier['startDate']:
+                        is_date_available = False
+                    if tier['endDate'] and current_time > tier['endDate']:
+                        is_date_available = False
+                    
+                    # Check if tier has capacity
+                    has_capacity = tier['remaining_capacity'] > 0
+                    
+                    # Tier is available if it's within date range AND has capacity
+                    tier['isAvailable'] = is_date_available and has_capacity
+                    tier['availabilityReason'] = ''
+                    
+                    if not is_date_available:
+                        if tier['startDate'] and current_time < tier['startDate']:
+                            tier['availabilityReason'] = 'Not yet available'
+                        elif tier['endDate'] and current_time > tier['endDate']:
+                            tier['availabilityReason'] = 'Registration period ended'
+                    elif not has_capacity:
+                        tier['availabilityReason'] = 'Sold out'
+                    
+                    tiers.append(tier)
+                
+                return tiers
+        except Exception as e:
+            print(f"Error getting available ticket tiers: {e}")
+            raise e
+    
+    async def get_sub_events(self, event_id: int) -> List[Dict[str, Any]]:
+        """Get all sub-events for an event"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                SELECT * FROM "SubEvent" 
+                WHERE "eventId" = $1
+                ORDER BY price ASC
+                """
+                rows = await conn.fetch(query, event_id)
+                return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Error getting sub-events: {e}")
+            raise e
+    
+    async def get_available_sub_events(self, event_id: int) -> List[Dict[str, Any]]:
+        """Get available sub-events with capacity information"""
+        try:
+            async with self.pool.acquire() as conn:
+                # Get all sub-events with current registration counts
+                query = """
+                SELECT 
+                    se.*,
+                    COUNT(er.id) as registered_count,
+                    (se.capacity - COUNT(er.id)) as remaining_capacity
+                FROM "SubEvent" se
+                LEFT JOIN "EventRegistration" er ON se.id = er."subEventId"
+                WHERE se."eventId" = $1
+                GROUP BY se.id
+                ORDER BY se.price ASC
+                """
+                rows = await conn.fetch(query, event_id)
+                
+                sub_events = []
+                for row in rows:
+                    sub_event = dict(row)
+                    
+                    # Check if sub-event has capacity
+                    has_capacity = sub_event['remaining_capacity'] > 0
+                    sub_event['isAvailable'] = has_capacity
+                    sub_event['availabilityReason'] = 'Sold out' if not has_capacity else ''
+                    
+                    sub_events.append(sub_event)
+                
+                return sub_events
+        except Exception as e:
+            print(f"Error getting available sub-events: {e}")
+            raise e
+    
+    async def get_available_capacity(self, tier_id: int = None, sub_event_id: int = None) -> int:
+        """Get remaining capacity for a ticket tier or sub-event"""
+        try:
+            async with self.pool.acquire() as conn:
+                if tier_id:
+                    # Get ticket tier capacity and current registrations
+                    tier_query = """
+                    SELECT 
+                        tt.capacity,
+                        COUNT(er.id) as registered_count
+                    FROM "TicketTier" tt
+                    LEFT JOIN "EventRegistration" er ON tt.id = er."ticketTierId"
+                    WHERE tt.id = $1
+                    GROUP BY tt.capacity
+                    """
+                    row = await conn.fetchrow(tier_query, tier_id)
+                    if row:
+                        return row['capacity'] - row['registered_count']
+                elif sub_event_id:
+                    # Get sub-event capacity and current registrations
+                    sub_event_query = """
+                    SELECT 
+                        se.capacity,
+                        COUNT(er.id) as registered_count
+                    FROM "SubEvent" se
+                    LEFT JOIN "EventRegistration" er ON se.id = er."subEventId"
+                    WHERE se.id = $1
+                    GROUP BY se.capacity
+                    """
+                    row = await conn.fetchrow(sub_event_query, sub_event_id)
+                    if row:
+                        return row['capacity'] - row['registered_count']
+                return 0
+        except Exception as e:
+            print(f"Error getting available capacity: {e}")
+            return 0
+    
+    async def delete_ticket_tiers_by_event(self, event_id: int):
+        """Delete all ticket tiers for an event"""
+        try:
+            async with self.pool.acquire() as conn:
+                await conn.execute("""
+                    DELETE FROM "TicketTier" WHERE "eventId" = $1
+                """, event_id)
+        except Exception as e:
+            print(f"Error deleting ticket tiers: {e}")
+            raise e
+    
+    async def delete_sub_events_by_event(self, event_id: int):
+        """Delete all sub-events for an event"""
+        try:
+            async with self.pool.acquire() as conn:
+                await conn.execute("""
+                    DELETE FROM "SubEvent" WHERE "eventId" = $1
+                """, event_id)
+        except Exception as e:
+            print(f"Error deleting sub-events: {e}")
+            raise e
+    
+    async def get_event_with_tiers_and_subevents(self, event_id: int) -> Dict[str, Any]:
+        """Get event with its ticket tiers and sub-events"""
+        try:
+            async with self.pool.acquire() as conn:
+                # Get the main event
+                event_query = """
+                SELECT * FROM "Event" WHERE id = $1
+                """
+                event_row = await conn.fetchrow(event_query, event_id)
+                
+                if not event_row:
+                    return None
+                
+                event = dict(event_row)
+                
+                # Get ticket tiers
+                tiers = await self.get_ticket_tiers(event_id)
+                event['ticketTiers'] = tiers
+                
+                # Get sub-events
+                sub_events = await self.get_sub_events(event_id)
+                event['subEvents'] = sub_events
+                
+                return event
+        except Exception as e:
+            print(f"Error getting event with tiers and sub-events: {e}")
+            raise e
+    
+    async def update_event(self, event_id: int, event_data: dict) -> Dict[str, Any]:
+        """Update an existing event"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                UPDATE "Event" 
+                SET name = $1, description = $2, "targetYear" = $3, fee = $4, 
+                    capacity = $5, date = $6, type = $7, image = $8, "refundDeadline" = $9, 
+                    "isArchived" = $10, "isUofTOnly" = $11, "enableAdvancedTicketing" = $12, 
+                    "enableSubEvents" = $13, "updatedAt" = NOW()
+                WHERE id = $14
+                RETURNING *
+                """
+                
+                # Parse refundDeadline if provided, otherwise use event date
+                refund_deadline = None
+                if event_data.get("refundDeadline"):
+                    refund_deadline = datetime.fromisoformat(event_data["refundDeadline"].replace('Z', '+00:00'))
+                else:
+                    refund_deadline = datetime.fromisoformat(event_data["date"].replace('Z', '+00:00'))
+                
+                row = await conn.fetchrow(
+                    query,
+                    event_data["name"],
+                    event_data["description"],
+                    event_data["targetYear"],
+                    float(event_data.get("fee", 0)),
+                    int(event_data["capacity"]),
+                    datetime.fromisoformat(event_data["date"].replace('Z', '+00:00')),
+                    event_data["type"],
+                    event_data.get("image"),
+                    refund_deadline,
+                    event_data.get("isArchived", False),
+                    event_data.get("isUofTOnly", False),
+                    event_data.get("enableAdvancedTicketing", False),
+                    event_data.get("enableSubEvents", False),
                     event_id
                 )
                 
@@ -477,6 +907,97 @@ class EventRepository:
             print(f"❌ Error deleting event: {e}")
             raise e
     
+    async def register_for_event_advanced(self, user_id: int, event_id: int, payment_id: str = None, 
+                                        ticket_tier_id: int = None, sub_event_id: int = None, 
+                                        final_price: float = None) -> Dict[str, Any]:
+        """Register a user for an event with advanced ticketing support"""
+        try:
+            async with self.pool.acquire() as conn:
+                # Check if event exists
+                event = await conn.fetchrow(
+                    'SELECT * FROM "Event" WHERE id = $1',
+                    event_id
+                )
+                
+                if not event:
+                    raise Exception("Event not found")
+                
+                # Check if user is already registered for this event
+                existing = await conn.fetchrow(
+                    'SELECT * FROM "EventRegistration" WHERE "userId" = $1 AND "eventId" = $2',
+                    user_id, event_id
+                )
+                
+                if existing:
+                    raise Exception("User already registered for this event")
+                
+                # Validate ticket tier if provided
+                if ticket_tier_id:
+                    tier = await conn.fetchrow(
+                        'SELECT * FROM "TicketTier" WHERE id = $1 AND "eventId" = $2',
+                        ticket_tier_id, event_id
+                    )
+                    if not tier:
+                        raise Exception("Invalid ticket tier")
+                    
+                    # Check tier capacity
+                    tier_registrations = await conn.fetchval(
+                        'SELECT COUNT(*) FROM "EventRegistration" WHERE "ticketTierId" = $1',
+                        ticket_tier_id
+                    )
+                    if tier_registrations >= tier['capacity']:
+                        raise Exception("Ticket tier is full")
+                
+                # Validate sub-event if provided
+                if sub_event_id:
+                    sub_event = await conn.fetchrow(
+                        'SELECT * FROM "SubEvent" WHERE id = $1 AND "eventId" = $2',
+                        sub_event_id, event_id
+                    )
+                    if not sub_event:
+                        raise Exception("Invalid sub-event")
+                    
+                    # Check sub-event capacity
+                    sub_event_registrations = await conn.fetchval(
+                        'SELECT COUNT(*) FROM "EventRegistration" WHERE "subEventId" = $1',
+                        sub_event_id
+                    )
+                    if sub_event_registrations >= sub_event['capacity']:
+                        raise Exception("Sub-event is full")
+                
+                # Check overall event capacity if no specific tier/sub-event capacity constraints
+                if not ticket_tier_id and not sub_event_id:
+                    registration_count = await conn.fetchval(
+                        'SELECT COUNT(*) FROM "EventRegistration" WHERE "eventId" = $1',
+                        event_id
+                    )
+                    if registration_count >= event['capacity']:
+                        raise Exception("Event is full")
+                
+                # Create registration with advanced ticketing data
+                print(f"🔍 Inserting advanced registration: user_id={user_id}, event_id={event_id}, tier_id={ticket_tier_id}, sub_event_id={sub_event_id}, final_price={final_price}")
+                registration = await conn.fetchrow("""
+                    INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId")
+                    VALUES ($1, $2, $3, $4, $5, 'completed', $6)
+                    RETURNING *
+                """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id)
+                print(f"✅ Advanced registration created with ID: {registration['id']}")
+                
+                return {
+                    'id': registration['id'],
+                    'userId': registration['userId'],
+                    'eventId': registration['eventId'],
+                    'ticketTierId': registration['ticketTierId'],
+                    'subEventId': registration['subEventId'],
+                    'finalPrice': float(registration['finalPrice']) if registration['finalPrice'] else None,
+                    'registeredAt': registration['registeredAt'].isoformat(),
+                    'paymentStatus': registration['paymentStatus'],
+                    'paymentId': registration['paymentId']
+                }
+        except Exception as e:
+            print(f"❌ Error in advanced registration: {e}")
+            raise e
+
     async def register_for_event(self, user_id: int, event_id: int, payment_id: str = None) -> Dict[str, Any]:
         """Register a user for an event"""
         try:

@@ -28,29 +28,75 @@ model Event {
   name            String
   description     String
   targetYear      String   // e.g., "All years", "1st-2nd year", etc.
-  fee             Float    @default(0)
-  capacity        Int
+  fee             Float    @default(0)  // Default/legacy fee (for backward compatibility)
+  capacity        Int      // Default/legacy capacity (for backward compatibility)
   isArchived      Boolean  @default(false)
   isUofTOnly      Boolean  @default(false)  // If true, only UofT students can see/register
   date            DateTime
   type            String   // e.g., "career", "social"
   image           String?
+  
+  // Advanced ticketing features (disabled by default)
+  enableAdvancedTicketing Boolean @default(false)  // Enable pricing tiers and sub-events
+  enableSubEvents         Boolean @default(false)  // Enable sub-events (1st party, 2nd party, etc.)
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   // Event relationships
   registrations   EventRegistration[]
+  ticketTiers     TicketTier[]
+  subEvents       SubEvent[]
+}
+
+// Ticket pricing tiers (Early bird, Regular, Walk-in)
+model TicketTier {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  name            String   // "Early Bird", "Regular", "Walk-in"
+  price           Float
+  capacity        Int
+  startDate       DateTime?  // When this tier becomes available
+  endDate         DateTime?  // When this tier expires
+  isActive        Boolean  @default(true)
+  
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations   EventRegistration[]
+  
+  @@unique([eventId, name])
+}
+
+// Sub-events (1st party, 2nd party, etc.)
+model SubEvent {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  name            String   // "1st Party", "2nd Party", "Combined"
+  description     String?
+  price           Float
+  capacity        Int
+  isStandalone    Boolean  @default(true)   // Can be purchased alone
+  isComboOption   Boolean  @default(false)  // Part of a combo ticket
+  
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations   EventRegistration[]
+  
+  @@unique([eventId, name])
 }
 
 model EventRegistration {
   id              Int      @id @default(autoincrement())
   userId          Int
   eventId         Int
+  ticketTierId    Int?     // Which pricing tier was used
+  subEventId      Int?     // Which sub-event was selected
   registeredAt    DateTime @default(now())
   paymentStatus   String   @default("pending") // "pending", "completed", "failed"
+  finalPrice      Float?   // Final price paid (after discounts, etc.)
   
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketTier      TicketTier? @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
+  subEvent        SubEvent? @relation(fields: [subEventId], references: [id], onDelete: SetNull)
   
   @@unique([userId, eventId])
 }
