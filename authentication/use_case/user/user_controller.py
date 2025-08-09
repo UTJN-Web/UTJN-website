@@ -6,6 +6,48 @@ from authentication.data_access.user_repository import UserRepository
 
 user_router = APIRouter(prefix="/users", tags=["users"])
 
+@user_router.get("")
+async def get_all_users():
+    """Get all users for admin dashboard"""
+    try:
+        print("👥 Getting all users for admin dashboard")
+        
+        # Initialize user repository
+        user_repo = UserRepository()
+        await user_repo.connect()
+        
+        try:
+            # Get all users from database
+            users = await user_repo.get_all_users()
+            print(f"✅ Retrieved {len(users)} users from database")
+            
+            await user_repo.disconnect()
+            
+            # Format users for response
+            formatted_users = []
+            for user in users:
+                formatted_users.append({
+                    "id": user["id"],
+                    "firstName": user["firstName"],
+                    "lastName": user["lastName"],
+                    "email": user["email"],
+                    "major": user["major"],
+                    "graduationYear": user["graduationYear"],
+                    "cognitoSub": user["cognitoSub"],
+                    "joinedAt": user["joinedAt"].isoformat() if user["joinedAt"] else None,
+                    "hasProfile": True  # All users in DB have profiles
+                })
+            
+            return formatted_users
+        except Exception as e:
+            print(f"❌ Database error: {e}")
+            await user_repo.disconnect()
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Controller error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve users: {str(e)}")
+
 class UserProfileRequest(BaseModel):
     firstName: str
     lastName: str

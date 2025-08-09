@@ -447,4 +447,37 @@ class UserRepository:
                 }
         except Exception as e:
             print(f"Error updating user: {e}")
+            raise e
+    
+    async def get_all_users(self) -> list:
+        """Get all users for admin dashboard"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
+                FROM "User"
+                ORDER BY "joinedAt" DESC
+                """
+                
+                rows = await conn.fetch(query)
+                
+                users = []
+                for row in rows:
+                    users.append({
+                        "id": row["id"],
+                        "firstName": row["firstName"],
+                        "lastName": row["lastName"],
+                        "email": row["email"],
+                        "major": row["major"],
+                        "graduationYear": row["graduationYear"],
+                        "currentYear": row["currentYear"],
+                        "university": row["university"],
+                        "cognitoSub": row["cognitoSub"],
+                        "joinedAt": row["joinedAt"]
+                    })
+                
+                return users
+        except Exception as e:
+            print(f"❌ Error getting all users: {e}")
+            print(f"🔍 Error type: {type(e).__name__}")
             raise e 
