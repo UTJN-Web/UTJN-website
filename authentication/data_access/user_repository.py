@@ -6,6 +6,40 @@ import boto3
 import json
 from typing import Optional, Dict, Any
 
+# Major options for user selection
+MAJOR_OPTIONS = [
+    "Computer Science",
+    "Computer Engineering", 
+    "Electrical Engineering",
+    "Mechanical Engineering",
+    "Civil Engineering",
+    "Chemical Engineering",
+    "Industrial Engineering",
+    "Materials Science & Engineering",
+    "Mineral Engineering",
+    "Engineering Science",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Psychology",
+    "Economics",
+    "Business Administration",
+    "Commerce",
+    "Arts & Science",
+    "Architecture",
+    "Urban Planning",
+    "Forestry",
+    "Kinesiology",
+    "Nursing",
+    "Pharmacy",
+    "Medicine",
+    "Law",
+    "Education",
+    "Social Work",
+    "Other"
+]
+
 class UserRepository:
     def __init__(self):
         self.pool = None
@@ -113,14 +147,175 @@ class UserRepository:
         if self.pool:
             await self.pool.close()
     
+    async def ensure_tables_exist(self):
+        """Ensure User table exists with proper major constraints"""
+        if not self.pool:
+            raise Exception("Database not connected")
+        
+        async with self.pool.acquire() as conn:
+            try:
+                # Check if User table exists
+                table_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'User'
+                    );
+                """)
+                
+                if not table_exists:
+                    print("🆕 Creating User table...")
+                    await conn.execute("""
+                        CREATE TABLE "User" (
+                            id SERIAL PRIMARY KEY,
+                            "firstName" VARCHAR(255) NOT NULL,
+                            "lastName" VARCHAR(255) NOT NULL,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            major VARCHAR(255) NOT NULL CHECK (major IN (
+                                'Computer Science', 'Computer Engineering', 'Electrical Engineering',
+                                'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering',
+                                'Industrial Engineering', 'Materials Science & Engineering', 'Mineral Engineering',
+                                'Engineering Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                                'Psychology', 'Economics', 'Business Administration', 'Commerce',
+                                'Arts & Science', 'Architecture', 'Urban Planning', 'Forestry',
+                                'Kinesiology', 'Nursing', 'Pharmacy', 'Medicine', 'Law', 'Education',
+                                'Social Work', 'Other'
+                            )),
+                            "graduationYear" INTEGER NOT NULL,
+                            university VARCHAR(255) NOT NULL DEFAULT 'University of Toronto',
+                            "cognitoSub" VARCHAR(255) UNIQUE NOT NULL,
+                            "joinedAt" TIMESTAMP DEFAULT NOW()
+                        );
+                    """)
+                    
+                    # Create indexes for better performance
+                    await conn.execute('CREATE INDEX idx_user_email ON "User"(email);')
+                    await conn.execute('CREATE INDEX idx_user_cognito_sub ON "User"("cognitoSub");')
+                    
+                    print("✅ User table created with major constraints")
+                else:
+                    print("✅ User table already exists")
+                    # Check if major constraint exists
+                    constraint_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.check_constraints 
+                            WHERE constraint_name LIKE '%major%'
+                        );
+                    """)
+                    
+                    if not constraint_exists:
+                        print("🆕 Adding major constraint to existing User table...")
+                        
+                        # First, check for any existing data that would violate the constraint
+                        invalid_majors = await conn.fetch("""
+                            SELECT id, email, major FROM "User" 
+                            WHERE major NOT IN (
+                                'Computer Science', 'Computer Engineering', 'Electrical Engineering',
+                                'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering',
+                                'Industrial Engineering', 'Materials Science & Engineering', 'Mineral Engineering',
+                                'Engineering Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                                'Psychology', 'Economics', 'Business Administration', 'Commerce',
+                                'Arts & Science', 'Architecture', 'Urban Planning', 'Forestry',
+                                'Kinesiology', 'Nursing', 'Pharmacy', 'Medicine', 'Law', 'Education',
+                                'Social Work', 'Other'
+                            )
+                        """)
+                        
+                        if invalid_majors:
+                            print(f"🔍 Found {len(invalid_majors)} user(s) with invalid majors:")
+                            for user in invalid_majors:
+                                print(f"  - ID: {user['id']}, Email: {user['email']}, Major: {user['major']}")
+                            
+                            # Fix common abbreviations
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Computer Science' WHERE major = 'CS'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Computer Engineering' WHERE major = 'CE'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Electrical Engineering' WHERE major = 'EE'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Mechanical Engineering' WHERE major = 'ME'
+                            """)
+                            await conn.execute("""
+                                UPDATE "User" SET major = 'Civil Engineering' WHERE major = 'CivE'
+                            """)
+                            
+                            print("✅ Fixed common major abbreviations")
+                        
+                        # Now add the constraint
+                        await conn.execute("""
+                            ALTER TABLE "User" 
+                            ADD CONSTRAINT check_major 
+                            CHECK (major IN (
+                                'Computer Science', 'Computer Engineering', 'Electrical Engineering',
+                                'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering',
+                                'Industrial Engineering', 'Materials Science & Engineering', 'Mineral Engineering',
+                                'Engineering Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
+                                'Psychology', 'Economics', 'Business Administration', 'Commerce',
+                                'Arts & Science', 'Architecture', 'Urban Planning', 'Forestry',
+                                'Kinesiology', 'Nursing', 'Pharmacy', 'Medicine', 'Law', 'Education',
+                                'Social Work', 'Other'
+                            ));
+                        """)
+                        print("✅ Major constraint added to User table")
+                    else:
+                        print("✅ Major constraint already exists")
+                    
+                    # Check if university column exists and add it if not
+                    university_column_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'User'
+                            AND column_name = 'university'
+                        );
+                    """)
+                    
+                    if not university_column_exists:
+                        print("🆕 Adding university column to User table...")
+                        await conn.execute("""
+                            ALTER TABLE "User" 
+                            ADD COLUMN university VARCHAR(255) NOT NULL DEFAULT 'University of Toronto';
+                        """)
+                        print("✅ university column added to User table")
+                    else:
+                        print("✅ university column already exists in User table")
+                    
+                    # Check if currentYear column exists and add it if not
+                    current_year_column_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'User'
+                            AND column_name = 'currentYear'
+                        );
+                    """)
+                    
+                    if not current_year_column_exists:
+                        print("🆕 Adding currentYear column to User table...")
+                        await conn.execute("""
+                            ALTER TABLE "User" 
+                            ADD COLUMN "currentYear" VARCHAR(255) NOT NULL DEFAULT '1st year';
+                        """)
+                        print("✅ currentYear column added to User table")
+                    else:
+                        print("✅ currentYear column already exists in User table")
+                        
+            except Exception as e:
+                print(f"❌ Error ensuring tables exist: {e}")
+                raise e
+    
     async def create_user(self, user_data: dict) -> Dict[str, Any]:
         """Create a new user in the database"""
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                INSERT INTO "User" ("firstName", "lastName", email, major, "graduationYear", "cognitoSub", "joinedAt")
-                VALUES ($1, $2, $3, $4, $5, $6, NOW())
-                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "cognitoSub", "joinedAt"
+                INSERT INTO "User" ("firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 """
                 
                 row = await conn.fetchrow(
@@ -130,6 +325,8 @@ class UserRepository:
                     user_data["email"],
                     user_data["major"],
                     user_data["graduationYear"],
+                    user_data.get("currentYear", "1st year"),
+                    user_data.get("university", "University of Toronto"),
                     user_data["cognitoSub"]
                 )
                 
@@ -140,6 +337,8 @@ class UserRepository:
                     "email": row["email"],
                     "major": row["major"],
                     "graduationYear": row["graduationYear"],
+                    "currentYear": row["currentYear"],
+                    "university": row["university"],
                     "cognitoSub": row["cognitoSub"],
                     "joinedAt": row["joinedAt"]
                 }
@@ -152,7 +351,7 @@ class UserRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                SELECT id, "firstName", "lastName", email, major, "graduationYear", "cognitoSub", "joinedAt"
+                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 FROM "User"
                 WHERE email = $1
                 """
@@ -167,6 +366,8 @@ class UserRepository:
                         "email": row["email"],
                         "major": row["major"],
                         "graduationYear": row["graduationYear"],
+                        "currentYear": row["currentYear"],
+                        "university": row["university"],
                         "cognitoSub": row["cognitoSub"],
                         "joinedAt": row["joinedAt"]
                     }
@@ -181,7 +382,7 @@ class UserRepository:
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                SELECT id, "firstName", "lastName", email, major, "graduationYear", "cognitoSub", "joinedAt"
+                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 FROM "User"
                 WHERE "cognitoSub" = $1
                 """
@@ -196,6 +397,8 @@ class UserRepository:
                         "email": row["email"],
                         "major": row["major"],
                         "graduationYear": row["graduationYear"],
+                        "currentYear": row["currentYear"],
+                        "university": row["university"],
                         "cognitoSub": row["cognitoSub"],
                         "joinedAt": row["joinedAt"]
                     }
@@ -210,9 +413,9 @@ class UserRepository:
             async with self.pool.acquire() as conn:
                 query = """
                 UPDATE "User" 
-                SET "firstName" = $1, "lastName" = $2, major = $3, "graduationYear" = $4, "cognitoSub" = $5
-                WHERE email = $6
-                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "cognitoSub", "joinedAt"
+                SET "firstName" = $1, "lastName" = $2, major = $3, "graduationYear" = $4, "currentYear" = $5, university = $6, "cognitoSub" = $7
+                WHERE email = $8
+                RETURNING id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 """
                 
                 row = await conn.fetchrow(
@@ -221,6 +424,8 @@ class UserRepository:
                     user_data["lastName"],
                     user_data["major"],
                     user_data["graduationYear"],
+                    user_data.get("currentYear", "1st year"),
+                    user_data.get("university", "University of Toronto"),
                     user_data["cognitoSub"],
                     user_data["email"]
                 )
@@ -235,9 +440,44 @@ class UserRepository:
                     "email": row["email"],
                     "major": row["major"],
                     "graduationYear": row["graduationYear"],
+                    "currentYear": row["currentYear"],
+                    "university": row["university"],
                     "cognitoSub": row["cognitoSub"],
                     "joinedAt": row["joinedAt"]
                 }
         except Exception as e:
             print(f"Error updating user: {e}")
+            raise e
+    
+    async def get_all_users(self) -> list:
+        """Get all users for admin dashboard"""
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
+                FROM "User"
+                ORDER BY "joinedAt" DESC
+                """
+                
+                rows = await conn.fetch(query)
+                
+                users = []
+                for row in rows:
+                    users.append({
+                        "id": row["id"],
+                        "firstName": row["firstName"],
+                        "lastName": row["lastName"],
+                        "email": row["email"],
+                        "major": row["major"],
+                        "graduationYear": row["graduationYear"],
+                        "currentYear": row["currentYear"],
+                        "university": row["university"],
+                        "cognitoSub": row["cognitoSub"],
+                        "joinedAt": row["joinedAt"]
+                    })
+                
+                return users
+        except Exception as e:
+            print(f"❌ Error getting all users: {e}")
+            print(f"🔍 Error type: {type(e).__name__}")
             raise e 

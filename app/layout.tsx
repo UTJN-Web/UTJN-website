@@ -5,6 +5,7 @@ import ScrollObserver from './components/ScrollObserver';
 import Footer from './components/Footer';
 import ClientLayoutWrapper from './ClientLayoutWrapper';
 import LoginButton from './components/LoginButton';
+import AdminLink from './components/AdminLink';
 
 export const metadata = {
   title: 'UTJN - University of Toronto Japanese Network',
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             "
           >
             <Link href="/contact" className="text-lg font-semibold hover:text-[#1c2a52]">Contact</Link>
+            <AdminLink />
             <LoginButton />
 
             <Link href="https://www.facebook.com/uoftjn/" target="_blank" rel="noopener noreferrer">

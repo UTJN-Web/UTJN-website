@@ -14,6 +14,226 @@ model User {
   email             String   @unique
   major             String
   graduationYear   Int
+  currentYear      String   @default("1st year") // Current academic year (1st, 2nd, 3rd, 4th)
+  university        String   @default("University of Toronto")
   cognitoSub        String   @unique
   joinedAt         DateTime @default(now())
+  
+  // Credit system
+  credits          Float    @default(0)  // Available credits (1 credit = 1 USD, supports 0.5 increments)
+  totalCreditsEarned Float  @default(0)  // Total credits earned over time
+  
+  // Event relationships
+  registeredEvents EventRegistration[]
+  formSubmissions  FormSubmission[]
+  couponUsages     CouponUsage[]
+  creditTransactions CreditTransaction[]
+}
+
+model Event {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String
+  targetYear      String   // e.g., "All years", "1st-2nd year", etc.
+  fee             Float    @default(0)  // Default/legacy fee (for backward compatibility)
+  capacity        Int      // Default/legacy capacity (for backward compatibility)
+  isArchived      Boolean  @default(false)
+  isUofTOnly      Boolean  @default(false)  // If true, only UofT students can see/register
+  date            DateTime
+  type            String   // e.g., "career", "social"
+  image           String?
+  
+  // Advanced ticketing features (disabled by default)
+  enableAdvancedTicketing Boolean @default(false)  // Enable pricing tiers and sub-events
+  enableSubEvents         Boolean @default(false)  // Enable sub-events (1st party, 2nd party, etc.)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Event relationships
+  registrations   EventRegistration[]
+  ticketTiers     TicketTier[]
+  subEvents       SubEvent[]
+  form            Form?
+  coupons         Coupon[]
+  couponUsages    CouponUsage[]
+}
+
+// Ticket pricing tiers (Early bird, Regular, Walk-in)
+model TicketTier {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  name            String   // "Early Bird", "Regular", "Walk-in"
+  price           Float
+  capacity        Int
+  startDate       DateTime?  // When this tier becomes available
+  endDate         DateTime?  // When this tier expires
+  isActive        Boolean  @default(true)
+  
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations   EventRegistration[]
+  
+  @@unique([eventId, name])
+}
+
+// Sub-events (1st party, 2nd party, etc.)
+model SubEvent {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  name            String   // "1st Party", "2nd Party", "Combined"
+  description     String?
+  price           Float
+  capacity        Int
+  isStandalone    Boolean  @default(true)   // Can be purchased alone
+  isComboOption   Boolean  @default(false)  // Part of a combo ticket
+  
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations   EventRegistration[]
+  
+  @@unique([eventId, name])
+}
+
+model EventRegistration {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  eventId         Int
+  ticketTierId    Int?     // Which pricing tier was used
+  subEventId      Int?     // Which sub-event was selected
+  registeredAt    DateTime @default(now())
+  paymentStatus   String   @default("pending") // "pending", "completed", "failed"
+  finalPrice      Float?   // Final price paid (after discounts, etc.)
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketTier      TicketTier? @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
+  subEvent        SubEvent? @relation(fields: [subEventId], references: [id], onDelete: SetNull)
+  
+  @@unique([userId, eventId])
+}
+
+// Forms for events (feedback, surveys, etc.)
+model Form {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  title           String
+  description     String?
+  isActive        Boolean  @default(true)
+  isRequired      Boolean  @default(false)  // Required for event completion
+  accessToken     String   @unique @default(cuid()) // Unique token for public access
+  allowPublicAccess Boolean @default(true)   // Allow access via public link
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fields          FormField[]
+  submissions     FormSubmission[]
+  creditAward     CreditAward?
+  
+  @@unique([eventId])  // One form per event
+}
+
+// Form fields (questions)
+model FormField {
+  id              Int      @id @default(autoincrement())
+  formId          Int
+  type            String   // "text", "textarea", "select", "radio", "checkbox", "rating", "file"
+  question        String
+  description     String?
+  isRequired      Boolean  @default(false)
+  options         String?  // JSON array for select/radio/checkbox options
+  order           Int      @default(0)
+  
+  form            Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  responses       FormResponse[]
+}
+
+// User form submissions
+model FormSubmission {
+  id              Int      @id @default(autoincrement())
+  formId          Int
+  userId          Int
+  submittedAt     DateTime @default(now())
+  
+  form            Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses       FormResponse[]
+  
+  @@unique([formId, userId])  // One submission per user per form
+}
+
+// Individual field responses
+model FormResponse {
+  id              Int      @id @default(autoincrement())
+  submissionId    Int
+  fieldId         Int
+  value           String   // JSON for complex responses
+  
+  submission      FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field           FormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  
+  @@unique([submissionId, fieldId])
+}
+
+// Coupons and discounts
+model Coupon {
+  id              Int      @id @default(autoincrement())
+  code            String   @unique
+  name            String
+  description     String?
+  discountType    String   // "percentage", "fixed"
+  discountValue   Float    // Percentage (0-100) or fixed amount
+  minAmount       Float?   // Minimum order amount to apply
+  maxUses         Int?     // Maximum number of uses (null = unlimited)
+  currentUses     Int      @default(0)
+  isActive        Boolean  @default(true)
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  
+  // Auto-generation rules
+  autoGenerated   Boolean  @default(false)
+  triggerEventId  Int?     // Event that triggers this coupon
+  requiredSubmissions Int? // Number of form submissions required
+  
+  triggerEvent    Event?   @relation(fields: [triggerEventId], references: [id], onDelete: SetNull)
+  usages          CouponUsage[]
+}
+
+// Track coupon usage
+model CouponUsage {
+  id              Int      @id @default(autoincrement())
+  couponId        Int
+  userId          Int
+  eventId         Int
+  discountAmount  Float
+  usedAt          DateTime @default(now())
+
+  coupon          Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// Credit award configuration per form
+model CreditAward {
+  id              Int      @id @default(autoincrement())
+  formId          Int      @unique
+  creditsAwarded  Float    @default(1)  // Number of credits awarded for completing this form (supports 0.5 increments)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  form            Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+}
+
+// Credit transaction history
+model CreditTransaction {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  type            String   // "earned", "spent", "refunded"
+  amount          Float    // Number of credits (supports 0.5 increments)
+  description     String   // Description of transaction
+  relatedFormId   Int?     // If earned from form submission
+  relatedEventId  Int?     // If spent on event registration
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
