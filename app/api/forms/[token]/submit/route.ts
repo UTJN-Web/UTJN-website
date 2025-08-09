@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    const { token } = await params;
     const body = await request.json();
     
-    console.log('📝 Frontend: Submitting form data:', { 
-      formId: body.formId, 
-      userId: body.userId, 
-      responseCount: body.responses?.length 
-    });
+    console.log('📝 Frontend: Submitting public form via token:', token);
     
-    const response = await fetch(`${backendUrl}/forms/submit`, {
+    const response = await fetch(`${backendUrl}/forms/public/${token}/submit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -27,7 +24,7 @@ export async function POST(request: NextRequest) {
         errorData = await response.text();
       }
       
-      console.error('Backend form submission failed:', errorData);
+      console.error('Backend public form submission failed:', errorData);
       
       // Handle specific error cases
       if (response.status === 409) {
@@ -44,10 +41,10 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ Frontend: Form submission successful');
+    console.log('✅ Frontend: Public form submission successful');
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error submitting form:', error);
+    console.error('Error submitting public form:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

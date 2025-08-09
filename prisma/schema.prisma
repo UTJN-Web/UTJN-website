@@ -19,10 +19,15 @@ model User {
   cognitoSub        String   @unique
   joinedAt         DateTime @default(now())
   
+  // Credit system
+  credits          Float    @default(0)  // Available credits (1 credit = 1 USD, supports 0.5 increments)
+  totalCreditsEarned Float  @default(0)  // Total credits earned over time
+  
   // Event relationships
   registeredEvents EventRegistration[]
   formSubmissions  FormSubmission[]
   couponUsages     CouponUsage[]
+  creditTransactions CreditTransaction[]
 }
 
 model Event {
@@ -114,12 +119,15 @@ model Form {
   description     String?
   isActive        Boolean  @default(true)
   isRequired      Boolean  @default(false)  // Required for event completion
+  accessToken     String   @unique @default(cuid()) // Unique token for public access
+  allowPublicAccess Boolean @default(true)   // Allow access via public link
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   fields          FormField[]
   submissions     FormSubmission[]
+  creditAward     CreditAward?
   
   @@unique([eventId])  // One form per event
 }
@@ -198,8 +206,34 @@ model CouponUsage {
   eventId         Int
   discountAmount  Float
   usedAt          DateTime @default(now())
-  
+
   coupon          Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// Credit award configuration per form
+model CreditAward {
+  id              Int      @id @default(autoincrement())
+  formId          Int      @unique
+  creditsAwarded  Float    @default(1)  // Number of credits awarded for completing this form (supports 0.5 increments)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  form            Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+}
+
+// Credit transaction history
+model CreditTransaction {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  type            String   // "earned", "spent", "refunded"
+  amount          Float    // Number of credits (supports 0.5 increments)
+  description     String   // Description of transaction
+  relatedFormId   Int?     // If earned from form submission
+  relatedEventId  Int?     // If spent on event registration
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

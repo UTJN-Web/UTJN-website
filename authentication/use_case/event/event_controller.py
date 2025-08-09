@@ -49,6 +49,8 @@ class EventRegistrationRequest(BaseModel):
     paymentId: Optional[str] = None
     tierId: Optional[int] = None
     subEventIds: Optional[List[int]] = None
+    creditsUsed: Optional[float] = 0
+    finalPrice: Optional[float] = None
 
 # Dummy payment simulation
 async def simulate_payment(amount: float) -> bool:
@@ -364,8 +366,18 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                     if sub_event_capacity <= 0:
                         raise HTTPException(status_code=400, detail=f"Sub-event {sub_event_id} is no longer available")
             
-            # Determine payment amount (use event fee for now, price validation should be done on frontend)
-            payment_amount = float(event['fee'])
+            # Determine payment amount - use finalPrice if provided (credits already applied), otherwise use event fee
+            if registration_data.finalPrice is not None:
+                payment_amount = float(registration_data.finalPrice)
+                print(f"💰 Using provided final price: ${payment_amount} (credits applied: ${registration_data.creditsUsed})")
+            else:
+                payment_amount = float(event['fee'])
+                # Apply credits if provided but no finalPrice
+                if registration_data.creditsUsed > 0:
+                    payment_amount = max(0, payment_amount - registration_data.creditsUsed)
+                    print(f"💰 Applied ${registration_data.creditsUsed} credits. Final amount: ${payment_amount}")
+                else:
+                    print(f"💰 Using standard event fee: ${payment_amount}")
             
             # Simulate payment processing if amount > 0
             if payment_amount > 0:

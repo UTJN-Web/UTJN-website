@@ -58,7 +58,7 @@ export default function EventFormPage() {
     try {
       const [eventRes, formRes] = await Promise.all([
         fetch(`/api/events/${eventId}`),
-        fetch(`/api/forms/${eventId}`)
+        fetch(`/api/forms/event/${eventId}`)
       ]);
 
       if (eventRes.ok) {

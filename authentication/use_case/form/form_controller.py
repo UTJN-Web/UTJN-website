@@ -16,6 +16,10 @@ class FormFieldRequest(BaseModel):
     options: Optional[List[str]] = None
     order: int = 0
 
+class CreditAwardRequest(BaseModel):
+    creditsAwarded: float = 1
+    isActive: bool = True
+
 class FormRequest(BaseModel):
     eventId: int
     title: str
@@ -23,6 +27,7 @@ class FormRequest(BaseModel):
     isActive: bool = True
     isRequired: bool = False
     fields: List[FormFieldRequest] = []
+    creditAward: Optional[CreditAwardRequest] = None
 
 class FormResponseRequest(BaseModel):
     fieldId: int
@@ -32,6 +37,12 @@ class FormSubmissionRequest(BaseModel):
     formId: int
     userId: int
     responses: List[FormResponseRequest]
+
+class PublicFormSubmissionRequest(BaseModel):
+    responses: List[FormResponseRequest]
+    guestEmail: Optional[str] = None
+    guestName: Optional[str] = None
+    userId: Optional[int] = None
 
 class CouponRequest(BaseModel):
     code: str
@@ -78,6 +89,37 @@ async def create_form(form_data: FormRequest):
         print(f"❌ Error creating form: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create form: {str(e)}")
 
+@form_router.get("/public/{access_token}")
+async def get_public_form(access_token: str):
+    """Get form by access token for public access"""
+    try:
+        print(f"📝 Getting public form with token: {access_token}")
+        
+        form_repo = FormRepository()
+        await form_repo.connect()
+        
+        try:
+            form = await form_repo.get_form_by_token(access_token)
+            if not form:
+                await form_repo.disconnect()
+                raise HTTPException(status_code=404, detail="Form not found or not accessible")
+            
+            # Also get the event information
+            event = await form_repo.get_event_by_id(form["eventId"])
+            await form_repo.disconnect()
+            
+            return {
+                "success": True,
+                "form": form,
+                "event": event
+            }
+        except Exception as e:
+            await form_repo.disconnect()
+            raise e
+    except Exception as e:
+        print(f"❌ Error getting public form: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get public form: {str(e)}")
+
 @form_router.get("/event/{event_id}")
 async def get_form_by_event(event_id: int):
     """Get form for a specific event"""
@@ -106,8 +148,53 @@ async def get_form_by_event(event_id: int):
             await form_repo.disconnect()
             raise e
     except Exception as e:
-        print(f"❌ Error getting form: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get form: {str(e)}")
+        print(f"❌ Error getting form for event {event_id}: {str(e)}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
+        error_message = str(e) if str(e) else "Unknown database error"
+        raise HTTPException(status_code=500, detail=f"Failed to get form: {error_message}")
+
+@form_router.get("/{form_id}/qr")
+async def get_form_qr_data(form_id: int):
+    """Get QR code data for a form"""
+    try:
+        print(f"📱 Getting QR code data for form {form_id}")
+        
+        form_repo = FormRepository()
+        await form_repo.connect()
+        
+        try:
+            form = await form_repo.get_form_by_id(form_id)
+            if not form:
+                await form_repo.disconnect()
+                raise HTTPException(status_code=404, detail="Form not found")
+            
+            # Get event info for the QR code
+            event = await form_repo.get_event_by_id(form["eventId"])
+            await form_repo.disconnect()
+            
+            # Generate the public form URL
+            # Get base URL from environment or use default
+            import os
+            base_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            public_url = f"{base_url}/form/{form['accessToken']}"
+            
+            return {
+                "success": True,
+                "qrData": {
+                    "url": public_url,
+                    "accessToken": form["accessToken"],
+                    "formTitle": form["title"],
+                    "eventName": event["name"] if event else "Unknown Event",
+                    "eventDate": str(event["date"]) if event else None
+                }
+            }
+        except Exception as e:
+            await form_repo.disconnect()
+            raise e
+    except Exception as e:
+        print(f"❌ Error getting QR code data: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get QR code data: {str(e)}")
 
 @form_router.put("/{form_id}")
 async def update_form(form_id: int, form_data: FormRequest):
@@ -199,7 +286,137 @@ async def submit_form(submission_data: FormSubmissionRequest):
             raise e
     except Exception as e:
         print(f"❌ Error submitting form: {e}")
+        # Check if this is a duplicate submission error
+        if "You have already submitted this form" in str(e):
+            raise HTTPException(status_code=409, detail="You have already submitted this form")
         raise HTTPException(status_code=500, detail=f"Failed to submit form: {str(e)}")
+
+@form_router.post("/public/{access_token}/submit")
+async def submit_public_form(access_token: str, submission_data: PublicFormSubmissionRequest):
+    """Submit a form response via public access token"""
+    try:
+        print(f"📝 Submitting public form with token: {access_token}")
+        
+        form_repo = FormRepository()
+        await form_repo.connect()
+        
+        try:
+            # First get the form by token to verify access
+            form = await form_repo.get_form_by_token(access_token)
+            if not form:
+                await form_repo.disconnect()
+                raise HTTPException(status_code=404, detail="Form not found or not accessible")
+            
+            # Handle guest submissions - find or create user
+            user_id = submission_data.userId
+            if not user_id and submission_data.guestEmail:
+                # Try to find existing user by email, or create a guest entry
+                user_id = await form_repo.find_or_create_guest_user(
+                    submission_data.guestEmail, 
+                    submission_data.guestName or "Guest User"
+                )
+            
+            if not user_id:
+                await form_repo.disconnect()
+                raise HTTPException(status_code=400, detail="User identification required")
+            
+            # Create submission data - convert Pydantic objects to dict
+            responses_data = []
+            for response in submission_data.responses:
+                responses_data.append({
+                    "fieldId": response.fieldId,
+                    "value": response.value
+                })
+            
+            form_submission_data = {
+                "formId": form["id"],
+                "userId": user_id,
+                "responses": responses_data
+            }
+            
+            submission = await form_repo.submit_form(form_submission_data)
+            
+            # Award credits for form completion
+            credits_awarded = await form_repo.award_credits_for_form_submission(form["id"], user_id)
+            
+            # Check if this submission triggers any auto-coupons
+            generated_coupons = await form_repo.check_and_generate_auto_coupons(form["eventId"])
+            if generated_coupons:
+                print(f"🎟️ Generated {len(generated_coupons)} auto-coupons for public submission")
+            
+            await form_repo.disconnect()
+            
+            return {
+                "success": True,
+                "message": "Form submitted successfully",
+                "submission": submission,
+                "creditsAwarded": credits_awarded,
+                "generatedCoupons": generated_coupons if generated_coupons else []
+            }
+        except Exception as e:
+            await form_repo.disconnect()
+            raise e
+    except Exception as e:
+        print(f"❌ Error submitting public form: {e}")
+        # Check if this is a duplicate submission error
+        if "You have already submitted this form" in str(e):
+            raise HTTPException(status_code=409, detail="You have already submitted this form")
+        raise HTTPException(status_code=500, detail=f"Failed to submit public form: {str(e)}")
+
+@form_router.get("/check-submission")
+async def check_form_submission(formId: int, userId: int):
+    """Check if a user has already submitted a specific form"""
+    try:
+        print(f"📝 Checking submission for form {formId} by user {userId}")
+        
+        form_repo = FormRepository()
+        await form_repo.connect()
+        
+        try:
+            # Check if submission exists
+            async with form_repo.pool.acquire() as conn:
+                submission_query = """
+                    SELECT fs.id, fs."submittedAt",
+                           array_agg(
+                               json_build_object(
+                                   'fieldId', fr."fieldId",
+                                   'value', fr.value
+                               )
+                           ) as responses
+                    FROM "FormSubmission" fs
+                    LEFT JOIN "FormResponse" fr ON fs.id = fr."submissionId"
+                    WHERE fs."formId" = $1 AND fs."userId" = $2
+                    GROUP BY fs.id, fs."submittedAt"
+                """
+                submission_row = await conn.fetchrow(submission_query, formId, userId)
+                
+                if submission_row:
+                    # User has already submitted
+                    responses = submission_row["responses"] if submission_row["responses"] != [None] else []
+                    await form_repo.disconnect()
+                    return {
+                        "success": True,
+                        "hasSubmitted": True,
+                        "submission": {
+                            "id": submission_row["id"],
+                            "submittedAt": submission_row["submittedAt"].isoformat(),
+                            "responses": responses
+                        }
+                    }
+                else:
+                    # User has not submitted yet
+                    await form_repo.disconnect()
+                    return {
+                        "success": True,
+                        "hasSubmitted": False,
+                        "submission": None
+                    }
+        except Exception as e:
+            await form_repo.disconnect()
+            raise e
+    except Exception as e:
+        print(f"❌ Error checking form submission: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to check form submission: {str(e)}")
 
 @form_router.get("/{form_id}/submissions")
 async def get_form_submissions(form_id: int):
@@ -418,3 +635,87 @@ async def trigger_auto_coupon_generation(event_id: int):
     except Exception as e:
         print(f"❌ Error generating auto-coupons: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate auto-coupons: {str(e)}") 
+
+# Credit-related endpoints
+@form_router.get("/users/{user_id}/credits")
+async def get_user_credits(user_id: int):
+    """Get user's credit balance and history"""
+    print(f"🔍 Credit API called for user {user_id}")
+    
+    # Retry logic for database connection issues
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            print(f"🔄 Attempt {attempt + 1} to get credits for user {user_id}")
+            form_repo = FormRepository()
+            await form_repo.connect()
+            
+            try:
+                # Get user credit balance
+                user_credits = await form_repo.get_user_credits(user_id)
+                
+                # Get recent credit transactions (skip if connection issues)
+                try:
+                    credit_history = await form_repo.get_credit_history(user_id, limit=10)
+                except Exception as history_error:
+                    print(f"⚠️ Could not get credit history: {history_error}")
+                    credit_history = []
+                
+                await form_repo.disconnect()
+                
+                print(f"✅ Successfully retrieved credits for user {user_id}: {user_credits}")
+                return {
+                    "success": True,
+                    "credits": user_credits,
+                    "history": credit_history
+                }
+            except Exception as e:
+                await form_repo.disconnect()
+                raise e
+        except Exception as e:
+            print(f"❌ Attempt {attempt + 1} failed for user {user_id}: {e}")
+            if attempt == max_retries - 1:  # Last attempt
+                # Return default credits to avoid complete failure
+                print(f"🔄 Returning default credits for user {user_id}")
+                return {
+                    "success": True,
+                    "credits": {"currentCredits": 0.0, "totalEarned": 0.0},
+                    "history": []
+                }
+            else:
+                # Wait before retry
+                import asyncio
+                await asyncio.sleep(1)
+    
+    # This should never be reached, but just in case
+    raise HTTPException(status_code=500, detail=f"Failed to get user credits after {max_retries} attempts")
+
+@form_router.post("/users/{user_id}/credits/spend")
+async def spend_user_credits(user_id: int, spend_request: dict):
+    """Spend user credits for event registration"""
+    try:
+        form_repo = FormRepository()
+        await form_repo.connect()
+        
+        try:
+            # Spend credits
+            result = await form_repo.spend_user_credits(
+                user_id, 
+                spend_request["amount"], 
+                spend_request["description"],
+                spend_request.get("eventId")
+            )
+            
+            await form_repo.disconnect()
+            
+            return {
+                "success": True,
+                "transaction": result,
+                "message": f"Successfully spent {spend_request['amount']} credits"
+            }
+        except Exception as e:
+            await form_repo.disconnect()
+            raise e
+    except Exception as e:
+        print(f"❌ Error spending credits: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to spend credits: {str(e)}") 

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useContext, useRef } from 'react';
-import { ChevronDown, ChevronUp, CreditCard, CheckCircle, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, CheckCircle, X, Coins } from 'lucide-react';
 import Link from 'next/link';
 import { UserContext } from '../contexts/UserContext';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -68,6 +68,11 @@ export default function EventsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [registering, setRegistering] = useState<number | null>(null);
 
+  // Credit system state
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [useCredits, setUseCredits] = useState<{[eventId: number]: boolean}>({});
+  const [creditsToUse, setCreditsToUse] = useState<{[eventId: number]: number}>({});
+
   // Modal and Toast states
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -120,8 +125,15 @@ export default function EventsPage() {
     // Only fetch if user email changed or it's the initial load
     const currentUserEmail = user?.email || null;
     if (currentUserEmail !== lastUserEmailRef.current) {
+      console.log('🔄 User email changed, current:', currentUserEmail);
       lastUserEmailRef.current = currentUserEmail;
       fetchEvents();
+      if (user?.id) {
+        console.log('👤 User ID exists, fetching credits for user:', user.id);
+        fetchUserCredits();
+      } else {
+        console.log('❌ No user ID, cannot fetch credits');
+      }
     }
   }, [user?.email]);
 
@@ -230,6 +242,45 @@ export default function EventsPage() {
     }
   };
 
+  const fetchUserCredits = async () => {
+    if (!user?.id) {
+      console.log('❌ fetchUserCredits: No user ID available');
+      return;
+    }
+    
+    try {
+      console.log('🔍 Fetching user credits for user ID:', user.id);
+      const url = `/api/users/credits?userId=${user.id}`;
+      console.log('🌐 Credit API URL:', url);
+      
+      const response = await fetch(url);
+      console.log('💳 Credits API response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('💳 Credits API response data:', data);
+        if (data.success) {
+          const credits = data.credits?.currentCredits || 0;
+          console.log('💰 Setting user credits to:', credits);
+          setUserCredits(credits);
+        } else {
+          console.error('❌ Credits API returned success: false', data);
+          // Set to 0 as fallback
+          setUserCredits(0);
+        }
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Credits API failed:', response.status, errorData);
+        // Set to 0 as fallback
+        setUserCredits(0);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user credits:', error);
+      // Set to 0 as fallback
+      setUserCredits(0);
+    }
+  };
+
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
       if (keyword && !ev.name.toLowerCase().includes(keyword.toLowerCase()))
@@ -250,6 +301,8 @@ export default function EventsPage() {
     archivedEvents: archivedEvents.length,
     keyword,
     category,
+    user: user ? { id: user.id, email: user.email } : null,
+    userCredits: userCredits,
     eventsDetail: events.map(e => ({
       id: e.id,
       name: e.name,
@@ -265,8 +318,16 @@ export default function EventsPage() {
       return;
     }
 
+    // Build payment URL with credit usage information
+    let paymentUrl = `/payment?eventId=${eventId}&userId=${user.id}`;
+    
+    // Add credit usage parameters if credits are being used
+    if (useCredits[eventId] && creditsToUse[eventId] > 0) {
+      paymentUrl += `&useCredits=true&creditsAmount=${creditsToUse[eventId]}`;
+    }
+
     // Redirect to payment page
-    window.location.href = `/payment?eventId=${eventId}&userId=${user.id}`;
+    window.location.href = paymentUrl;
   };
 
   const handleFreeEventRegistration = async (eventId: number) => {
@@ -327,21 +388,30 @@ export default function EventsPage() {
     // Find the event to check if it's paid
     const event = events.find(e => e.id === eventId);
     
-    if (event && event.fee > 0) {
-      // Paid event - show refund request modal
-      setRefundModal({
-        isOpen: true,
-        eventId,
-        eventName,
-        amount: event.fee
-      });
-    } else {
-      // Free event - show simple confirmation
-      setConfirmModal({
-        isOpen: true,
-        eventId,
-        eventName
-      });
+    if (event) {
+      // Find the user's registration to get the actual paid amount (finalPrice)
+      const userRegistration = event.registeredUsers?.find((regUser: any) => regUser.id === user.id) ||
+                               event.registrations?.find((reg: any) => reg.userId === user.id);
+      
+      // Use finalPrice if available, otherwise fall back to event fee
+      const actualPaidAmount = userRegistration?.finalPrice ?? event.fee;
+      
+      if (actualPaidAmount > 0) {
+        // Paid event - show refund request modal with actual paid amount
+        setRefundModal({
+          isOpen: true,
+          eventId,
+          eventName,
+          amount: actualPaidAmount
+        });
+      } else {
+        // Free event - show simple confirmation
+        setConfirmModal({
+          isOpen: true,
+          eventId,
+          eventName
+        });
+      }
     }
   };
 
@@ -516,6 +586,11 @@ export default function EventsPage() {
             onFreeRegister={handleFreeEventRegistration}
             onCancel={handleCancelRegistration}
             registering={registering === event.id}
+            userCredits={userCredits}
+            useCredits={useCredits[event.id] || false}
+            creditsToUse={creditsToUse[event.id] || 0}
+            onToggleCredits={(eventId, enabled) => setUseCredits(prev => ({...prev, [eventId]: enabled}))}
+            onCreditsChange={(eventId, amount) => setCreditsToUse(prev => ({...prev, [eventId]: amount}))}
           />
         ))}
       </div>
@@ -605,7 +680,12 @@ function EventCard({
   onRegister,
   onFreeRegister,
   onCancel,
-  registering
+  registering,
+  userCredits = 0,
+  useCredits = false,
+  creditsToUse = 0,
+  onToggleCredits,
+  onCreditsChange
 }: {
   event: Event;
   archived?: boolean;
@@ -614,6 +694,11 @@ function EventCard({
   onFreeRegister?: (eventId: number) => Promise<void>;
   onCancel?: (eventId: number, eventName: string) => void;
   registering: boolean;
+  userCredits?: number;
+  useCredits?: boolean;
+  creditsToUse?: number;
+  onToggleCredits?: (eventId: number, enabled: boolean) => void;
+  onCreditsChange?: (eventId: number, amount: number) => void;
 }) {
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
   const [selectedSubEventIds, setSelectedSubEventIds] = useState<number[]>([]);
@@ -952,10 +1037,84 @@ function EventCard({
               </div>
             )}
 
+            {/* Credit Usage Section */}
+            {user && userCredits > 0 && getCurrentPrice() > 0 && (
+              <div className="w-full bg-green-50 border border-green-200 rounded-md p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-900">
+                      Available Credits: ${userCredits}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={useCredits}
+                      onChange={(e) => {
+                        const enabled = e.target.checked;
+                        onToggleCredits?.(event.id, enabled);
+                        if (!enabled) {
+                          onCreditsChange?.(event.id, 0);
+                        } else {
+                          // Default to 0 (None) - user must manually enter amount
+                          onCreditsChange?.(event.id, 0);
+                        }
+                      }}
+                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-green-800">Use credits for this event</span>
+                  </label>
+                  
+                  {useCredits && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-green-800">Amount:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.min(userCredits, getCurrentPrice())}
+                        step="0.5"
+                        value={creditsToUse || ''}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const inputValue = e.target.value;
+                          if (inputValue === '') {
+                            onCreditsChange?.(event.id, 0);
+                            return;
+                          }
+                          
+                          const amount = Math.min(
+                            parseFloat(inputValue) || 0,
+                            Math.min(userCredits, getCurrentPrice())
+                          );
+                          onCreditsChange?.(event.id, amount);
+                        }}
+                        className="w-20 px-2 py-1 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-green-800">credits (${creditsToUse})</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Current Price Display */}
             <div className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 text-center">
               <div className="text-sm font-medium text-gray-900">
-                Total: ${getCurrentPrice()}
+                {useCredits && creditsToUse > 0 ? (
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-600">Subtotal: ${getCurrentPrice()}</div>
+                    <div className="text-xs text-green-600">Credits: -${creditsToUse}</div>
+                    <div className="border-t border-gray-300 pt-1">
+                      Total: ${Math.max(0, getCurrentPrice() - creditsToUse)}
+                    </div>
+                  </div>
+                ) : (
+                  <>Total: ${getCurrentPrice()}</>
+                )}
               </div>
             </div>
 
@@ -980,7 +1139,7 @@ function EventCard({
               </button>
             ) : (
               <Link
-                href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}`}
+                href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}${useCredits && creditsToUse > 0 ? `&useCredits=true&creditsAmount=${creditsToUse}` : ''}`}
                 className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
                   canRegister()
                     ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
@@ -988,7 +1147,11 @@ function EventCard({
                 }`}
               >
                 <CreditCard size={16} />
-                Pay & Register (${getCurrentPrice()})
+                {useCredits && creditsToUse > 0 ? (
+                  <>Pay & Register (${Math.max(0, getCurrentPrice() - creditsToUse)})</>
+                ) : (
+                  <>Pay & Register (${getCurrentPrice()})</>
+                )}
               </Link>
             )}
             

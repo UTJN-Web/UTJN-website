@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { UserContext } from '@/app/contexts/UserContext';
 import { ArrowLeft, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import SquarePaymentForm from '@/app/components/SquarePaymentForm';
@@ -9,6 +10,8 @@ import SquarePaymentForm from '@/app/components/SquarePaymentForm';
 export default function PaymentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const userContext = useContext(UserContext);
+  const user = userContext?.user;
   
   const [eventData, setEventData] = useState<any>(null);
   const [ticketTierData, setTicketTierData] = useState<any>(null);
@@ -17,88 +20,70 @@ export default function PaymentPage() {
   const [paymentResult, setPaymentResult] = useState<'success' | 'failed' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   
-  // Coupon state
-  const [couponCode, setCouponCode] = useState<string>('');
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
-  const [couponValidating, setCouponValidating] = useState(false);
-  const [couponError, setCouponError] = useState<string>('');
+  // Removed coupon functionality - credits are now the primary discount method
   const [finalPrice, setFinalPrice] = useState<number>(0);
+  
+  // Credit usage state
+  const [creditsUsed, setCreditsUsed] = useState<number>(0);
+  const [originalPrice, setOriginalPrice] = useState<number>(0);
+  const [availableCredits, setAvailableCredits] = useState<number>(0);
+  const [creditsLoading, setCreditsLoading] = useState<boolean>(false);
 
   const eventId = searchParams.get('eventId');
   const userId = searchParams.get('userId');
   const tierId = searchParams.get('tierId');
   const subEventIds = searchParams.get('subEventIds');
   const price = searchParams.get('price');
+  const useCreditsParam = searchParams.get('useCredits');
+  const creditsAmountParam = searchParams.get('creditsAmount');
 
   useEffect(() => {
     if (eventId) {
       fetchEventData();
     }
-  }, [eventId]);
+    if (userId || user?.id) {
+      fetchUserCredits();
+    }
+  }, [eventId, userId, user?.id]);
 
-  const validateCoupon = async () => {
-    if (!couponCode.trim() || !eventId || !userId) return;
+  const fetchUserCredits = async () => {
+    const userIdToUse = userId || user?.id?.toString();
+    if (!userIdToUse) return;
     
-    setCouponValidating(true);
-    setCouponError('');
-    
+    setCreditsLoading(true);
     try {
-      const response = await fetch('/api/forms/coupons/validate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          couponCode: couponCode.trim(),
-          userId: parseInt(userId),
-          eventId: parseInt(eventId)
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.valid) {
-        setAppliedCoupon(data.coupon);
-        setCouponError('');
-        
-        // Calculate discount
-        const originalPrice = price ? parseFloat(price) : eventData?.fee || 0;
-        let discountAmount = 0;
-        
-        if (data.coupon.discountType === 'percentage') {
-          discountAmount = originalPrice * (data.coupon.discountValue / 100);
-        } else {
-          discountAmount = data.coupon.discountValue;
+      const response = await fetch(`/api/users/credits?userId=${userIdToUse}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.credits) {
+          setAvailableCredits(data.credits.credits || 0);
         }
-        
-        // Apply minimum amount check
-        if (data.coupon.minAmount && originalPrice < data.coupon.minAmount) {
-          setCouponError(`Minimum order amount is $${data.coupon.minAmount}`);
-          setAppliedCoupon(null);
-          return;
-        }
-        
-        const newPrice = Math.max(0, originalPrice - discountAmount);
-        setFinalPrice(newPrice);
-      } else {
-        setCouponError(data.message || 'Invalid coupon code');
-        setAppliedCoupon(null);
-        setFinalPrice(price ? parseFloat(price) : eventData?.fee || 0);
       }
     } catch (error) {
-      console.error('Error validating coupon:', error);
-      setCouponError('Error validating coupon. Please try again.');
-      setAppliedCoupon(null);
+      console.error('Failed to fetch user credits:', error);
     } finally {
-      setCouponValidating(false);
+      setCreditsLoading(false);
     }
   };
-  
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode('');
-    setCouponError('');
-    setFinalPrice(price ? parseFloat(price) : eventData?.fee || 0);
+
+  // Coupon functionality removed - using credits instead
+
+  const applyCredits = (creditsToApply: number) => {
+    const maxCreditsAllowed = Math.min(availableCredits, originalPrice);
+    const actualCreditsToApply = Math.min(creditsToApply, maxCreditsAllowed);
+    
+    setCreditsUsed(actualCreditsToApply);
+    
+    // Recalculate final price with credits
+    const newFinalPrice = Math.max(0, originalPrice - actualCreditsToApply);
+    setFinalPrice(newFinalPrice);
+  };
+
+  const removeCredits = () => {
+    setCreditsUsed(0);
+    
+    // Recalculate price without credits
+    setFinalPrice(originalPrice);
   };
 
   const fetchEventData = async () => {
@@ -110,7 +95,16 @@ export default function PaymentPage() {
         
         // Get the actual price from URL params or calculate effective price
         const effectivePrice = price ? parseFloat(price) : data.fee;
-        setFinalPrice(effectivePrice);
+        setOriginalPrice(effectivePrice);
+        
+        // Handle credit usage if specified
+        if (useCreditsParam === 'true' && creditsAmountParam) {
+          const creditsAmount = parseFloat(creditsAmountParam);
+          setCreditsUsed(creditsAmount);
+          setFinalPrice(Math.max(0, effectivePrice - creditsAmount));
+        } else {
+          setFinalPrice(effectivePrice);
+        }
         
         // Redirect free events to direct registration (only if no price override)
         if (effectivePrice === 0) {
@@ -166,6 +160,32 @@ export default function PaymentPage() {
       const paymentId = (window as any).lastPaymentId;
       console.log('Processing registration with payment ID:', paymentId);
       
+      // Spend credits if they were used
+      const userIdToUse = userId || user?.id?.toString();
+      if (creditsUsed > 0 && userIdToUse) {
+        try {
+          const creditResponse = await fetch('/api/users/credits', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: parseInt(userIdToUse),
+              amount: creditsUsed,
+              description: `Event registration: ${eventData?.name}`,
+              eventId: parseInt(eventId || '0')
+            }),
+          });
+          
+          if (!creditResponse.ok) {
+            console.error('Failed to spend credits, but continuing with registration');
+          }
+        } catch (creditError) {
+          console.error('Error spending credits:', creditError);
+          // Continue with registration even if credit spending fails
+        }
+      }
+      
       // Process the actual registration
       const response = await fetch(`/api/events/${eventId}/register/paid`, {
         method: 'POST',
@@ -173,10 +193,12 @@ export default function PaymentPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          userId: parseInt(userId || '0'),
+          userId: parseInt(userIdToUse || '0'),
           paymentId: paymentId,
           tierId: tierId ? parseInt(tierId) : null,
-          subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : []
+          subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : [],
+          creditsUsed: creditsUsed,
+          finalPrice: finalPrice
         }),
       });
 
@@ -385,72 +407,23 @@ export default function PaymentPage() {
                 </div>
               )}
               
-              {/* Coupon Section */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">🎟️ Discount Coupon</h4>
-                {!appliedCoupon ? (
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder="Enter coupon code"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={couponValidating}
-                      />
-                      <button
-                        onClick={validateCoupon}
-                        disabled={!couponCode.trim() || couponValidating}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {couponValidating ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          'Apply'
-                        )}
-                      </button>
-                    </div>
-                    {couponError && (
-                      <p className="text-sm text-red-600">{couponError}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-green-900">{appliedCoupon.name}</p>
-                        <p className="text-sm text-green-700">
-                          Code: {appliedCoupon.code} • 
-                          {appliedCoupon.discountType === 'percentage' 
-                            ? ` ${appliedCoupon.discountValue}% off`
-                            : ` $${appliedCoupon.discountValue} off`}
-                        </p>
-                      </div>
-                      <button
-                        onClick={removeCoupon}
-                        className="p-1 text-green-600 hover:text-green-800"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Coupon section removed - using credits instead */}
+              
+              {/* Credits selection UI removed - credits are pre-applied from member event page */}
               
               <div className="border-t pt-4">
-                {appliedCoupon && (
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span>${price ? parseFloat(price).toFixed(2) : eventData.fee.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Discount ({appliedCoupon.code}):</span>
-                      <span>-${((price ? parseFloat(price) : eventData.fee) - finalPrice).toFixed(2)}</span>
-                    </div>
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span>${originalPrice.toFixed(2)}</span>
                   </div>
-                )}
+                  {creditsUsed > 0 && (
+                    <div className="flex justify-between text-sm text-blue-600">
+                      <span>Credits Applied:</span>
+                      <span>-${creditsUsed.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-medium text-gray-900">Total Amount:</span>
                   <span className="text-2xl font-bold text-blue-600">
@@ -459,7 +432,7 @@ export default function PaymentPage() {
                 </div>
                 {finalPrice === 0 && (
                   <p className="text-sm text-green-600 mt-1">
-                    {appliedCoupon ? 'Free with coupon!' : 'This is a free event!'}
+                    {creditsUsed > 0 ? 'Free with credits!' : 'This is a free event!'}
                   </p>
                 )}
               </div>
@@ -486,16 +459,16 @@ export default function PaymentPage() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Payment Required</h3>
                 <p className="text-gray-600 mb-6">
-                  {appliedCoupon ? 'Your coupon covers the full amount!' : 'This is a free event.'}
+                  {creditsUsed > 0 ? 'Your credits cover the full amount!' : 'This is a free event.'}
                 </p>
                 <button
                   onClick={() => {
-                    // Direct registration for free events
+                    // Direct registration for free events (with credits if used)
                     handlePaymentSuccess();
                   }}
                   className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Complete Free Registration
+                  {creditsUsed > 0 ? 'Complete Registration with Credits' : 'Complete Free Registration'}
                 </button>
               </div>
             </div>

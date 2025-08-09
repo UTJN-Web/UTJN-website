@@ -430,13 +430,14 @@ class EventRepository:
                     event_dict = dict(row)
                     event_id = event_dict['id']
                     
-                    # Get registered users for this event
+                    # Get registered users for this event with finalPrice
                     users_query = """
                     SELECT 
                         u.id,
                         u."firstName",
                         u."lastName", 
-                        u.email
+                        u.email,
+                        er."finalPrice"
                     FROM "EventRegistration" er
                     JOIN "User" u ON er."userId" = u.id
                     WHERE er."eventId" = $1
@@ -449,7 +450,8 @@ class EventRepository:
                             'id': user_row['id'],
                             'firstName': user_row['firstName'],
                             'lastName': user_row['lastName'],
-                            'email': user_row['email']
+                            'email': user_row['email'],
+                            'finalPrice': float(user_row['finalPrice']) if user_row['finalPrice'] is not None else None
                         })
                     
                     # Calculate remaining seats
@@ -499,7 +501,8 @@ class EventRepository:
                         'userId': reg_row['userId'],
                         'eventId': reg_row['eventId'],
                         'registeredAt': reg_row['registeredAt'].isoformat() if reg_row['registeredAt'] else None,
-                        'paymentStatus': reg_row['paymentStatus']
+                        'paymentStatus': reg_row['paymentStatus'],
+                        'finalPrice': float(reg_row['finalPrice']) if reg_row['finalPrice'] is not None else None
                     }
                     registrations.append(reg_dict)
                     
@@ -507,7 +510,8 @@ class EventRepository:
                         'id': reg_row['user_id'],
                         'firstName': reg_row['firstName'],
                         'lastName': reg_row['lastName'],
-                        'email': reg_row['email']
+                        'email': reg_row['email'],
+                        'finalPrice': float(reg_row['finalPrice']) if reg_row['finalPrice'] is not None else None
                     }
                     registered_users.append(user_dict)
                 
