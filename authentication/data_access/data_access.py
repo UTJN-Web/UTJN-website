@@ -104,7 +104,6 @@ async def login_user(email, password) -> tuple:
             try:
                 from authentication.data_access.user_repository import UserRepository
                 user_repo = UserRepository()
-                await user_repo.connect()
                 
                 db_user = await user_repo.get_user_by_email(email)
                 if db_user:
@@ -122,7 +121,6 @@ async def login_user(email, password) -> tuple:
                 else:
                     user_data["hasProfile"] = False
                 
-                await user_repo.disconnect()
             except Exception as db_error:
                 print(f"Warning: Could not retrieve database user data: {db_error}")
                 user_data["hasProfile"] = False

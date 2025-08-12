@@ -29,7 +29,6 @@ async def create_refund_request(refund_data: RefundRequestCreate):
         print(f"🔁 Creating refund request for user {refund_data.userId}, event {refund_data.eventId}")
         
         refund_repo = RefundRepository()
-        await refund_repo.connect()
         
         try:
             await refund_repo.ensure_tables_exist()
@@ -43,8 +42,6 @@ async def create_refund_request(refund_data: RefundRequestCreate):
                 currency=refund_data.currency,
                 payment_id=refund_data.paymentId
             )
-            
-            await refund_repo.disconnect()
             
             # Convert datetime objects to ISO strings for JSON serialization
             if refund_request.get('requestDate'):
@@ -60,7 +57,6 @@ async def create_refund_request(refund_data: RefundRequestCreate):
             }
             
         except Exception as e:
-            await refund_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -74,12 +70,10 @@ async def get_all_refund_requests():
         print("📝 Getting all refund requests...")
         
         refund_repo = RefundRepository()
-        await refund_repo.connect()
         
         try:
             await refund_repo.ensure_tables_exist()
             refund_requests = await refund_repo.get_all_refund_requests()
-            await refund_repo.disconnect()
             
             # Convert datetime objects to ISO strings for JSON serialization
             for refund in refund_requests:
@@ -96,7 +90,6 @@ async def get_all_refund_requests():
             }
             
         except Exception as e:
-            await refund_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -110,12 +103,10 @@ async def get_refund_request(refund_id: int):
         print(f"📝 Getting refund request {refund_id}...")
         
         refund_repo = RefundRepository()
-        await refund_repo.connect()
         
         try:
             await refund_repo.ensure_tables_exist()
             refund_request = await refund_repo.get_refund_request_by_id(refund_id)
-            await refund_repo.disconnect()
             
             if not refund_request:
                 raise HTTPException(status_code=404, detail="Refund request not found")
@@ -133,7 +124,6 @@ async def get_refund_request(refund_id: int):
             }
             
         except Exception as e:
-            await refund_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -151,8 +141,6 @@ async def update_refund_status(refund_id: int, status_update: RefundStatusUpdate
         
         refund_repo = RefundRepository()
         event_repo = EventRepository()
-        await refund_repo.connect()
-        await event_repo.connect()
         
         try:
             await refund_repo.ensure_tables_exist()
@@ -198,9 +186,6 @@ async def update_refund_status(refund_id: int, status_update: RefundStatusUpdate
                 processed_by=status_update.processedBy
             )
             
-            await refund_repo.disconnect()
-            await event_repo.disconnect()
-            
             if not success:
                 raise HTTPException(status_code=404, detail="Refund request not found")
             
@@ -214,8 +199,6 @@ async def update_refund_status(refund_id: int, status_update: RefundStatusUpdate
             }
             
         except Exception as e:
-            await refund_repo.disconnect()
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -229,12 +212,9 @@ async def get_refund_stats():
         print("📊 Getting refund statistics...")
         
         refund_repo = RefundRepository()
-        await refund_repo.connect()
-        
         try:
             await refund_repo.ensure_tables_exist()
             all_refunds = await refund_repo.get_all_refund_requests()
-            await refund_repo.disconnect()
             
             # Calculate statistics
             total_requests = len(all_refunds)
@@ -262,7 +242,6 @@ async def get_refund_stats():
             }
             
         except Exception as e:
-            await refund_repo.disconnect()
             raise e
             
     except Exception as e:

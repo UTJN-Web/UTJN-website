@@ -5,10 +5,11 @@ import asyncpg
 import boto3
 import json
 from typing import Optional, Dict, Any, List
+from .base_repository import BaseRepository
 
-class FormRepository:
+class FormRepository(BaseRepository):
     def __init__(self):
-        self.pool = None
+        super().__init__()
     
     def list_available_secrets(self):
         """List all available secrets in AWS Secrets Manager"""
@@ -86,40 +87,12 @@ class FormRepository:
         print("⚠️ Using DATABASE_URL from environment variable (AWS Secrets Manager not configured)")
         return None
     
-    async def connect(self):
-        """Connect to the database using AWS Secrets Manager or environment variables"""
-        try:
-            # Try to get database URL from AWS Secrets Manager
-            database_url = self.get_database_url_from_secrets()
-            if database_url:
-                print("✅ Retrieved database credentials from AWS Secrets Manager")
-            else:
-                # Fallback to environment variable if AWS fails
-                database_url = os.getenv("DATABASE_URL")
-                if not database_url:
-                    raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-                print("⚠️ Using DATABASE_URL from environment variable")
-        except Exception as e:
-            # Fallback to environment variable if AWS fails
-            database_url = os.getenv("DATABASE_URL")
-            if not database_url:
-                raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-            print("⚠️ Using DATABASE_URL from environment variable")
-        
-        self.pool = await asyncpg.create_pool(database_url)
-        print("✅ FormRepository connected to database")
-        await self.ensure_tables_exist()
-    
-    async def disconnect(self):
-        """Disconnect from the database"""
-        if self.pool:
-            await self.pool.close()
-            print("🔌 FormRepository disconnected from database")
+    # connect() and disconnect() methods are now handled by BaseRepository
     
     async def ensure_tables_exist(self):
         """Ensure all form-related tables exist"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Create Form table
                 await conn.execute("""
                     CREATE TABLE IF NOT EXISTS "Form" (
@@ -318,7 +291,7 @@ class FormRepository:
     async def create_form(self, form_data: dict) -> Dict[str, Any]:
         """Create a new form"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 async with conn.transaction():
                     # Generate unique access token
                     import secrets
@@ -392,7 +365,7 @@ class FormRepository:
     async def get_form_by_event_id(self, event_id: int) -> Optional[Dict[str, Any]]:
         """Get form by event ID with fields"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Get form
                 form_query = """
                     SELECT id, "eventId", title, description, "isActive", "isRequired", "createdAt", "updatedAt"
@@ -462,7 +435,7 @@ class FormRepository:
     async def update_form(self, form_id: int, form_data: dict) -> Dict[str, Any]:
         """Update a form and its fields"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 async with conn.transaction():
                     # Update form
                     form_query = """
@@ -536,7 +509,7 @@ class FormRepository:
     async def delete_form(self, form_id: int) -> bool:
         """Delete a form"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 result = await conn.execute('DELETE FROM "Form" WHERE id = $1', form_id)
                 return result == "DELETE 1"
         except Exception as e:
@@ -547,7 +520,7 @@ class FormRepository:
     async def submit_form(self, submission_data: dict) -> Dict[str, Any]:
         """Submit a form"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 async with conn.transaction():
                     # Check if submission already exists
                     existing_query = """
@@ -605,7 +578,7 @@ class FormRepository:
     async def award_credits_for_form_submission(self, form_id: int, user_id: int) -> float:
         """Award credits to user for completing a form"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Check if this form has credit awards configured
                 credit_award_query = """
                     SELECT ca.* FROM "CreditAward" ca 
@@ -656,7 +629,7 @@ class FormRepository:
     async def get_form_submissions(self, form_id: int) -> List[Dict[str, Any]]:
         """Get all submissions for a form"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                     SELECT 
                         fs.id, fs."formId", fs."userId", fs."submittedAt",
@@ -703,7 +676,7 @@ class FormRepository:
     async def create_coupon(self, coupon_data: dict) -> Dict[str, Any]:
         """Create a new coupon"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                     INSERT INTO "Coupon" (
                         code, name, description, "discountType", "discountValue", 
@@ -736,7 +709,7 @@ class FormRepository:
     async def get_all_coupons(self) -> List[Dict[str, Any]]:
         """Get all coupons"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                     SELECT c.*, e.name as "triggerEventName"
                     FROM "Coupon" c
@@ -752,7 +725,7 @@ class FormRepository:
     async def get_coupon_by_code(self, code: str) -> Optional[Dict[str, Any]]:
         """Get coupon by code"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = 'SELECT * FROM "Coupon" WHERE code = $1 AND "isActive" = true'
                 row = await conn.fetchrow(query, code)
                 return dict(row) if row else None
@@ -763,7 +736,7 @@ class FormRepository:
     async def use_coupon(self, usage_data: dict) -> Dict[str, Any]:
         """Record coupon usage"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 async with conn.transaction():
                     # Record usage
                     usage_query = """
@@ -793,7 +766,7 @@ class FormRepository:
     async def check_and_generate_auto_coupons(self, event_id: int) -> List[Dict[str, Any]]:
         """Check if auto-coupons should be generated based on form submissions"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Get events that trigger coupons based on this event's submissions
                 query = """
                     SELECT c.*, COUNT(fs.id) as submission_count
@@ -869,7 +842,7 @@ class FormRepository:
     async def get_form_by_token(self, access_token: str) -> Optional[Dict[str, Any]]:
         """Get form by access token for public access"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                     SELECT f.*, 
                            array_agg(
@@ -908,7 +881,7 @@ class FormRepository:
     async def get_event_by_id(self, event_id: int) -> Optional[Dict[str, Any]]:
         """Get event by ID"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = 'SELECT * FROM "Event" WHERE id = $1'
                 row = await conn.fetchrow(query, event_id)
                 return dict(row) if row else None
@@ -919,7 +892,7 @@ class FormRepository:
     async def find_or_create_guest_user(self, email: str, name: str) -> int:
         """Find existing user by email or create a guest user entry"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # First try to find existing user by email
                 existing_user_query = 'SELECT id FROM "User" WHERE email = $1'
                 existing_user = await conn.fetchrow(existing_user_query, email)
@@ -959,7 +932,7 @@ class FormRepository:
     async def get_form_by_id(self, form_id: int) -> Optional[Dict[str, Any]]:
         """Get form by ID"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                     SELECT f.*, 
                            array_agg(
@@ -996,7 +969,7 @@ class FormRepository:
     async def get_user_credits(self, user_id: int) -> Dict[str, Any]:
         """Get user's current credit balance"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 user_query = """
                     SELECT credits, "totalCreditsEarned" 
                     FROM "User" 
@@ -1032,7 +1005,7 @@ class FormRepository:
     async def get_credit_history(self, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
         """Get user's credit transaction history"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 history_query = """
                     SELECT ct.*, f.title as form_title, e.name as event_name
                     FROM "CreditTransaction" ct
@@ -1052,7 +1025,7 @@ class FormRepository:
     async def spend_user_credits(self, user_id: int, amount: float, description: str, event_id: int = None) -> Dict[str, Any]:
         """Spend user credits"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 async with conn.transaction():
                     # Check user's current balance
                     user_row = await conn.fetchrow("""
