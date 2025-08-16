@@ -6,10 +6,11 @@ import boto3
 import json
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from .base_repository import BaseRepository
 
-class EventRepository:
+class EventRepository(BaseRepository):
     def __init__(self):
-        self.pool = None
+        super().__init__()
     
     def list_available_secrets(self):
         """List all available secrets in AWS Secrets Manager"""
@@ -93,49 +94,13 @@ class EventRepository:
         print("⚠️ Using DATABASE_URL from environment variable (AWS Secrets Manager not configured)")
         return None
     
-    async def connect(self):
-        """Connect to the database using AWS Secrets Manager or environment variables"""
-        try:
-            # Try to get database URL from AWS Secrets Manager
-            database_url = self.get_database_url_from_secrets()
-            if database_url:
-                print("✅ Retrieved database credentials from AWS Secrets Manager")
-            else:
-                # Fallback to environment variable if AWS fails
-                database_url = os.getenv("DATABASE_URL")
-                if not database_url:
-                    raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-                print("⚠️ Using DATABASE_URL from environment variable")
-        except Exception as e:
-            # Fallback to environment variable if AWS fails
-            database_url = os.getenv("DATABASE_URL")
-            if not database_url:
-                raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-            print("⚠️ Using DATABASE_URL from environment variable")
-        
-        # Extract database URL for logging
-        if database_url:
-            # Extract components for safe logging (hide password)
-            import re
-            match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', database_url)
-            if match:
-                username, password, host, port, dbname = match.groups()
-                safe_url = f"postgresql://{username}:***@{host}:{port}/{dbname}"
-                print(f"🔗 Database URL: {safe_url}")
-        
-        print("🔌 Attempting to connect to database...")
-        self.pool = await asyncpg.create_pool(database_url)
-        print("✅ Successfully connected to database")
-    
-    async def disconnect(self):
-        """Disconnect from the database"""
-        if self.pool:
-            await self.pool.close()
+    # connect() and disconnect() methods are now handled by BaseRepository
+    # No need to implement them as the global pool is managed centrally
     
     async def ensure_tables_exist(self):
         """Ensure Event and EventRegistration tables exist"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Check if Event table exists
                 event_table_exists = await conn.fetchval("""
                     SELECT EXISTS (
@@ -411,7 +376,7 @@ class EventRepository:
     async def get_all_events(self) -> List[Dict[str, Any]]:
         """Get all events with registration counts and registered users"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # First get all events
                 events_query = """
                 SELECT 
@@ -467,7 +432,7 @@ class EventRepository:
     async def get_event_by_id(self, event_id: int) -> Optional[Dict[str, Any]]:
         """Get event by ID with registrations"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Get event details
                 event_query = """
                 SELECT * FROM "Event" WHERE id = $1
@@ -527,7 +492,7 @@ class EventRepository:
     async def create_event(self, event_data: dict) -> Dict[str, Any]:
         """Create a new event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                 INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived", "isUofTOnly", "enableAdvancedTicketing", "enableSubEvents")
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
@@ -571,7 +536,7 @@ class EventRepository:
     async def create_ticket_tier(self, tier_data: dict) -> Dict[str, Any]:
         """Create a new ticket tier for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                 INSERT INTO "TicketTier" ("eventId", name, price, capacity, "targetYear", "startDate", "endDate", "isActive", "subEventPrices")
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -612,7 +577,7 @@ class EventRepository:
     async def create_sub_event(self, sub_event_data: dict) -> Dict[str, Any]:
         """Create a new sub-event for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                 INSERT INTO "SubEvent" ("eventId", name, description, price, capacity, "isStandalone", "isComboOption")
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -638,7 +603,7 @@ class EventRepository:
     async def get_ticket_tiers(self, event_id: int) -> List[Dict[str, Any]]:
         """Get all ticket tiers for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                 SELECT * FROM "TicketTier" 
                 WHERE "eventId" = $1 AND "isActive" = TRUE
@@ -655,7 +620,7 @@ class EventRepository:
         try:
             from datetime import datetime
             
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Get all tiers with current registration counts
                 query = """
                 SELECT 
@@ -718,7 +683,7 @@ class EventRepository:
     async def get_sub_events(self, event_id: int) -> List[Dict[str, Any]]:
         """Get all sub-events for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                 SELECT * FROM "SubEvent" 
                 WHERE "eventId" = $1
@@ -733,7 +698,7 @@ class EventRepository:
     async def get_available_sub_events(self, event_id: int) -> List[Dict[str, Any]]:
         """Get available sub-events with capacity information"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Get all sub-events with current registration counts
                 query = """
                 SELECT 
@@ -767,7 +732,7 @@ class EventRepository:
     async def get_available_capacity(self, tier_id: int = None, sub_event_id: int = None) -> int:
         """Get remaining capacity for a ticket tier or sub-event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 if tier_id:
                     # Get ticket tier capacity and current registrations
                     tier_query = """
@@ -804,7 +769,7 @@ class EventRepository:
     async def delete_ticket_tiers_by_event(self, event_id: int):
         """Delete all ticket tiers for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 await conn.execute("""
                     DELETE FROM "TicketTier" WHERE "eventId" = $1
                 """, event_id)
@@ -815,7 +780,7 @@ class EventRepository:
     async def delete_sub_events_by_event(self, event_id: int):
         """Delete all sub-events for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 await conn.execute("""
                     DELETE FROM "SubEvent" WHERE "eventId" = $1
                 """, event_id)
@@ -826,7 +791,7 @@ class EventRepository:
     async def get_event_with_tiers_and_subevents(self, event_id: int) -> Dict[str, Any]:
         """Get event with its ticket tiers and sub-events"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Get the main event
                 event_query = """
                 SELECT * FROM "Event" WHERE id = $1
@@ -854,7 +819,7 @@ class EventRepository:
     async def update_event(self, event_id: int, event_data: dict) -> Dict[str, Any]:
         """Update an existing event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 query = """
                 UPDATE "Event" 
                 SET name = $1, description = $2, "targetYear" = $3, fee = $4, 
@@ -901,7 +866,7 @@ class EventRepository:
     async def delete_event(self, event_id: int) -> bool:
         """Delete an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 result = await conn.execute(
                     'DELETE FROM "Event" WHERE id = $1',
                     event_id
@@ -916,7 +881,7 @@ class EventRepository:
                                         final_price: float = None) -> Dict[str, Any]:
         """Register a user for an event with advanced ticketing support"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Check if event exists
                 event = await conn.fetchrow(
                     'SELECT * FROM "Event" WHERE id = $1',
@@ -1005,7 +970,7 @@ class EventRepository:
     async def register_for_event(self, user_id: int, event_id: int, payment_id: str = None) -> Dict[str, Any]:
         """Register a user for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 # Check if event exists and has capacity
                 event = await conn.fetchrow(
                     'SELECT * FROM "Event" WHERE id = $1',
@@ -1058,7 +1023,7 @@ class EventRepository:
     async def get_payment_id_for_registration(self, user_id: int, event_id: int) -> Optional[str]:
         """Get the payment ID for a user's event registration"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 print(f"🔍 Looking for payment ID: user_id={user_id}, event_id={event_id}")
                 result = await conn.fetchrow("""
                     SELECT "paymentId" FROM "EventRegistration" 
@@ -1080,7 +1045,7 @@ class EventRepository:
     async def cancel_registration(self, user_id: int, event_id: int) -> bool:
         """Cancel a user's registration for an event"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 result = await conn.execute(
                     'DELETE FROM "EventRegistration" WHERE "userId" = $1 AND "eventId" = $2',
                     user_id, event_id
@@ -1184,7 +1149,7 @@ class EventRepository:
     async def get_system_stats(self) -> Dict[str, Any]:
         """Get system statistics"""
         try:
-            async with self.pool.acquire() as conn:
+            async with self.get_connection() as conn:
                 event_count = await conn.fetchval('SELECT COUNT(*) FROM "Event"')
                 user_count = await conn.fetchval('SELECT COUNT(*) FROM "User"')
                 registration_count = await conn.fetchval('SELECT COUNT(*) FROM "EventRegistration"')

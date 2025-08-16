@@ -71,19 +71,14 @@ async def create_form(form_data: FormRequest):
         print(f"📝 Creating form for event {form_data.eventId}: {form_data.title}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             form = await form_repo.create_form(form_data.dict())
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": "Form created successfully",
                 "form": form
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error creating form: {e}")
@@ -96,25 +91,19 @@ async def get_public_form(access_token: str):
         print(f"📝 Getting public form with token: {access_token}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             form = await form_repo.get_form_by_token(access_token)
             if not form:
-                await form_repo.disconnect()
                 raise HTTPException(status_code=404, detail="Form not found or not accessible")
             
             # Also get the event information
             event = await form_repo.get_event_by_id(form["eventId"])
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "form": form,
                 "event": event
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error getting public form: {e}")
@@ -127,12 +116,8 @@ async def get_form_by_event(event_id: int):
         print(f"📝 Getting form for event {event_id}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             form = await form_repo.get_form_by_event_id(event_id)
-            await form_repo.disconnect()
-            
             if not form:
                 return {
                     "success": False,
@@ -145,7 +130,6 @@ async def get_form_by_event(event_id: int):
                 "form": form
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error getting form for event {event_id}: {str(e)}")
@@ -161,18 +145,13 @@ async def get_form_qr_data(form_id: int):
         print(f"📱 Getting QR code data for form {form_id}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             form = await form_repo.get_form_by_id(form_id)
             if not form:
-                await form_repo.disconnect()
                 raise HTTPException(status_code=404, detail="Form not found")
             
             # Get event info for the QR code
             event = await form_repo.get_event_by_id(form["eventId"])
-            await form_repo.disconnect()
-            
             # Generate the public form URL
             # Get base URL from environment or use default
             import os
@@ -190,7 +169,6 @@ async def get_form_qr_data(form_id: int):
                 }
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error getting QR code data: {e}")
@@ -203,19 +181,14 @@ async def update_form(form_id: int, form_data: FormRequest):
         print(f"📝 Updating form {form_id}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             form = await form_repo.update_form(form_id, form_data.dict())
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": "Form updated successfully",
                 "form": form
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error updating form: {e}")
@@ -228,12 +201,8 @@ async def delete_form(form_id: int):
         print(f"📝 Deleting form {form_id}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             success = await form_repo.delete_form(form_id)
-            await form_repo.disconnect()
-            
             if success:
                 return {
                     "success": True,
@@ -245,7 +214,6 @@ async def delete_form(form_id: int):
                     "message": "Form not found or already deleted"
                 }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error deleting form: {e}")
@@ -259,8 +227,6 @@ async def submit_form(submission_data: FormSubmissionRequest):
         print(f"📝 Submitting form {submission_data.formId} by user {submission_data.userId}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             submission = await form_repo.submit_form(submission_data.dict())
             
@@ -274,15 +240,12 @@ async def submit_form(submission_data: FormSubmissionRequest):
                     if generated_coupons:
                         print(f"🎟️ Generated {len(generated_coupons)} auto-coupons")
             
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": "Form submitted successfully",
                 "submission": submission
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error submitting form: {e}")
@@ -298,13 +261,10 @@ async def submit_public_form(access_token: str, submission_data: PublicFormSubmi
         print(f"📝 Submitting public form with token: {access_token}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             # First get the form by token to verify access
             form = await form_repo.get_form_by_token(access_token)
             if not form:
-                await form_repo.disconnect()
                 raise HTTPException(status_code=404, detail="Form not found or not accessible")
             
             # Handle guest submissions - find or create user
@@ -317,7 +277,6 @@ async def submit_public_form(access_token: str, submission_data: PublicFormSubmi
                 )
             
             if not user_id:
-                await form_repo.disconnect()
                 raise HTTPException(status_code=400, detail="User identification required")
             
             # Create submission data - convert Pydantic objects to dict
@@ -344,8 +303,6 @@ async def submit_public_form(access_token: str, submission_data: PublicFormSubmi
             if generated_coupons:
                 print(f"🎟️ Generated {len(generated_coupons)} auto-coupons for public submission")
             
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": "Form submitted successfully",
@@ -354,7 +311,6 @@ async def submit_public_form(access_token: str, submission_data: PublicFormSubmi
                 "generatedCoupons": generated_coupons if generated_coupons else []
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error submitting public form: {e}")
@@ -370,8 +326,6 @@ async def check_form_submission(formId: int, userId: int):
         print(f"📝 Checking submission for form {formId} by user {userId}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             # Check if submission exists
             async with form_repo.pool.acquire() as conn:
@@ -393,7 +347,6 @@ async def check_form_submission(formId: int, userId: int):
                 if submission_row:
                     # User has already submitted
                     responses = submission_row["responses"] if submission_row["responses"] != [None] else []
-                    await form_repo.disconnect()
                     return {
                         "success": True,
                         "hasSubmitted": True,
@@ -405,14 +358,12 @@ async def check_form_submission(formId: int, userId: int):
                     }
                 else:
                     # User has not submitted yet
-                    await form_repo.disconnect()
                     return {
                         "success": True,
                         "hasSubmitted": False,
                         "submission": None
                     }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error checking form submission: {e}")
@@ -425,19 +376,14 @@ async def get_form_submissions(form_id: int):
         print(f"📝 Getting submissions for form {form_id}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             submissions = await form_repo.get_form_submissions(form_id)
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "submissions": submissions,
                 "count": len(submissions)
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error getting form submissions: {e}")
@@ -451,19 +397,14 @@ async def create_coupon(coupon_data: CouponRequest):
         print(f"🎟️ Creating coupon: {coupon_data.code}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             coupon = await form_repo.create_coupon(coupon_data.dict())
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": "Coupon created successfully",
                 "coupon": coupon
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error creating coupon: {e}")
@@ -476,19 +417,14 @@ async def get_all_coupons():
         print("🎟️ Getting all coupons")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             coupons = await form_repo.get_all_coupons()
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "coupons": coupons,
                 "count": len(coupons)
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error getting coupons: {e}")
@@ -501,12 +437,8 @@ async def get_coupon_by_code(code: str):
         print(f"🎟️ Getting coupon: {code}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             coupon = await form_repo.get_coupon_by_code(code)
-            await form_repo.disconnect()
-            
             if not coupon:
                 raise HTTPException(status_code=404, detail="Coupon not found or inactive")
             
@@ -515,7 +447,6 @@ async def get_coupon_by_code(code: str):
                 "coupon": coupon
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error getting coupon: {e}")
@@ -528,12 +459,8 @@ async def validate_coupon(usage_request: CouponUsageRequest):
         print(f"🎟️ Validating coupon: {usage_request.couponCode}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             coupon = await form_repo.get_coupon_by_code(usage_request.couponCode)
-            await form_repo.disconnect()
-            
             if not coupon:
                 return {
                     "success": False,
@@ -564,7 +491,6 @@ async def validate_coupon(usage_request: CouponUsageRequest):
                 "coupon": coupon
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error validating coupon: {e}")
@@ -577,13 +503,10 @@ async def use_coupon(usage_request: CouponUsageRequest):
         print(f"🎟️ Using coupon: {usage_request.couponCode}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             # First validate the coupon
             coupon = await form_repo.get_coupon_by_code(usage_request.couponCode)
             if not coupon:
-                await form_repo.disconnect()
                 raise HTTPException(status_code=404, detail="Coupon not found or inactive")
             
             # Calculate discount amount (this would be calculated on frontend based on event price)
@@ -596,15 +519,12 @@ async def use_coupon(usage_request: CouponUsageRequest):
             }
             
             usage = await form_repo.use_coupon(usage_data)
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": "Coupon used successfully",
                 "usage": usage
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error using coupon: {e}")
@@ -617,12 +537,8 @@ async def trigger_auto_coupon_generation(event_id: int):
         print(f"🎟️ Triggering auto-coupon generation for event {event_id}")
         
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             generated_coupons = await form_repo.check_and_generate_auto_coupons(event_id)
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": f"Generated {len(generated_coupons)} coupons",
@@ -630,7 +546,6 @@ async def trigger_auto_coupon_generation(event_id: int):
                 "count": len(generated_coupons)
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error generating auto-coupons: {e}")
@@ -648,8 +563,6 @@ async def get_user_credits(user_id: int):
         try:
             print(f"🔄 Attempt {attempt + 1} to get credits for user {user_id}")
             form_repo = FormRepository()
-            await form_repo.connect()
-            
             try:
                 # Get user credit balance
                 user_credits = await form_repo.get_user_credits(user_id)
@@ -661,8 +574,6 @@ async def get_user_credits(user_id: int):
                     print(f"⚠️ Could not get credit history: {history_error}")
                     credit_history = []
                 
-                await form_repo.disconnect()
-                
                 print(f"✅ Successfully retrieved credits for user {user_id}: {user_credits}")
                 return {
                     "success": True,
@@ -670,7 +581,6 @@ async def get_user_credits(user_id: int):
                     "history": credit_history
                 }
             except Exception as e:
-                await form_repo.disconnect()
                 raise e
         except Exception as e:
             print(f"❌ Attempt {attempt + 1} failed for user {user_id}: {e}")
@@ -695,8 +605,6 @@ async def spend_user_credits(user_id: int, spend_request: dict):
     """Spend user credits for event registration"""
     try:
         form_repo = FormRepository()
-        await form_repo.connect()
-        
         try:
             # Spend credits
             result = await form_repo.spend_user_credits(
@@ -706,15 +614,12 @@ async def spend_user_credits(user_id: int, spend_request: dict):
                 spend_request.get("eventId")
             )
             
-            await form_repo.disconnect()
-            
             return {
                 "success": True,
                 "transaction": result,
                 "message": f"Successfully spent {spend_request['amount']} credits"
             }
         except Exception as e:
-            await form_repo.disconnect()
             raise e
     except Exception as e:
         print(f"❌ Error spending credits: {e}")

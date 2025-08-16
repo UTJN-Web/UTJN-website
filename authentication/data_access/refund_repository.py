@@ -7,15 +7,16 @@ import json
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
+from .base_repository import BaseRepository
 
 class RefundStatus(Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
 
-class RefundRepository:
+class RefundRepository(BaseRepository):
     def __init__(self):
-        self.pool = None
+        super().__init__()
     
     def list_available_secrets(self):
         """List all available secrets in AWS Secrets Manager"""
@@ -97,47 +98,14 @@ class RefundRepository:
         print("⚠️ No valid database secret found in AWS Secrets Manager")
         return None
     
-    async def connect(self):
-        """Connect to the database"""
-        if self.pool:
-            return  # Already connected
-        
-        try:
-            # Get database URL from AWS Secrets Manager
-            database_url = self.get_database_url_from_secrets()
-            if not database_url:
-                # Fallback to environment variable if AWS fails
-                database_url = os.getenv("DATABASE_URL")
-                if not database_url:
-                    raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-                print("⚠️ Using DATABASE_URL from environment variable")
-        except Exception as e:
-            # Fallback to environment variable if AWS fails
-            database_url = os.getenv("DATABASE_URL")
-            if not database_url:
-                raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-            print("⚠️ Using DATABASE_URL from environment variable")
-        
-        try:
-            self.pool = await asyncpg.create_pool(database_url)
-            print("✅ RefundRepository connected to database")
-        except Exception as e:
-            print(f"❌ RefundRepository connection failed: {e}")
-            raise e
-    
-    async def disconnect(self):
-        """Disconnect from the database"""
-        if self.pool:
-            await self.pool.close()
-            self.pool = None
-            print("🔌 RefundRepository disconnected from database")
+    # connect() and disconnect() methods are now handled by BaseRepository
+    # No need to implement them as the global pool is managed centrally
     
     async def ensure_tables_exist(self):
         """Ensure RefundRequest table exists"""
-        if not self.pool:
-            raise Exception("Database not connected")
+        self.log_operation("Ensuring RefundRequest table exists")
         
-        async with self.pool.acquire() as conn:
+        async with self.get_connection() as conn:
             try:
                 # Check if RefundRequest table exists
                 refund_table_exists = await conn.fetchval("""
@@ -206,10 +174,9 @@ class RefundRepository:
     async def create_refund_request(self, event_id: int, user_id: int, email: str, 
                                   amount: float, reason: str = None, currency: str = "CAD", payment_id: str = None) -> Dict[str, Any]:
         """Create a new refund request"""
-        if not self.pool:
-            raise Exception("Database not connected")
+        self.log_operation("Creating refund request", f"event_id={event_id}, user_id={user_id}")
         
-        async with self.pool.acquire() as conn:
+        async with self.get_connection() as conn:
             try:
                 # Insert the refund request
                 result = await conn.fetchrow("""
@@ -221,7 +188,7 @@ class RefundRepository:
                 refund_id = result['id']
                 request_date = result['requestDate']
                 
-                print(f"✅ Refund request created: ID {refund_id} for user {user_id}, event {event_id}, amount {currency} ${amount}")
+                self.log_success(f"Refund request created: ID {refund_id} for user {user_id}, event {event_id}, amount {currency} ${amount}")
                 
                 return {
                     'id': refund_id,
@@ -239,15 +206,14 @@ class RefundRepository:
                 }
                 
             except Exception as e:
-                print(f"❌ Error creating refund request: {e}")
+                self.log_error("Creating refund request", e)
                 raise e
     
     async def get_all_refund_requests(self) -> List[Dict[str, Any]]:
         """Get all refund requests with event and user information"""
-        if not self.pool:
-            raise Exception("Database not connected")
+        self.log_operation("Getting all refund requests")
         
-        async with self.pool.acquire() as conn:
+        async with self.get_connection() as conn:
             try:
                 rows = await conn.fetch("""
                     SELECT 
@@ -281,23 +247,22 @@ class RefundRepository:
                         refund['amount'] = float(refund['amount'])
                     refunds.append(refund)
                 
-                print(f"✅ Retrieved {len(refunds)} refund requests")
+                self.log_success(f"Retrieved {len(refunds)} refund requests")
                 return refunds
                 
             except Exception as e:
-                print(f"❌ Error getting refund requests: {e}")
+                self.log_error("Getting refund requests", e)
                 raise e
     
     async def update_refund_status(self, refund_id: int, status: str, admin_notes: str = None, 
                                  processed_by: str = None) -> bool:
         """Update the status of a refund request"""
-        if not self.pool:
-            raise Exception("Database not connected")
+        self.log_operation("Updating refund status", f"refund_id={refund_id}, status={status}")
         
         if status not in ['pending', 'approved', 'rejected']:
             raise ValueError(f"Invalid status: {status}")
         
-        async with self.pool.acquire() as conn:
+        async with self.get_connection() as conn:
             try:
                 # Update the refund request status
                 result = await conn.execute("""
@@ -319,10 +284,9 @@ class RefundRepository:
     
     async def get_refund_request_by_id(self, refund_id: int) -> Optional[Dict[str, Any]]:
         """Get a specific refund request by ID"""
-        if not self.pool:
-            raise Exception("Database not connected")
         
-        async with self.pool.acquire() as conn:
+        
+        async with self.get_connection() as conn:
             try:
                 row = await conn.fetchrow("""
                     SELECT 

@@ -86,72 +86,49 @@ def get_database_url_from_secrets():
 async def init_database():
     """Initialize the database with required tables if they don't exist"""
     try:
-        # Get database URL from AWS Secrets Manager
-        database_url = get_database_url_from_secrets()
-        if database_url:
-            print("✅ Retrieved database credentials from AWS Secrets Manager")
-        else:
-            # Fallback to environment variable if AWS fails
-            database_url = os.getenv("DATABASE_URL")
-            if not database_url:
-                raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-            print("⚠️ Using DATABASE_URL from environment variable")
-            print(f"🔗 Database URL: {database_url[:database_url.find('@')]}@***:***/***")
-    except Exception as e:
-        # Fallback to environment variable if AWS fails
-        database_url = os.getenv("DATABASE_URL")
-        if not database_url:
-            raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-        print("⚠️ Using DATABASE_URL from environment variable")
-        print(f"🔗 Database URL: {database_url[:database_url.find('@')]}@***:***/***")
-    
-    try:
-        # Connect to the database
-        print("🔌 Attempting to connect to database...")
-        conn = await asyncpg.connect(database_url)
-        print("✅ Successfully connected to database")
+        # Use global connection pool instead of creating new connection
+        from .database_pool import get_global_connection
         
-        # Check if User table already exists
-        table_exists = await conn.fetchval("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'User'
-            );
-        """)
+        print("🔌 Using global connection pool for database initialization...")
         
-        if table_exists:
-            print("✅ User table already exists, skipping initialization")
-            await conn.close()
-            return
-        
-        # Create the User table with explicit column names
-        print("📋 Creating User table with correct structure...")
-        await conn.execute("""
-            CREATE TABLE "User" (
-                id SERIAL PRIMARY KEY,
-                "firstName" VARCHAR(255) NOT NULL,
-                "lastName" VARCHAR(255) NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                major VARCHAR(255) NOT NULL,
-                "graduationYear" INTEGER NOT NULL,
-                "cognitoSub" VARCHAR(255) UNIQUE NOT NULL,
-                "joinedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        
-        # Create indexes for better performance
-        await conn.execute('CREATE INDEX idx_user_email ON "User"(email);')
-        await conn.execute('CREATE INDEX idx_user_cognito_sub ON "User"("cognitoSub");')
-        
-        print("✅ Database initialized successfully!")
-        print("✅ User table created with correct column names")
-        
-        await conn.close()
+        async with get_global_connection() as conn:
+            # Check if User table already exists
+            table_exists = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'User'
+                );
+            """)
+            
+            if table_exists:
+                print("✅ User table already exists, skipping initialization")
+                return
+            
+            # Create the User table with explicit column names
+            print("📋 Creating User table with correct structure...")
+            await conn.execute("""
+                CREATE TABLE "User" (
+                    id SERIAL PRIMARY KEY,
+                    "firstName" VARCHAR(255) NOT NULL,
+                    "lastName" VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    major VARCHAR(255) NOT NULL,
+                    "graduationYear" INTEGER NOT NULL,
+                    "cognitoSub" VARCHAR(255) UNIQUE NOT NULL,
+                    "joinedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            
+            # Create indexes for better performance
+            await conn.execute('CREATE INDEX idx_user_email ON "User"(email);')
+            await conn.execute('CREATE INDEX idx_user_cognito_sub ON "User"("cognitoSub");')
+            
+            print("✅ Database initialized successfully!")
+            print("✅ User table created with correct column names")
         
     except Exception as e:
         print(f"❌ Error initializing database: {e}")
-        print(f"🔍 Connection details: {database_url[:database_url.find('@')]}@***:***/***")
         raise e
 
 if __name__ == "__main__":

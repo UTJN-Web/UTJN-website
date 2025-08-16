@@ -74,8 +74,6 @@ async def get_all_events(user_email: Optional[str] = None):
         print(f"📅 Getting all events for user: {user_email}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             
@@ -85,7 +83,6 @@ async def get_all_events(user_email: Optional[str] = None):
             if user_email:
                 from authentication.data_access.user_repository import UserRepository
                 user_repo = UserRepository()
-                await user_repo.connect()
                 try:
                     user = await user_repo.get_user_by_email(user_email)
                     if user:
@@ -95,7 +92,7 @@ async def get_all_events(user_email: Optional[str] = None):
                     else:
                         print(f"⚠️ User not found: {user_email}")
                 finally:
-                    await user_repo.disconnect()
+                    pass
             
             events = await event_repo.get_all_events()
             
@@ -123,8 +120,6 @@ async def get_all_events(user_email: Optional[str] = None):
             else:
                 print(f"✅ Retrieved {len(events)} events (no user filter)")
             
-            await event_repo.disconnect()
-            
             # Convert datetime objects to ISO strings for JSON serialization
             for event in events:
                 if event.get('date'):
@@ -139,7 +134,6 @@ async def get_all_events(user_email: Optional[str] = None):
             return events
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -153,8 +147,6 @@ async def create_event(event_data: EventRequest):
         print(f"🆕 Creating event: {event_data.name}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             
@@ -178,8 +170,6 @@ async def create_event(event_data: EventRequest):
                     sub_event_data['eventId'] = event_id
                     await event_repo.create_sub_event(sub_event_data)
             
-            await event_repo.disconnect()
-            
             # Convert datetime objects to ISO strings
             if event.get('date'):
                 event['date'] = event['date'].isoformat()
@@ -192,7 +182,6 @@ async def create_event(event_data: EventRequest):
             return event
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -206,12 +195,8 @@ async def get_event_by_id(event_id: int):
         print(f"🔍 Getting event by ID: {event_id}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             event = await event_repo.get_event_with_tiers_and_subevents(event_id)
-            await event_repo.disconnect()
-            
             if not event:
                 raise HTTPException(status_code=404, detail="Event not found")
             
@@ -236,7 +221,6 @@ async def get_event_by_id(event_id: int):
             return event
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -252,8 +236,6 @@ async def update_event(event_id: int, event_data: EventRequest):
         print(f"✏️ Updating event ID: {event_id}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             # Update the main event first
             event_dict = event_data.dict()
@@ -281,8 +263,6 @@ async def update_event(event_id: int, event_data: EventRequest):
                     sub_event_data['eventId'] = event_id
                     await event_repo.create_sub_event(sub_event_data)
             
-            await event_repo.disconnect()
-            
             # Convert datetime objects to ISO strings
             if event.get('date'):
                 event['date'] = event['date'].isoformat()
@@ -295,7 +275,6 @@ async def update_event(event_id: int, event_data: EventRequest):
             return event
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -311,12 +290,8 @@ async def delete_event(event_id: int):
         print(f"🗑️ Deleting event ID: {event_id}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             success = await event_repo.delete_event(event_id)
-            await event_repo.disconnect()
-            
             if not success:
                 raise HTTPException(status_code=404, detail="Event not found")
             
@@ -324,7 +299,6 @@ async def delete_event(event_id: int):
             return {"message": "Event deleted successfully"}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -341,8 +315,6 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
         print(f"🎫 Registration details: tier={registration_data.tierId}, subEvents={registration_data.subEventIds}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             # Ensure tables exist (important for paymentId column migration)
             await event_repo.ensure_tables_exist()
@@ -422,8 +394,6 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                 )
                 additional_registrations = []
             
-            await event_repo.disconnect()
-            
             print(f"✅ Registration successful for user {registration_data.userId}")
             return {
                 "message": "Registration successful",
@@ -433,7 +403,6 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
             }
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -449,12 +418,8 @@ async def cancel_registration(event_id: int, registration_data: EventRegistratio
         print(f"❌ Canceling registration for user {registration_data.userId} from event {event_id}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             success = await event_repo.cancel_registration(registration_data.userId, event_id)
-            await event_repo.disconnect()
-            
             if not success:
                 raise HTTPException(status_code=404, detail="Registration not found")
             
@@ -462,7 +427,6 @@ async def cancel_registration(event_id: int, registration_data: EventRegistratio
             return {"message": "Registration cancelled successfully"}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -478,14 +442,10 @@ async def get_payment_id_for_event(event_id: int, userId: int):
         print(f"🔍 Getting payment ID for user {userId}, event {event_id}")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             
             payment_id = await event_repo.get_payment_id_for_registration(userId, event_id)
-            await event_repo.disconnect()
-            
             if payment_id:
                 print(f"✅ Found payment ID for user {userId}, event {event_id}")
                 return {
@@ -501,7 +461,6 @@ async def get_payment_id_for_event(event_id: int, userId: int):
                 }
                 
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -515,18 +474,13 @@ async def seed_events():
         print("🌱 Seeding sample events...")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             await event_repo.seed_sample_events()
-            await event_repo.disconnect()
-            
             print("✅ Events seeded successfully")
             return {"message": "Events seeded successfully"}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -540,13 +494,9 @@ async def test_event_system():
         print("🧪 Testing event system...")
         
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             stats = await event_repo.get_system_stats()
-            await event_repo.disconnect()
-            
             print("✅ Event system test completed successfully")
             return {
                 "status": "success",
@@ -555,7 +505,6 @@ async def test_event_system():
             }
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -568,18 +517,13 @@ async def create_ticket_tier(tier_data: TicketTierRequest):
     """Create a new ticket tier for an event"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             tier_dict = tier_data.dict()
             result = await event_repo.create_ticket_tier(tier_dict)
-            await event_repo.disconnect()
-            
             return {"success": True, "tier": result}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -591,17 +535,12 @@ async def get_ticket_tiers(event_id: int):
     """Get all ticket tiers for an event"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             tiers = await event_repo.get_ticket_tiers(event_id)
-            await event_repo.disconnect()
-            
             return {"success": True, "tiers": tiers}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -613,18 +552,13 @@ async def create_sub_event(sub_event_data: SubEventRequest):
     """Create a new sub-event for an event"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             sub_event_dict = sub_event_data.dict()
             result = await event_repo.create_sub_event(sub_event_dict)
-            await event_repo.disconnect()
-            
             return {"success": True, "subEvent": result}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -636,17 +570,12 @@ async def get_sub_events(event_id: int):
     """Get all sub-events for an event"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             sub_events = await event_repo.get_sub_events(event_id)
-            await event_repo.disconnect()
-            
             return {"success": True, "subEvents": sub_events}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -658,16 +587,11 @@ async def get_tier_capacity(tier_id: int):
     """Get available capacity for a ticket tier"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             capacity = await event_repo.get_available_capacity(tier_id=tier_id)
-            await event_repo.disconnect()
-            
             return {"success": True, "availableCapacity": capacity}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -679,16 +603,11 @@ async def get_sub_event_capacity(sub_event_id: int):
     """Get available capacity for a sub-event"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             capacity = await event_repo.get_available_capacity(sub_event_id=sub_event_id)
-            await event_repo.disconnect()
-            
             return {"success": True, "availableCapacity": capacity}
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -700,8 +619,6 @@ async def get_ticket_options(event_id: int, user_email: Optional[str] = None):
     """Get available ticket options for an event with automatic progression logic"""
     try:
         event_repo = EventRepository()
-        await event_repo.connect()
-        
         try:
             await event_repo.ensure_tables_exist()
             
@@ -716,14 +633,13 @@ async def get_ticket_options(event_id: int, user_email: Optional[str] = None):
             if user_email:
                 from authentication.data_access.user_repository import UserRepository
                 user_repo = UserRepository()
-                await user_repo.connect()
                 try:
                     user = await user_repo.get_user_by_email(user_email)
                     if user:
                         user_current_year = user.get('currentYear', '1st year')
                         user_university = user.get('university', 'University of Toronto')
                 finally:
-                    await user_repo.disconnect()
+                    pass
             
             # Check university restrictions
             if event.get('isUofTOnly', False) and user_university != 'University of Toronto':
@@ -775,11 +691,9 @@ async def get_ticket_options(event_id: int, user_email: Optional[str] = None):
                 sub_events = await event_repo.get_available_sub_events(event_id)
                 result['subEvents'] = sub_events
             
-            await event_repo.disconnect()
             return result
             
         except Exception as e:
-            await event_repo.disconnect()
             raise e
             
     except Exception as e:

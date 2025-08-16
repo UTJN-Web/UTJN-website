@@ -5,6 +5,7 @@ import asyncpg
 import boto3
 import json
 from typing import Optional, Dict, Any
+from .base_repository import BaseRepository
 
 # Major options for user selection
 MAJOR_OPTIONS = [
@@ -40,9 +41,9 @@ MAJOR_OPTIONS = [
     "Other"
 ]
 
-class UserRepository:
+class UserRepository(BaseRepository):
     def __init__(self):
-        self.pool = None
+        super().__init__()
     
     def list_available_secrets(self):
         """List all available secrets in AWS Secrets Manager"""
@@ -120,39 +121,14 @@ class UserRepository:
         print("⚠️ Using DATABASE_URL from environment variable (AWS Secrets Manager not configured)")
         return None
     
-    async def connect(self):
-        """Connect to the database using AWS Secrets Manager or environment variables"""
-        try:
-            # Try to get database URL from AWS Secrets Manager
-            database_url = self.get_database_url_from_secrets()
-            if database_url:
-                print("✅ Retrieved database credentials from AWS Secrets Manager")
-            else:
-                # Fallback to environment variable if AWS fails
-                database_url = os.getenv("DATABASE_URL")
-                if not database_url:
-                    raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-                print("⚠️ Using DATABASE_URL from environment variable")
-        except Exception as e:
-            # Fallback to environment variable if AWS fails
-            database_url = os.getenv("DATABASE_URL")
-            if not database_url:
-                raise Exception("DATABASE_URL environment variable not set and AWS Secrets Manager failed")
-            print("⚠️ Using DATABASE_URL from environment variable")
-        
-        self.pool = await asyncpg.create_pool(database_url)
-    
-    async def disconnect(self):
-        """Disconnect from the database"""
-        if self.pool:
-            await self.pool.close()
+    # connect() and disconnect() methods are now handled by BaseRepository
+    # No need to implement them as the global pool is managed centrally
     
     async def ensure_tables_exist(self):
         """Ensure User table exists with proper major constraints"""
-        if not self.pool:
-            raise Exception("Database not connected")
+        self.log_operation("Ensuring User table exists")
         
-        async with self.pool.acquire() as conn:
+        async with self.get_connection() as conn:
             try:
                 # Check if User table exists
                 table_exists = await conn.fetchval("""
@@ -164,7 +140,7 @@ class UserRepository:
                 """)
                 
                 if not table_exists:
-                    print("🆕 Creating User table...")
+                    self.log_operation("Creating User table")
                     await conn.execute("""
                         CREATE TABLE "User" (
                             id SERIAL PRIMARY KEY,
@@ -192,9 +168,9 @@ class UserRepository:
                     await conn.execute('CREATE INDEX idx_user_email ON "User"(email);')
                     await conn.execute('CREATE INDEX idx_user_cognito_sub ON "User"("cognitoSub");')
                     
-                    print("✅ User table created with major constraints")
+                    self.log_success("User table created with major constraints")
                 else:
-                    print("✅ User table already exists")
+                    self.log_success("User table already exists")
                     # Check if major constraint exists
                     constraint_exists = await conn.fetchval("""
                         SELECT EXISTS (
@@ -311,7 +287,9 @@ class UserRepository:
     async def create_user(self, user_data: dict) -> Dict[str, Any]:
         """Create a new user in the database"""
         try:
-            async with self.pool.acquire() as conn:
+            self.log_operation("Creating user", user_data["email"])
+            
+            async with self.get_connection() as conn:
                 query = """
                 INSERT INTO "User" ("firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt")
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
@@ -343,44 +321,51 @@ class UserRepository:
                     "joinedAt": row["joinedAt"]
                 }
         except Exception as e:
-            print(f"Error creating user: {e}")
+            self.log_error("Creating user", e)
             raise e
     
     async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Get user by email"""
         try:
-            async with self.pool.acquire() as conn:
-                query = """
-                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
-                FROM "User"
-                WHERE email = $1
-                """
-                
-                row = await conn.fetchrow(query, email)
-                
-                if row:
-                    return {
-                        "id": row["id"],
-                        "firstName": row["firstName"],
-                        "lastName": row["lastName"],
-                        "email": row["email"],
-                        "major": row["major"],
-                        "graduationYear": row["graduationYear"],
-                        "currentYear": row["currentYear"],
-                        "university": row["university"],
-                        "cognitoSub": row["cognitoSub"],
-                        "joinedAt": row["joinedAt"]
-                    }
-                return None
+            self.log_operation("Getting user by email", email)
+            
+            query = """
+            SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
+            FROM "User"
+            WHERE email = $1
+            """
+            
+            row = await self.fetchrow_query(query, email)
+            
+            if row:
+                user_data = {
+                    "id": row["id"],
+                    "firstName": row["firstName"],
+                    "lastName": row["lastName"],
+                    "email": row["email"],
+                    "major": row["major"],
+                    "graduationYear": row["graduationYear"],
+                    "currentYear": row["currentYear"],
+                    "university": row["university"],
+                    "cognitoSub": row["cognitoSub"],
+                    "joinedAt": row["joinedAt"]
+                }
+                self.log_success("User found by email", email)
+                return user_data
+            
+            self.log_operation("User not found by email", email)
+            return None
+            
         except Exception as e:
-            print(f"❌ Error getting user by email: {e}")
-            print(f"🔍 Error type: {type(e).__name__}")
+            self.log_error("Getting user by email", e)
             raise e
     
     async def get_user_by_cognito_sub(self, cognito_sub: str) -> Optional[Dict[str, Any]]:
         """Get user by Cognito sub"""
         try:
-            async with self.pool.acquire() as conn:
+            self.log_operation("Getting user by cognito sub", cognito_sub)
+            
+            async with self.get_connection() as conn:
                 query = """
                 SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
                 FROM "User"
@@ -404,13 +389,15 @@ class UserRepository:
                     }
                 return None
         except Exception as e:
-            print(f"Error getting user by cognito sub: {e}")
+            self.log_error("Getting user by cognito sub", e)
             raise e 
 
     async def update_user(self, user_data: dict) -> Dict[str, Any]:
         """Update an existing user in the database"""
         try:
-            async with self.pool.acquire() as conn:
+            self.log_operation("Updating user", user_data["email"])
+            
+            async with self.get_connection() as conn:
                 query = """
                 UPDATE "User" 
                 SET "firstName" = $1, "lastName" = $2, major = $3, "graduationYear" = $4, "currentYear" = $5, university = $6, "cognitoSub" = $7
@@ -446,38 +433,40 @@ class UserRepository:
                     "joinedAt": row["joinedAt"]
                 }
         except Exception as e:
-            print(f"Error updating user: {e}")
+            self.log_error("Updating user", e)
             raise e
     
     async def get_all_users(self) -> list:
         """Get all users for admin dashboard"""
         try:
-            async with self.pool.acquire() as conn:
-                query = """
-                SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
-                FROM "User"
-                ORDER BY "joinedAt" DESC
-                """
-                
-                rows = await conn.fetch(query)
-                
-                users = []
-                for row in rows:
-                    users.append({
-                        "id": row["id"],
-                        "firstName": row["firstName"],
-                        "lastName": row["lastName"],
-                        "email": row["email"],
-                        "major": row["major"],
-                        "graduationYear": row["graduationYear"],
-                        "currentYear": row["currentYear"],
-                        "university": row["university"],
-                        "cognitoSub": row["cognitoSub"],
-                        "joinedAt": row["joinedAt"]
-                    })
-                
-                return users
+            self.log_operation("Getting all users")
+            
+            query = """
+            SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
+            FROM "User"
+            ORDER BY "joinedAt" DESC
+            """
+            
+            rows = await self.fetch_query(query)
+            
+            users = []
+            for row in rows:
+                users.append({
+                    "id": row["id"],
+                    "firstName": row["firstName"],
+                    "lastName": row["lastName"],
+                    "email": row["email"],
+                    "major": row["major"],
+                    "graduationYear": row["graduationYear"],
+                    "currentYear": row["currentYear"],
+                    "university": row["university"],
+                    "cognitoSub": row["cognitoSub"],
+                    "joinedAt": row["joinedAt"]
+                })
+            
+            self.log_success(f"Retrieved {len(users)} users")
+            return users
+            
         except Exception as e:
-            print(f"❌ Error getting all users: {e}")
-            print(f"🔍 Error type: {type(e).__name__}")
+            self.log_error("Getting all users", e)
             raise e 

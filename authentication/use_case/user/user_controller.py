@@ -12,16 +12,13 @@ async def get_all_users():
     try:
         print("👥 Getting all users for admin dashboard")
         
-        # Initialize user repository
+        # Initialize user repository (no need to connect/disconnect with global pool)
         user_repo = UserRepository()
-        await user_repo.connect()
         
         try:
             # Get all users from database
             users = await user_repo.get_all_users()
             print(f"✅ Retrieved {len(users)} users from database")
-            
-            await user_repo.disconnect()
             
             # Format users for response
             formatted_users = []
@@ -41,7 +38,6 @@ async def get_all_users():
             return formatted_users
         except Exception as e:
             print(f"❌ Database error: {e}")
-            await user_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -78,9 +74,8 @@ async def create_user_profile(user_data: UserProfileRequest):
         if cognito_sub is None:
             raise HTTPException(status_code=400, detail="User not found in Cognito. Please sign up first.")
         
-        # Initialize user repository
+        # Initialize user repository (no need to connect/disconnect with global pool)
         user_repo = UserRepository()
-        await user_repo.connect()
         
         try:
             # Ensure tables exist with proper constraints
@@ -118,8 +113,6 @@ async def create_user_profile(user_data: UserProfileRequest):
                 })
                 message = "User profile created successfully"
             
-            await user_repo.disconnect()
-            
             return {
                 "success": True,
                 "message": message,
@@ -136,7 +129,6 @@ async def create_user_profile(user_data: UserProfileRequest):
                 }
             }
         except Exception as e:
-            await user_repo.disconnect()
             raise e
             
     except Exception as e:
@@ -148,9 +140,8 @@ async def get_user_profile(email: str):
     try:
         print(f"🔍 Getting user profile for email: {email}")
         
-        # Initialize user repository
+        # Initialize user repository (no need to connect/disconnect with global pool)
         user_repo = UserRepository()
-        await user_repo.connect()
         
         try:
             # Get user from database
@@ -159,11 +150,9 @@ async def get_user_profile(email: str):
             
             if not db_user:
                 print(f"❌ User not found in database: {email}")
-                await user_repo.disconnect()
                 raise HTTPException(status_code=404, detail="User profile not found")
             
             print(f"✅ User found in database: {db_user}")
-            await user_repo.disconnect()
             
             return {
                 "success": True,
@@ -180,7 +169,6 @@ async def get_user_profile(email: str):
             }
         except Exception as e:
             print(f"❌ Database error: {e}")
-            await user_repo.disconnect()
             raise e
             
     except Exception as e:
