@@ -8,6 +8,7 @@ import { UserContext } from '../contexts/UserContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import RefundRequestModal from '../components/RefundRequestModal';
 import Toast from '../components/Toast';
+import { ImageIcon } from 'lucide-react';
 
 interface TicketTier {
   id: number;
@@ -560,7 +561,7 @@ export default function EventsPage() {
         ))}
       </div>
 
-      <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {liveEvents.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
@@ -578,9 +579,9 @@ export default function EventsPage() {
           </div>
         )}
         {liveEvents.map((event) => (
-          <EventCard 
-            key={event.id} 
-            event={event} 
+          <EventCard
+            key={event.id}
+            event={event}
             user={user}
             onRegister={handleRegister}
             onFreeRegister={handleFreeEventRegistration}
@@ -589,8 +590,12 @@ export default function EventsPage() {
             userCredits={userCredits}
             useCredits={useCredits[event.id] || false}
             creditsToUse={creditsToUse[event.id] || 0}
-            onToggleCredits={(eventId, enabled) => setUseCredits(prev => ({...prev, [eventId]: enabled}))}
-            onCreditsChange={(eventId, amount) => setCreditsToUse(prev => ({...prev, [eventId]: amount}))}
+            onToggleCredits={(eventId, enabled) =>
+              setUseCredits((prev) => ({ ...prev, [eventId]: enabled }))
+            }
+            onCreditsChange={(eventId, amount) =>
+              setCreditsToUse((prev) => ({ ...prev, [eventId]: amount }))
+            }
           />
         ))}
       </div>
@@ -613,8 +618,8 @@ export default function EventsPage() {
       </div>
 
       {showArchived && (
-        <div className="mt-10 space-y-8">
-          <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-300 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-300 mb-6 col-span-full">
             Archived Events
           </h2>
           {archivedEvents.length === 0 ? (
@@ -827,345 +832,362 @@ function EventCard({
   };
 
   return (
-    <article className={`flex flex-col rounded-lg border p-4 shadow-sm transition-all hover:shadow-md md:flex-row md:items-center md:gap-4 ${
+    <article className={`flex flex-col md:flex-row rounded-lg border p-4 shadow-sm transition-all hover:shadow-md md:items-center md:gap-4 ${
       archived 
         ? 'border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600' 
         : 'border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700'
     }`}>
-      <div className="flex w-full items-center justify-between md:w-[120px] md:flex-col md:justify-center">
-        <span className="text-2xl font-bold md:text-3xl text-[#1c2a52] dark:text-blue-400">
-          {dateLabel}
-        </span>
-        <div className="text-center">
-          <span className="text-sm text-gray-500 block">
-            Seats {effectiveCapacity - effectiveRemainingSeats}/{effectiveCapacity}
-          </span>
-          {!archived && (
-            <div className={`mt-1 w-full bg-gray-200 rounded-full h-2 ${
-              isFull ? 'bg-red-200' : effectiveRemainingSeats <= 5 ? 'bg-yellow-200' : 'bg-green-200'
-            }`}>
-              <div 
-                className={`h-2 rounded-full ${
-                  isFull ? 'bg-red-500' : effectiveRemainingSeats <= 5 ? 'bg-yellow-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${((effectiveCapacity - effectiveRemainingSeats) / effectiveCapacity) * 100}%` }}
-              ></div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 grow md:mt-0">
-        <div className="flex items-start justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{event.name}</h2>
-          <span
-            className={`ml-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-              event.type === 'career'
-                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
-                : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-            }`}
-          >
-            {event.type === 'career' ? '💼 Career' : '🎉 Social'}
-          </span>
-        </div>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          {event.description}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            For: {event.targetYear}
-          </span>
-          {(typeof effectivePrice === 'number' ? effectivePrice > 0 : true) && (
-            <span className="flex items-center gap-1 text-green-600 font-medium">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clipRule="evenodd" />
-              </svg>
-              Fee: ${effectivePrice}
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-            </svg>
-            {date.toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              month: 'short', 
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex shrink-0 flex-col items-end gap-2 md:mt-0 md:w-[200px]">
-        {archived ? (
-          <div className="w-full text-center">
-            <span className="inline-block rounded-full bg-gray-500 px-3 py-1 text-xs text-white mb-2">
-              Archived
-            </span>
-            <Link
-              href="#"
-              className="w-full block rounded-md border border-gray-400 py-2 text-center text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
-            >
-              View Report
-            </Link>
-          </div>
-        ) : isUserRegistered ? (
-          <div className="w-full space-y-2">
-            <div className="w-full rounded-md border border-green-600 bg-green-50 py-2 text-center text-sm text-green-700 flex items-center justify-center gap-1">
-              <CheckCircle size={16} />
-              Registered
-            </div>
-            {!archived && onCancel && isRefundAllowed() && (
-              <button
-                onClick={() => onCancel(event.id, event.name)}
-                disabled={registering}
-                className="w-full rounded-md border border-red-400 py-1 text-center text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              >
-                {registering ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                    Cancelling...
-                  </>
-                ) : (
-                  <>
-                    <X size={12} />
-                    Cancel Registration
-                  </>
-                )}
-              </button>
-            )}
-            {!archived && onCancel && !isRefundAllowed() && (
-              <div className="w-full rounded-md border border-gray-400 bg-gray-50 py-1 text-center text-xs text-gray-600">
-                Refund period expired
-              </div>
-            )}
-          </div>
-        ) : !canRegister() ? (
-          <div className="w-full space-y-2">
-            {/* Only show "no tickets" if we're NOT falling back to basic registration */}
-            {event.enableAdvancedTicketing && !currentTier && event.ticketTiers && event.ticketTiers.length > 0 && (
-              <div className="w-full rounded-md border border-orange-400 bg-orange-50 py-2 text-center text-sm text-orange-700">
-                No tickets available
-              </div>
-            )}
-            {!event.enableAdvancedTicketing && !event.enableSubEvents && isFull && (
-              <div className="w-full rounded-md border border-red-400 bg-red-50 py-2 text-center text-sm text-red-700">
-                Event Full
-              </div>
-            )}
-            {event.enableSubEvents && availableSubEvents.length === 0 && (
-              <div className="w-full rounded-md border border-orange-400 bg-orange-50 py-2 text-center text-sm text-orange-700">
-                No sub-events available
-              </div>
-            )}
-          </div>
+    
+      {/* === LEFT: Image === */}
+      <div className="w-full md:w-1/2 max-h-64 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+        {event.image ? (
+          <img
+            src={event.image}
+            alt={event.name}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <div className="w-full space-y-2">
-            {/* Ticket Tier Display */}
-            {event.enableAdvancedTicketing && currentTier && (
-              <div className="w-full border border-blue-200 bg-blue-50 rounded-md p-3 text-sm">
-                <div className="font-medium text-blue-900 mb-1">{currentTier.name}</div>
-                <div className="text-blue-700">${currentTier.price}</div>
-                <div className="text-xs text-blue-600">
-                  {currentTier.remaining_capacity} seats left
-                  {currentTier.targetYear !== 'All years' && (
-                    <span className="ml-2">• For {currentTier.targetYear}</span>
+          <ImageIcon size={48} className="text-gray-400" />
+        )}
+      </div>
+
+      {/* === RIGHT: Text & Content === */}
+      <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-6 flex flex-col">
+        <div className="flex w-full items-center justify-between md:w-[120px] md:flex-col md:justify-center">
+          <span className="text-2xl font-bold md:text-3xl text-[#1c2a52] dark:text-blue-400">
+            {dateLabel}
+          </span>
+          <div className="text-center">
+            <span className="text-sm text-gray-500 block">
+              Seats {effectiveCapacity - effectiveRemainingSeats}/{effectiveCapacity}
+            </span>
+            {!archived && (
+              <div className={`mt-1 w-full bg-gray-200 rounded-full h-2 ${
+                isFull ? 'bg-red-200' : effectiveRemainingSeats <= 5 ? 'bg-yellow-200' : 'bg-green-200'
+              }`}>
+                <div 
+                  className={`h-2 rounded-full ${
+                    isFull ? 'bg-red-500' : effectiveRemainingSeats <= 5 ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${((effectiveCapacity - effectiveRemainingSeats) / effectiveCapacity) * 100}%` }}
+                ></div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 grow md:mt-0">
+          <div className="flex items-start justify-between mb-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{event.name}</h2>
+            <span
+              className={`ml-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                event.type === 'career'
+                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+              }`}
+            >
+              {event.type === 'career' ? '💼 Career' : '🎉 Social'}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {event.description}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+              For: {event.targetYear}
+            </span>
+            {(typeof effectivePrice === 'number' ? effectivePrice > 0 : true) && (
+              <span className="flex items-center gap-1 text-green-600 font-medium">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clipRule="evenodd" />
+                </svg>
+                Fee: ${effectivePrice}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
+              {date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex shrink-0 flex-col items-end gap-2 md:mt-0 md:w-[200px]">
+          {archived ? (
+            <div className="w-full text-center">
+              <span className="inline-block rounded-full bg-gray-500 px-3 py-1 text-xs text-white mb-2">
+                Archived
+              </span>
+              <Link
+                href="#"
+                className="w-full block rounded-md border border-gray-400 py-2 text-center text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
+              >
+                View Report
+              </Link>
+            </div>
+          ) : isUserRegistered ? (
+            <div className="w-full space-y-2">
+              <div className="w-full rounded-md border border-green-600 bg-green-50 py-2 text-center text-sm text-green-700 flex items-center justify-center gap-1">
+                <CheckCircle size={16} />
+                Registered
+              </div>
+              {!archived && onCancel && isRefundAllowed() && (
+                <button
+                  onClick={() => onCancel(event.id, event.name)}
+                  disabled={registering}
+                  className="w-full rounded-md border border-red-400 py-1 text-center text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  {registering ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                      Cancelling...
+                    </>
+                  ) : (
+                    <>
+                      <X size={12} />
+                      Cancel Registration
+                    </>
+                  )}
+                </button>
+              )}
+              {!archived && onCancel && !isRefundAllowed() && (
+                <div className="w-full rounded-md border border-gray-400 bg-gray-50 py-1 text-center text-xs text-gray-600">
+                  Refund period expired
+                </div>
+              )}
+            </div>
+          ) : !canRegister() ? (
+            <div className="w-full space-y-2">
+              {/* Only show "no tickets" if we're NOT falling back to basic registration */}
+              {event.enableAdvancedTicketing && !currentTier && event.ticketTiers && event.ticketTiers.length > 0 && (
+                <div className="w-full rounded-md border border-orange-400 bg-orange-50 py-2 text-center text-sm text-orange-700">
+                  No tickets available
+                </div>
+              )}
+              {!event.enableAdvancedTicketing && !event.enableSubEvents && isFull && (
+                <div className="w-full rounded-md border border-red-400 bg-red-50 py-2 text-center text-sm text-red-700">
+                  Event Full
+                </div>
+              )}
+              {event.enableSubEvents && availableSubEvents.length === 0 && (
+                <div className="w-full rounded-md border border-orange-400 bg-orange-50 py-2 text-center text-sm text-orange-700">
+                  No sub-events available
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full space-y-2">
+              {/* Ticket Tier Display */}
+              {event.enableAdvancedTicketing && currentTier && (
+                <div className="w-full border border-blue-200 bg-blue-50 rounded-md p-3 text-sm">
+                  <div className="font-medium text-blue-900 mb-1">{currentTier.name}</div>
+                  <div className="text-blue-700">${currentTier.price}</div>
+                  <div className="text-xs text-blue-600">
+                    {currentTier.remaining_capacity} seats left
+                    {currentTier.targetYear !== 'All years' && (
+                      <span className="ml-2">• For {currentTier.targetYear}</span>
+                    )}
+                  </div>
+                  {currentTier.availabilityReason && (
+                    <div className="text-xs text-orange-600 mt-1">
+                      {currentTier.availabilityReason}
+                    </div>
+                  )}
+                  
+                  {/* Show tier progression info */}
+                  {event.ticketTiers && event.ticketTiers.length > 1 && (
+                    <div className="mt-2 pt-2 border-t border-blue-200">
+                      <div className="text-xs text-blue-600 font-medium mb-1">Tier Progression:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {event.ticketTiers.map((tier: any, index: number) => (
+                          <span 
+                            key={tier.id} 
+                            className={`text-xs px-2 py-1 rounded ${
+                              tier.id === currentTier.id 
+                                ? 'bg-blue-200 text-blue-800 font-medium' 
+                                : tier.isAvailable
+                                ? 'bg-green-100 text-green-600'
+                                : tier.remaining_capacity === 0
+                                ? 'bg-red-100 text-red-600 line-through'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {tier.name}: ${tier.price}
+                            {tier.id === currentTier.id && ' (Current)'}
+                            {tier.remaining_capacity === 0 && ' (Sold out)'}
+                            {!tier.isAvailable && tier.remaining_capacity > 0 && ' (Upcoming)'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {currentTier.availabilityReason && (
-                  <div className="text-xs text-orange-600 mt-1">
-                    {currentTier.availabilityReason}
+              )}
+
+              {/* Sub-Events Selection */}
+              {event.enableSubEvents && availableSubEvents.length > 0 && (
+                <div className="w-full border border-gray-200 rounded-md p-3 text-sm">
+                  <div className="font-medium text-gray-900 mb-2">Choose Events:</div>
+                  <div className="space-y-2">
+                    {availableSubEvents.map(subEvent => (
+                      <label key={subEvent.id} className="flex items-center space-x-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={selectedSubEventIds.includes(subEvent.id)}
+                          onChange={(e) => handleSubEventSelection(subEvent.id, e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{subEvent.name}</div>
+                          <div className="text-green-600">${subEvent.price}</div>
+                          <div className="text-gray-500">{subEvent.remaining_capacity} left</div>
+                        </div>
+                      </label>
+                    ))}
                   </div>
-                )}
-                
-                {/* Show tier progression info */}
-                {event.ticketTiers && event.ticketTiers.length > 1 && (
-                  <div className="mt-2 pt-2 border-t border-blue-200">
-                    <div className="text-xs text-blue-600 font-medium mb-1">Tier Progression:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {event.ticketTiers.map((tier: any, index: number) => (
-                        <span 
-                          key={tier.id} 
-                          className={`text-xs px-2 py-1 rounded ${
-                            tier.id === currentTier.id 
-                              ? 'bg-blue-200 text-blue-800 font-medium' 
-                              : tier.isAvailable
-                              ? 'bg-green-100 text-green-600'
-                              : tier.remaining_capacity === 0
-                              ? 'bg-red-100 text-red-600 line-through'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {tier.name}: ${tier.price}
-                          {tier.id === currentTier.id && ' (Current)'}
-                          {tier.remaining_capacity === 0 && ' (Sold out)'}
-                          {!tier.isAvailable && tier.remaining_capacity > 0 && ' (Upcoming)'}
-                        </span>
-                      ))}
+                </div>
+              )}
+
+              {/* Credit Usage Section */}
+              {user && userCredits > 0 && getCurrentPrice() > 0 && (
+                <div className="w-full bg-green-50 border border-green-200 rounded-md p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-900">
+                        Available Credits: ${userCredits}
+                      </span>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Sub-Events Selection */}
-            {event.enableSubEvents && availableSubEvents.length > 0 && (
-              <div className="w-full border border-gray-200 rounded-md p-3 text-sm">
-                <div className="font-medium text-gray-900 mb-2">Choose Events:</div>
-                <div className="space-y-2">
-                  {availableSubEvents.map(subEvent => (
-                    <label key={subEvent.id} className="flex items-center space-x-2 text-xs">
+                  
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedSubEventIds.includes(subEvent.id)}
-                        onChange={(e) => handleSubEventSelection(subEvent.id, e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={useCredits}
+                        onChange={(e) => {
+                          const enabled = e.target.checked;
+                          onToggleCredits?.(event.id, enabled);
+                          if (!enabled) {
+                            onCreditsChange?.(event.id, 0);
+                          } else {
+                            // Default to 0 (None) - user must manually enter amount
+                            onCreditsChange?.(event.id, 0);
+                          }
+                        }}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
-                      <div className="flex-1">
-                        <div className="font-medium">{subEvent.name}</div>
-                        <div className="text-green-600">${subEvent.price}</div>
-                        <div className="text-gray-500">{subEvent.remaining_capacity} left</div>
-                      </div>
+                      <span className="text-sm text-green-800">Use credits for this event</span>
                     </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Credit Usage Section */}
-            {user && userCredits > 0 && getCurrentPrice() > 0 && (
-              <div className="w-full bg-green-50 border border-green-200 rounded-md p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-900">
-                      Available Credits: ${userCredits}
-                    </span>
+                    
+                    {useCredits && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-green-800">Amount:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max={Math.min(userCredits, getCurrentPrice())}
+                          step="0.5"
+                          value={creditsToUse || ''}
+                          placeholder="0"
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            if (inputValue === '') {
+                              onCreditsChange?.(event.id, 0);
+                              return;
+                            }
+                            
+                            const amount = Math.min(
+                              parseFloat(inputValue) || 0,
+                              Math.min(userCredits, getCurrentPrice())
+                            );
+                            onCreditsChange?.(event.id, amount);
+                          }}
+                          className="w-20 px-2 py-1 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-green-800">credits (${creditsToUse})</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={useCredits}
-                      onChange={(e) => {
-                        const enabled = e.target.checked;
-                        onToggleCredits?.(event.id, enabled);
-                        if (!enabled) {
-                          onCreditsChange?.(event.id, 0);
-                        } else {
-                          // Default to 0 (None) - user must manually enter amount
-                          onCreditsChange?.(event.id, 0);
-                        }
-                      }}
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-green-800">Use credits for this event</span>
-                  </label>
-                  
-                  {useCredits && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-green-800">Amount:</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max={Math.min(userCredits, getCurrentPrice())}
-                        step="0.5"
-                        value={creditsToUse || ''}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const inputValue = e.target.value;
-                          if (inputValue === '') {
-                            onCreditsChange?.(event.id, 0);
-                            return;
-                          }
-                          
-                          const amount = Math.min(
-                            parseFloat(inputValue) || 0,
-                            Math.min(userCredits, getCurrentPrice())
-                          );
-                          onCreditsChange?.(event.id, amount);
-                        }}
-                        className="w-20 px-2 py-1 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-green-800">credits (${creditsToUse})</span>
+              )}
+
+              {/* Current Price Display */}
+              <div className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 text-center">
+                <div className="text-sm font-medium text-gray-900">
+                  {useCredits && creditsToUse > 0 ? (
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-600">Subtotal: ${getCurrentPrice()}</div>
+                      <div className="text-xs text-green-600">Credits: -${creditsToUse}</div>
+                      <div className="border-t border-gray-300 pt-1">
+                        Total: ${Math.max(0, getCurrentPrice() - creditsToUse)}
+                      </div>
                     </div>
+                  ) : (
+                    <>Total: ${getCurrentPrice()}</>
                   )}
                 </div>
               </div>
-            )}
 
-            {/* Current Price Display */}
-            <div className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 text-center">
-              <div className="text-sm font-medium text-gray-900">
-                {useCredits && creditsToUse > 0 ? (
-                  <div className="space-y-1">
-                    <div className="text-xs text-gray-600">Subtotal: ${getCurrentPrice()}</div>
-                    <div className="text-xs text-green-600">Credits: -${creditsToUse}</div>
-                    <div className="border-t border-gray-300 pt-1">
-                      Total: ${Math.max(0, getCurrentPrice() - creditsToUse)}
-                    </div>
-                  </div>
-                ) : (
-                  <>Total: ${getCurrentPrice()}</>
-                )}
-              </div>
+              {/* Registration Button */}
+              {getCurrentPrice() === 0 ? (
+                <button
+                  onClick={() => onFreeRegister?.(event.id)}
+                  disabled={registering || !user || !canRegister()}
+                  className="w-full rounded-md border border-green-600 py-2 text-center text-sm text-green-600 transition hover:bg-green-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  {registering ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      Registering...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      Register FREE
+                    </>
+                  )}
+                </button>
+              ) : (
+                <Link
+                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}${useCredits && creditsToUse > 0 ? `&useCredits=true&creditsAmount=${creditsToUse}` : ''}`}
+                  className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
+                    canRegister()
+                      ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
+                      : 'border-gray-400 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <CreditCard size={16} />
+                  {useCredits && creditsToUse > 0 ? (
+                    <>Pay & Register (${Math.max(0, getCurrentPrice() - creditsToUse)})</>
+                  ) : (
+                    <>Pay & Register (${getCurrentPrice()})</>
+                  )}
+                </Link>
+              )}
+              
+              {/* Feedback Form Button - show for registered users or archived events */}
+              {(isUserRegistered || archived) && (
+                <Link
+                  href={`/events/${event.id}/form`}
+                  className="w-full rounded-md border border-purple-600 bg-purple-50 py-2 text-center text-sm text-purple-600 transition hover:bg-purple-600 hover:text-white flex items-center justify-center gap-1 mt-2"
+                >
+                  📝 Fill Feedback Form
+                </Link>
+              )}
             </div>
-
-            {/* Registration Button */}
-            {getCurrentPrice() === 0 ? (
-              <button
-                onClick={() => onFreeRegister?.(event.id)}
-                disabled={registering || !user || !canRegister()}
-                className="w-full rounded-md border border-green-600 py-2 text-center text-sm text-green-600 transition hover:bg-green-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              >
-                {registering ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                    Registering...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    Register FREE
-                  </>
-                )}
-              </button>
-            ) : (
-              <Link
-                href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}${useCredits && creditsToUse > 0 ? `&useCredits=true&creditsAmount=${creditsToUse}` : ''}`}
-                className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
-                  canRegister()
-                    ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
-                    : 'border-gray-400 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <CreditCard size={16} />
-                {useCredits && creditsToUse > 0 ? (
-                  <>Pay & Register (${Math.max(0, getCurrentPrice() - creditsToUse)})</>
-                ) : (
-                  <>Pay & Register (${getCurrentPrice()})</>
-                )}
-              </Link>
-            )}
-            
-            {/* Feedback Form Button - show for registered users or archived events */}
-            {(isUserRegistered || archived) && (
-              <Link
-                href={`/events/${event.id}/form`}
-                className="w-full rounded-md border border-purple-600 bg-purple-50 py-2 text-center text-sm text-purple-600 transition hover:bg-purple-600 hover:text-white flex items-center justify-center gap-1 mt-2"
-              >
-                📝 Fill Feedback Form
-              </Link>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </article>
   );
