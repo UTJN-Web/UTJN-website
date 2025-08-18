@@ -1,6 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import os
 import asyncio
 
@@ -12,6 +13,7 @@ from authentication.use_case.user.user_controller import user_router
 from authentication.use_case.form.form_controller import form_router
 from authentication.use_case.event.event_controller import event_router
 from authentication.use_case.refund.refund_controller import refund_router
+from authentication.use_case.admin.admin_controller import router as admin_router
 from authentication.data_access.database_init import init_database
 from authentication.data_access.database_pool import initialize_global_pool, close_global_pool
 
@@ -29,6 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─── 静的ファイル ─────────────────────────────────────
+# アップロードされた画像を提供するための静的ファイルマウント
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 # ─── ルーター登録 ─────────────────────────────────────
 app.include_router(signup_router)
 app.include_router(login_router)
@@ -37,6 +43,7 @@ app.include_router(user_router)
 app.include_router(form_router)
 app.include_router(event_router)
 app.include_router(refund_router)
+app.include_router(admin_router)
 
 @app.on_event("startup")
 async def startup_event():

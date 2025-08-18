@@ -48,37 +48,10 @@ export function withDatabaseOptimization(handler: Function) {
   };
 }
 
-// 接続プールの監視
-export function monitorConnectionPool() {
-  // Prismaクライアントの接続状態を監視
-  prisma.$on('query' as any, (e: any) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Query: ${e.query}`);
-      console.log(`Params: ${e.params}`);
-      console.log(`Duration: ${e.duration}ms`);
-    }
-  });
-  
-  prisma.$on('error' as any, (e: any) => {
-    console.error('Prisma error:', e);
-  });
-  
-  prisma.$on('info' as any, (e: any) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Prisma info:', e);
-    }
-  });
-  
-  prisma.$on('warn' as any, (e: any) => {
-    console.warn('Prisma warning:', e);
-  });
-}
-
 // データベース接続の初期化
 export async function initializeDatabase() {
   try {
     await prisma.$connect();
-    monitorConnectionPool();
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization failed:', error);

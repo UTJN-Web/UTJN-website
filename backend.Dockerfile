@@ -6,6 +6,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create uploads directory
+RUN mkdir -p uploads/event_images
+
 COPY authentication ./authentication
 # ルートにある main.py などエントリーポイントもコピー
 COPY main.py .

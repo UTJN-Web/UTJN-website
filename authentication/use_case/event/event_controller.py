@@ -96,6 +96,20 @@ async def get_all_events(user_email: Optional[str] = None):
             
             events = await event_repo.get_all_events()
             
+            # Debug: Check pricing configuration for each event
+            for event in events:
+                print(f"📊 Event '{event['name']}': enableAdvancedTicketing={event.get('enableAdvancedTicketing')}, enableSubEvents={event.get('enableSubEvents')}")
+                if event.get('enableAdvancedTicketing'):
+                    print(f"🎫 Event '{event['name']}' has advanced ticketing enabled")
+                    if event.get('ticketTiers'):
+                        for tier in event['ticketTiers']:
+                            print(f"  🎫 Tier '{tier['name']}': price={tier.get('price')}, subEventPrices={tier.get('subEventPrices')}")
+                if event.get('enableSubEvents'):
+                    print(f"🎊 Event '{event['name']}' has sub-events enabled")
+                    if event.get('subEvents'):
+                        for subEvent in event['subEvents']:
+                            print(f"  🎊 SubEvent '{subEvent['name']}': price={subEvent.get('price')}, capacity={subEvent.get('capacity')}")
+            
             # Filter events based on user's university and current year
             if user_university or user_current_year:
                 filtered_events = []
@@ -145,6 +159,9 @@ async def create_event(event_data: EventRequest):
     """Create a new event"""
     try:
         print(f"🆕 Creating event: {event_data.name}")
+        print(f"📊 Event data: enableAdvancedTicketing={event_data.enableAdvancedTicketing}, enableSubEvents={event_data.enableSubEvents}")
+        print(f"🎫 Ticket tiers count: {len(event_data.ticketTiers or [])}")
+        print(f"🎊 Sub-events count: {len(event_data.subEvents or [])}")
         
         event_repo = EventRepository()
         try:
@@ -155,20 +172,31 @@ async def create_event(event_data: EventRequest):
             ticket_tiers = event_dict.pop('ticketTiers', [])
             sub_events = event_dict.pop('subEvents', [])
             
+            print(f"🎫 Processing ticket tiers: {ticket_tiers}")
+            print(f"🎊 Processing sub-events: {sub_events}")
+            
             event = await event_repo.create_event(event_dict)
             event_id = event['id']
             
             # Create ticket tiers if advanced ticketing is enabled
             if event_data.enableAdvancedTicketing and ticket_tiers:
+                print(f"🎫 Creating {len(ticket_tiers)} ticket tiers for event {event_id}")
                 for tier_data in ticket_tiers:
                     tier_data['eventId'] = event_id
+                    print(f"🎫 Creating tier: {tier_data}")
                     await event_repo.create_ticket_tier(tier_data)
+            elif event_data.enableAdvancedTicketing:
+                print(f"⚠️ Advanced ticketing enabled but no ticket tiers provided")
             
             # Create sub-events if sub-events are enabled
             if event_data.enableSubEvents and sub_events:
+                print(f"🎊 Creating {len(sub_events)} sub-events for event {event_id}")
                 for sub_event_data in sub_events:
                     sub_event_data['eventId'] = event_id
+                    print(f"🎊 Creating sub-event: {sub_event_data}")
                     await event_repo.create_sub_event(sub_event_data)
+            elif event_data.enableSubEvents:
+                print(f"⚠️ Sub-events enabled but no sub-events provided")
             
             # Convert datetime objects to ISO strings
             if event.get('date'):

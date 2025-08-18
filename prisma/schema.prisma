@@ -69,6 +69,11 @@ model TicketTier {
   startDate       DateTime?  // When this tier becomes available
   endDate         DateTime?  // When this tier expires
   isActive        Boolean  @default(true)
+  targetYear      String   @default("All years") // Target year for this tier
+  
+  // Matrix pricing and capacity (JSON arrays)
+  subEventPrices    String? // JSON array of prices for each sub-event
+  subEventCapacities String? // JSON array of capacities for each sub-event
   
   event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   registrations   EventRegistration[]

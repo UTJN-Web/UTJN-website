@@ -419,6 +419,18 @@ class EventRepository(BaseRepository):
                             'finalPrice': float(user_row['finalPrice']) if user_row['finalPrice'] is not None else None
                         })
                     
+                    # Get ticket tiers if advanced ticketing is enabled
+                    if event_dict.get('enableAdvancedTicketing'):
+                        tiers = await self.get_available_ticket_tiers(event_id)
+                        event_dict['ticketTiers'] = tiers
+                        print(f"🎫 Event {event_id} has {len(tiers)} ticket tiers")
+                    
+                    # Get sub-events if sub-events are enabled
+                    if event_dict.get('enableSubEvents'):
+                        sub_events = await self.get_available_sub_events(event_id)
+                        event_dict['subEvents'] = sub_events
+                        print(f"🎊 Event {event_id} has {len(sub_events)} sub-events")
+                    
                     # Calculate remaining seats
                     event_dict['remainingSeats'] = event_dict['capacity'] - event_dict['registration_count']
                     event_dict['registeredUsers'] = registered_users
@@ -538,8 +550,8 @@ class EventRepository(BaseRepository):
         try:
             async with self.get_connection() as conn:
                 query = """
-                INSERT INTO "TicketTier" ("eventId", name, price, capacity, "targetYear", "startDate", "endDate", "isActive", "subEventPrices")
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                INSERT INTO "TicketTier" ("eventId", name, price, capacity, "targetYear", "startDate", "endDate", "isActive", "subEventPrices", "subEventCapacities")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 RETURNING *
                 """
                 
@@ -550,11 +562,16 @@ class EventRepository(BaseRepository):
                 if tier_data.get("endDate"):
                     end_date = datetime.fromisoformat(tier_data["endDate"].replace('Z', '+00:00'))
                 
-                # Handle subEventPrices as JSON
+                # Handle subEventPrices and subEventCapacities as JSON
                 sub_event_prices_json = None
                 if tier_data.get("subEventPrices"):
                     import json
                     sub_event_prices_json = json.dumps(tier_data["subEventPrices"])
+                
+                sub_event_capacities_json = None
+                if tier_data.get("subEventCapacities"):
+                    import json
+                    sub_event_capacities_json = json.dumps(tier_data["subEventCapacities"])
                 
                 row = await conn.fetchrow(
                     query,
@@ -566,7 +583,8 @@ class EventRepository(BaseRepository):
                     start_date,
                     end_date,
                     tier_data.get("isActive", True),
-                    sub_event_prices_json
+                    sub_event_prices_json,
+                    sub_event_capacities_json
                 )
                 
                 return dict(row)
@@ -610,7 +628,33 @@ class EventRepository(BaseRepository):
                 ORDER BY price ASC
                 """
                 rows = await conn.fetch(query, event_id)
-                return [dict(row) for row in rows]
+                
+                tiers = []
+                for row in rows:
+                    tier = dict(row)
+                    
+                    # Parse subEventPrices and subEventCapacities JSON if present
+                    if tier.get('subEventPrices'):
+                        import json
+                        try:
+                            tier['subEventPrices'] = json.loads(tier['subEventPrices'])
+                        except (json.JSONDecodeError, TypeError):
+                            tier['subEventPrices'] = None
+                    else:
+                        tier['subEventPrices'] = None
+                    
+                    if tier.get('subEventCapacities'):
+                        import json
+                        try:
+                            tier['subEventCapacities'] = json.loads(tier['subEventCapacities'])
+                        except (json.JSONDecodeError, TypeError):
+                            tier['subEventCapacities'] = None
+                    else:
+                        tier['subEventCapacities'] = None
+                    
+                    tiers.append(tier)
+                
+                return tiers
         except Exception as e:
             print(f"Error getting ticket tiers: {e}")
             raise e
@@ -641,7 +685,7 @@ class EventRepository(BaseRepository):
                 for row in rows:
                     tier = dict(row)
                     
-                    # Parse subEventPrices JSON if present
+                    # Parse subEventPrices and subEventCapacities JSON if present
                     if tier.get('subEventPrices'):
                         import json
                         try:
@@ -650,6 +694,15 @@ class EventRepository(BaseRepository):
                             tier['subEventPrices'] = None
                     else:
                         tier['subEventPrices'] = None
+                    
+                    if tier.get('subEventCapacities'):
+                        import json
+                        try:
+                            tier['subEventCapacities'] = json.loads(tier['subEventCapacities'])
+                        except (json.JSONDecodeError, TypeError):
+                            tier['subEventCapacities'] = None
+                    else:
+                        tier['subEventCapacities'] = None
                     
                     # Check if tier is within date range
                     is_date_available = True
@@ -674,6 +727,19 @@ class EventRepository(BaseRepository):
                         tier['availabilityReason'] = 'Sold out'
                     
                     tiers.append(tier)
+                
+                # Apply automatic progression logic: Early Bird → Regular
+                # If Early Bird is sold out, automatically make Regular available
+                if len(tiers) >= 2:
+                    early_bird = next((t for t in tiers if t['name'].lower() == 'early bird'), None)
+                    regular = next((t for t in tiers if t['name'].lower() == 'regular'), None)
+                    
+                    if early_bird and regular:
+                        # If Early Bird is sold out, make Regular available regardless of date
+                        if early_bird['remaining_capacity'] <= 0:
+                            regular['isAvailable'] = True
+                            regular['availabilityReason'] = 'Early Bird sold out - Regular now available'
+                            print(f"🔄 Auto-progression: Early Bird sold out, Regular now available for event {event_id}")
                 
                 return tiers
         except Exception as e:
@@ -709,7 +775,7 @@ class EventRepository(BaseRepository):
                 LEFT JOIN "EventRegistration" er ON se.id = er."subEventId"
                 WHERE se."eventId" = $1
                 GROUP BY se.id
-                ORDER BY se.price ASC
+                ORDER BY se.id ASC
                 """
                 rows = await conn.fetch(query, event_id)
                 
