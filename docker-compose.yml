@@ -27,10 +27,12 @@ services:
       - ./authentication:/app/authentication
       - ./main.py:/app/main.py
       - ./.env:/app/.env                  # AWS/Cognito 設定など
+      - ./uploads:/app/uploads            # アップロードされた画像を永続化
     ports:
       - "8000:8000"
     environment:
       - CORS_ORIGINS=http://localhost:3000
+      - BACKEND_URL=http://localhost:8000
       - DATABASE_URL=postgresql://postgres:MyNewPassword123!@utjn-db.ch68m8sgy7on.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}

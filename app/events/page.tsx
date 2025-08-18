@@ -23,6 +23,8 @@ interface TicketTier {
   availabilityReason: string;
   registered_count: number;
   remaining_capacity: number;
+  subEventPrices?: number[];
+  subEventCapacities?: number[];
 }
 
 interface SubEvent {
@@ -104,7 +106,6 @@ export default function EventsPage() {
   
   // Use ref to prevent multiple simultaneous fetch requests
   const isFetchingRef = useRef(false);
-  const lastUserEmailRef = useRef<string | null>(null);
 
   // Helper functions for notifications
   const showToast = (title: string, message: string, type: 'success' | 'error' | 'warning') => {
@@ -122,35 +123,8 @@ export default function EventsPage() {
     return now <= refundDeadline;
   };
 
-  useEffect(() => {
-    // Only fetch if user email changed or it's the initial load
-    const currentUserEmail = user?.email || null;
-    if (currentUserEmail !== lastUserEmailRef.current) {
-      console.log('🔄 User email changed, current:', currentUserEmail);
-      lastUserEmailRef.current = currentUserEmail;
-      fetchEvents();
-      if (user?.id) {
-        console.log('👤 User ID exists, fetching credits for user:', user.id);
-        fetchUserCredits();
-      } else {
-        console.log('❌ No user ID, cannot fetch credits');
-      }
-    }
-  }, [user?.email]);
-
-  // Separate useEffect for polling to avoid refetching on state changes
-  useEffect(() => {
-    // Set up polling for real-time updates
-    const pollInterval = setInterval(() => {
-      if (!registering && !isFetchingRef.current) {
-        fetchEvents();
-      }
-    }, 60000); // Increase to 60 seconds to reduce frequency
-
-    return () => clearInterval(pollInterval);
-  }, []);
-
   const fetchEvents = async () => {
+    console.log('🎯 fetchEvents called');
     // Prevent multiple simultaneous fetch requests
     if (isFetchingRef.current) {
       console.log('⏸️ Fetch already in progress, skipping...');
@@ -164,73 +138,37 @@ export default function EventsPage() {
       let url = '/api/events';
       if (user?.email) {
         url += `?user_email=${encodeURIComponent(user.email)}`;
+        console.log('🌐 Fetching events with user email:', user.email);
+      } else {
+        console.log('🌐 Fetching events without user email');
       }
       
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         console.log('🎯 Fetched events:', data.length);
+        console.log('🎯 Raw events data:', data);
+        console.log('🎯 Events data type:', typeof data);
+        console.log('🎯 Events data is array:', Array.isArray(data));
         
         // Set initial events data
         setEvents(data);
+        console.log('🎯 Events state set with length:', data.length);
         
-        // Fetch all ticket options in parallel, then batch update
-        const eventsWithAdvancedFeatures = data.filter((event: Event) => 
-          event.enableAdvancedTicketing || event.enableSubEvents
-        );
-        
-        if (eventsWithAdvancedFeatures.length > 0) {
-          console.log(`🎫 Fetching ticket options for ${eventsWithAdvancedFeatures.length} events...`);
-          
-          // Fetch all ticket options in parallel
-          const ticketOptionsPromises = eventsWithAdvancedFeatures.map(async (event: Event) => {
-            try {
-              let url = `/api/events/${event.id}/ticket-options`;
-              if (user?.email) {
-                url += `?user_email=${encodeURIComponent(user.email)}`;
-              }
-              
-              const response = await fetch(url);
-              if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                  return {
-                    eventId: event.id,
-                    ticketTiers: data.ticketTiers,
-                    subEvents: data.subEvents
-                  };
-                }
-              }
-              return null;
-            } catch (error) {
-              console.error(`Error fetching ticket options for event ${event.id}:`, error);
-              return null;
-            }
-          });
-          
-          // Wait for all ticket options to be fetched
-          const ticketOptionsResults = await Promise.all(ticketOptionsPromises);
-          
-          // Batch update all events with their ticket options
-          setEvents(prevEvents => {
-            const eventsMap = new Map(prevEvents.map(event => [event.id, event]));
-            
-            ticketOptionsResults.forEach(result => {
-              if (result && eventsMap.has(result.eventId)) {
-                const event = eventsMap.get(result.eventId)!;
-                eventsMap.set(result.eventId, {
-                  ...event,
-                  ticketTiers: result.ticketTiers,
-                  subEvents: result.subEvents
-                });
-              }
+        // Debug: Log detailed event data for Matrix Pricing
+        data.forEach((event: any) => {
+          if (event.enableAdvancedTicketing && event.enableSubEvents) {
+            console.log(`🔍 Matrix Pricing Debug for Event "${event.name}":`, {
+              eventId: event.id,
+              ticketTiers: event.ticketTiers,
+              subEvents: event.subEvents,
+              tierCount: event.ticketTiers?.length || 0,
+              subEventCount: event.subEvents?.length || 0
             });
-            
-            return Array.from(eventsMap.values());
-          });
-          
-          console.log('✅ All ticket options fetched and updated');
-        }
+          }
+        });
+        
+        console.log('✅ Events data set directly from get_all_events');
       } else {
         console.error('❌ Failed to fetch events:', response.status);
       }
@@ -266,21 +204,60 @@ export default function EventsPage() {
           setUserCredits(credits);
         } else {
           console.error('❌ Credits API returned success: false', data);
-          // Set to 0 as fallback
-          setUserCredits(0);
         }
       } else {
-        const errorData = await response.text();
-        console.error('❌ Credits API failed:', response.status, errorData);
-        // Set to 0 as fallback
-        setUserCredits(0);
+        console.error('❌ Failed to fetch user credits:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching user credits:', error);
-      // Set to 0 as fallback
-      setUserCredits(0);
+      console.error('💥 Error fetching user credits:', error);
     }
   };
+
+  // Initial load - fetch events immediately
+  useEffect(() => {
+    console.log('🔄 Initial load useEffect triggered');
+    fetchEvents();
+  }, []);
+
+  // User changes - fetch events with user context and credits
+  useEffect(() => {
+    console.log('🔄 User useEffect triggered, user:', user);
+    if (user) {
+      console.log('🔄 User available, fetching events with user context');
+      fetchEvents();
+      if (user.id) {
+        console.log('👤 User ID exists, fetching credits for user:', user.id);
+        fetchUserCredits();
+      }
+    }
+  }, [user]);
+
+  // Debug: Monitor events state changes
+  useEffect(() => {
+    console.log('🔄 Events state changed:', {
+      eventsLength: events.length,
+      events: events.map(e => ({
+        id: e.id,
+        name: e.name,
+        enableAdvancedTicketing: e.enableAdvancedTicketing,
+        enableSubEvents: e.enableSubEvents
+      }))
+    });
+  }, [events]);
+
+  // Separate useEffect for polling to avoid refetching on state changes
+  useEffect(() => {
+    // Set up polling for real-time updates
+    const pollInterval = setInterval(() => {
+      if (!registering && !isFetchingRef.current) {
+        fetchEvents();
+      }
+    }, 60000); // Increase to 60 seconds to reduce frequency
+
+    return () => clearInterval(pollInterval);
+  }, []);
+
+
 
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
@@ -308,6 +285,10 @@ export default function EventsPage() {
       id: e.id,
       name: e.name,
       type: e.type,
+      enableAdvancedTicketing: e.enableAdvancedTicketing,
+      enableSubEvents: e.enableSubEvents,
+      ticketTiersCount: e.ticketTiers?.length || 0,
+      subEventsCount: e.subEvents?.length || 0,
       isArchived: e.isArchived,
       date: e.date
     }))
@@ -323,9 +304,10 @@ export default function EventsPage() {
     let paymentUrl = `/payment?eventId=${eventId}&userId=${user.id}`;
     
     // Add credit usage parameters if credits are being used
-    if (useCredits[eventId] && creditsToUse[eventId] > 0) {
-      paymentUrl += `&useCredits=true&creditsAmount=${creditsToUse[eventId]}`;
-    }
+    // TODO: Fix credit usage logic
+    // if (useCredits[eventId] && creditsToUse[eventId] > 0) {
+    //   paymentUrl += `&useCredits=true&creditsAmount=${creditsToUse[eventId]}`;
+    // }
 
     // Redirect to payment page
     window.location.href = paymentUrl;
@@ -737,55 +719,196 @@ function EventCard({
   const availableTiers = event.ticketTiers?.filter(tier => tier.isAvailable) || [];
   const currentTier = availableTiers.length > 0 ? availableTiers[0] : null; // First available tier
 
+  // Debug: Log ticket tiers availability
+  console.log('🎫 Ticket tiers debug for event:', event.name, {
+    allTiers: event.ticketTiers?.map(t => ({
+      id: t.id,
+      name: t.name,
+      isAvailable: t.isAvailable,
+      remaining_capacity: t.remaining_capacity,
+      capacity: t.capacity
+    })),
+    availableTiers: availableTiers.length,
+    currentTier: currentTier?.name || 'null'
+  });
+
   // Get available sub-events
   const availableSubEvents = event.subEvents?.filter(subEvent => subEvent.isAvailable) || [];
 
+  // Debug: Log sub-events availability
+  console.log('🎊 Sub-events debug for event:', event.name, {
+    allSubEvents: event.subEvents?.map(se => ({
+      id: se.id,
+      name: se.name,
+      isAvailable: se.isAvailable,
+      remaining_capacity: se.remaining_capacity,
+      capacity: se.capacity
+    })),
+    availableSubEvents: availableSubEvents.length
+  });
+
+  // Auto-select sub-events for Matrix Pricing if none are selected
+  useEffect(() => {
+    if (event.enableAdvancedTicketing && event.enableSubEvents && selectedSubEventIds.length === 0 && availableSubEvents.length > 0) {
+      // Auto-select all available sub-events for Matrix Pricing
+      const availableSubEventIds = availableSubEvents.map(se => se.id);
+      setSelectedSubEventIds(availableSubEventIds);
+      console.log('🎯 Auto-selected sub-events for Matrix Pricing:', availableSubEventIds);
+    }
+  }, [event.enableAdvancedTicketing, event.enableSubEvents, availableSubEvents, selectedSubEventIds.length]);
+
   // Calculate effective values on client side only (after currentTier is defined)
   useEffect(() => {
-    // Calculate effective capacity
+    // Debug: Log the event data to see what we're working with
+    console.log('Event data for price calculation:', {
+      eventId: event.id,
+      enableAdvancedTicketing: event.enableAdvancedTicketing,
+      enableSubEvents: event.enableSubEvents,
+      currentTier: currentTier,
+      ticketTiers: event.ticketTiers,
+      subEvents: event.subEvents
+    });
+
+    // Calculate effective capacity based on current tier
     let capacity = event.capacity;
-    if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
-      capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
-    } else if (event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
-      capacity = event.subEvents.reduce((total, subEvent) => total + subEvent.capacity, 0);
-    }
-    setEffectiveCapacity(capacity);
-
-    // Calculate effective remaining seats
     let remaining = event.remainingSeats;
-    if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
-      remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
-    } else if (event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
-      remaining = event.subEvents.reduce((total, subEvent) => total + (subEvent.remaining_capacity || 0), 0);
-    }
-    setEffectiveRemainingSeats(remaining);
-
-    // Calculate effective price
     let price: number | string = event.fee;
-    if (event.enableAdvancedTicketing && currentTier) {
-      price = currentTier.price;
+
+    if (event.enableAdvancedTicketing && event.enableSubEvents && event.ticketTiers && event.ticketTiers.length > 0) {
+      // Matrix Pricing: Show tier capacity and price range for sub-events
+      if (currentTier) {
+        capacity = currentTier.capacity;
+        remaining = currentTier.remaining_capacity || 0;
+        
+        // Show price range for sub-events in this tier
+        if (currentTier.subEventPrices && event.subEvents) {
+          const prices = currentTier.subEventPrices.filter(p => p !== undefined && p > 0);
+          if (prices.length > 0) {
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            price = minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
+          } else {
+            price = 0;
+          }
+        } else {
+          price = 0;
+        }
+      } else {
+        // Fallback to total capacity and price range
+        capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
+        remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
+        price = 0; // Will be calculated based on selections
+      }
+    } else if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
+      // Simple Advanced Ticketing: use current tier's capacity and price
+      if (currentTier) {
+        capacity = currentTier.capacity;
+        remaining = currentTier.remaining_capacity || 0;
+        price = currentTier.price;
+      } else {
+        // Fallback to total capacity and regular price
+        capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
+        remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
+        const regularTier = event.ticketTiers.find(t => t.name === 'Regular');
+        price = regularTier ? regularTier.price : event.fee;
+      }
     } else if (event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
+      // Simple Sub-Events: show total capacity and price range
+      capacity = event.subEvents.reduce((total, subEvent) => total + subEvent.capacity, 0);
+      remaining = event.subEvents.reduce((total, subEvent) => total + (subEvent.remaining_capacity || 0), 0);
+      const prices = event.subEvents.map(se => se.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      price = minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
+    } else if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
+      // Simple Advanced Ticketing: use current tier's capacity and price
+      if (currentTier) {
+        capacity = currentTier.capacity;
+        remaining = currentTier.remaining_capacity || 0;
+        price = currentTier.price;
+      } else {
+        // Fallback to total capacity and regular price
+        capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
+        remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
+        const regularTier = event.ticketTiers.find(t => t.name === 'Regular');
+        price = regularTier ? regularTier.price : event.fee;
+      }
+    } else if (event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
+      // Simple Sub-Events: show total capacity and price range
+      capacity = event.subEvents.reduce((total, subEvent) => total + subEvent.capacity, 0);
+      remaining = event.subEvents.reduce((total, subEvent) => total + (subEvent.remaining_capacity || 0), 0);
       const prices = event.subEvents.map(se => se.price);
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
       price = minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
     }
+
+    setEffectiveCapacity(capacity);
+    setEffectiveRemainingSeats(remaining);
     setEffectivePrice(price);
   }, [event, currentTier]);
 
   // Calculate current price based on selections
   const getCurrentPrice = () => {
-    if (event.enableAdvancedTicketing) {
-      // If no tiers are configured, use basic event fee
+    if (event.enableAdvancedTicketing && event.enableSubEvents) {
+      // Matrix Pricing: Tier + SubEvent combination
+      if (currentTier && selectedSubEventIds.length > 0) {
+        console.log(`🔍 Total price calculation for "${event.name}":`, {
+          currentTier: currentTier.name,
+          selectedSubEventIds,
+          currentTierSubEventPrices: currentTier.subEventPrices,
+          allSubEvents: event.subEvents?.map(se => ({ id: se.id, name: se.name, price: se.price })),
+          subEventsInOrder: event.subEvents?.map((se, index) => ({ index, id: se.id, name: se.name }))
+        });
+        
+        return selectedSubEventIds.reduce((total, subEventId) => {
+          const subEventIndex = event.subEvents?.findIndex(se => se.id === subEventId) || -1;
+          const subEvent = event.subEvents?.find(se => se.id === subEventId);
+          let priceToAdd = 0;
+          
+          // Try to get price by index first
+          if (subEventIndex >= 0 && currentTier.subEventPrices && currentTier.subEventPrices[subEventIndex] !== undefined) {
+            priceToAdd = currentTier.subEventPrices[subEventIndex];
+            console.log(`  ✅ Using tier price by index for "${subEvent?.name || 'Unknown'}" (ID: ${subEventId}, index: ${subEventIndex}): $${priceToAdd}`);
+          } 
+          // Fallback: Try to map by name
+          else if (subEvent && currentTier.subEventPrices) {
+            const nameBasedMapping: { [key: string]: number } = {
+              '1st party': 0,  // First index
+              '2nd party': 1,  // Second index
+              '2nd party ': 1  // Handle name with trailing space
+            };
+            
+            const mappedIndex = nameBasedMapping[subEvent.name.trim()];
+            if (mappedIndex !== undefined && currentTier.subEventPrices[mappedIndex] !== undefined) {
+              priceToAdd = currentTier.subEventPrices[mappedIndex];
+              console.log(`  🔄 Using tier price by name mapping for "${subEvent.name}" (ID: ${subEventId}, mapped index: ${mappedIndex}): $${priceToAdd}`);
+            } else {
+              // Final fallback to sub-event's base price
+              priceToAdd = subEvent.price || 0;
+              console.log(`  ⚠️ Using fallback base price for "${subEvent.name}" (ID: ${subEventId}): $${priceToAdd} (no tier price available)`);
+            }
+          } else {
+            // Final fallback to sub-event's base price
+            priceToAdd = subEvent?.price || 0;
+            console.log(`  ⚠️ Using fallback base price for "Unknown" (ID: ${subEventId}): $${priceToAdd} (sub-event not found)`);
+          }
+          
+          return total + priceToAdd;
+        }, 0);
+      }
+      // If no sub-events selected, return 0
+      return 0;
+    } else if (event.enableAdvancedTicketing) {
+      // Simple Advanced Ticketing: use current tier price
       if (!event.ticketTiers || event.ticketTiers.length === 0) {
         return event.fee;
       }
-      // If tiers are configured, use current tier price
       if (currentTier) {
         return currentTier.price;
       }
-    }
-    if (event.enableSubEvents && selectedSubEventIds.length > 0) {
+    } else if (event.enableSubEvents && selectedSubEventIds.length > 0) {
+      // Simple Sub-Events: sum of selected sub-event prices
       return selectedSubEventIds.reduce((total, subEventId) => {
         const subEvent = event.subEvents?.find(se => se.id === subEventId);
         return total + (subEvent?.price || 0);
@@ -906,6 +1029,11 @@ function EventCard({
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clipRule="evenodd" />
                 </svg>
                 Fee: ${effectivePrice}
+                {event.enableAdvancedTicketing && currentTier && (
+                  <span className="text-xs text-blue-600 bg-blue-100 px-1 rounded ml-1">
+                    {currentTier.name}
+                  </span>
+                )}
               </span>
             )}
             <span className="flex items-center gap-1">
@@ -990,8 +1118,13 @@ function EventCard({
               {/* Ticket Tier Display */}
               {event.enableAdvancedTicketing && currentTier && (
                 <div className="w-full border border-blue-200 bg-blue-50 rounded-md p-3 text-sm">
-                  <div className="font-medium text-blue-900 mb-1">{currentTier.name}</div>
-                  <div className="text-blue-700">${currentTier.price}</div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-medium text-blue-900">{currentTier.name}</div>
+                    <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      Current Tier
+                    </div>
+                  </div>
+                  <div className="text-blue-700 font-semibold text-lg">${currentTier.price}</div>
                   <div className="text-xs text-blue-600">
                     {currentTier.remaining_capacity} seats left
                     {currentTier.targetYear !== 'All years' && (
@@ -1049,7 +1182,45 @@ function EventCard({
                         />
                         <div className="flex-1">
                           <div className="font-medium">{subEvent.name}</div>
-                          <div className="text-green-600">${subEvent.price}</div>
+                          <div className="text-green-600">
+                            ${(() => {
+                              if (event.enableAdvancedTicketing && event.enableSubEvents && currentTier) {
+                                const subEventIndex = event.subEvents?.findIndex(se => se.id === subEvent.id) || -1;
+                                console.log(`🔍 SubEvent price debug for "${subEvent.name}":`, {
+                                  subEventId: subEvent.id,
+                                  subEventIndex,
+                                  currentTierSubEventPrices: currentTier.subEventPrices,
+                                  priceAtIndex: currentTier.subEventPrices?.[subEventIndex],
+                                  fallbackPrice: subEvent.price,
+                                  allSubEventsOrder: event.subEvents?.map(se => ({ id: se.id, name: se.name }))
+                                });
+                                
+                                // Try to get price by index first
+                                if (subEventIndex >= 0 && currentTier.subEventPrices && currentTier.subEventPrices[subEventIndex] !== undefined) {
+                                  const priceByIndex = currentTier.subEventPrices[subEventIndex];
+                                  console.log(`  💰 Using price by index for "${subEvent.name}": $${priceByIndex}`);
+                                  return priceByIndex;
+                                }
+                                
+                                // Fallback: Try to map by name (for backward compatibility)
+                                if (currentTier.subEventPrices && event.subEvents) {
+                                  const nameBasedMapping: { [key: string]: number } = {
+                                    '1st party': 0,  // First index
+                                    '2nd party': 1,  // Second index
+                                    '2nd party ': 1  // Handle name with trailing space
+                                  };
+                                  
+                                  const mappedIndex = nameBasedMapping[subEvent.name.trim()];
+                                  if (mappedIndex !== undefined && currentTier.subEventPrices[mappedIndex] !== undefined) {
+                                    const priceByName = currentTier.subEventPrices[mappedIndex];
+                                    console.log(`  🔄 Using price by name mapping for "${subEvent.name}": $${priceByName} (mapped index: ${mappedIndex})`);
+                                    return priceByName;
+                                  }
+                                }
+                              }
+                              return subEvent.price;
+                            })()}
+                          </div>
                           <div className="text-gray-500">{subEvent.remaining_capacity} left</div>
                         </div>
                       </label>
@@ -1125,17 +1296,8 @@ function EventCard({
               {/* Current Price Display */}
               <div className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 text-center">
                 <div className="text-sm font-medium text-gray-900">
-                  {useCredits && creditsToUse > 0 ? (
-                    <div className="space-y-1">
-                      <div className="text-xs text-gray-600">Subtotal: ${getCurrentPrice()}</div>
-                      <div className="text-xs text-green-600">Credits: -${creditsToUse}</div>
-                      <div className="border-t border-gray-300 pt-1">
-                        Total: ${Math.max(0, getCurrentPrice() - creditsToUse)}
-                      </div>
-                    </div>
-                  ) : (
-                    <>Total: ${getCurrentPrice()}</>
-                  )}
+                  {/* TODO: Fix credit usage display */}
+                  <>Total: ${getCurrentPrice()}</>
                 </div>
               </div>
 
@@ -1160,7 +1322,7 @@ function EventCard({
                 </button>
               ) : (
                 <Link
-                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}${useCredits && creditsToUse > 0 ? `&useCredits=true&creditsAmount=${creditsToUse}` : ''}`}
+                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}`}
                   className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
                     canRegister()
                       ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
@@ -1168,11 +1330,7 @@ function EventCard({
                   }`}
                 >
                   <CreditCard size={16} />
-                  {useCredits && creditsToUse > 0 ? (
-                    <>Pay & Register (${Math.max(0, getCurrentPrice() - creditsToUse)})</>
-                  ) : (
-                    <>Pay & Register (${getCurrentPrice()})</>
-                  )}
+                  <>Pay & Register (${getCurrentPrice()})</>
                 </Link>
               )}
               

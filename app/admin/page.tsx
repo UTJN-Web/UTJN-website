@@ -310,27 +310,6 @@ export default function AdminDashboard() {
             </div>
           </Link>
         </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="flex gap-4">
-            <Link 
-              href="/admin/events?action=create"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Calendar className="w-4 h-4" />
-              Create New Event
-            </Link>
-            <Link 
-              href="/admin/refunds?filter=pending"
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2"
-            >
-              <DollarSign className="w-4 h-4" />
-              Review Pending Refunds
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

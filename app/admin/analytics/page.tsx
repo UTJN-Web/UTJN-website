@@ -166,16 +166,25 @@ export default function AnalyticsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Analytics & Insights</h1>
               <p className="text-gray-600 mt-2">Track performance and member engagement</p>
             </div>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="1y">Last year</option>
-            </select>
+            <div className="flex gap-4">
+              <Link
+                href="/admin/analytics/detailed"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <BarChart3 size={16} className="mr-2" />
+                Event Detailed Analytics
+              </Link>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last year</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -249,7 +258,10 @@ export default function AnalyticsPage() {
                 <p className="text-sm font-medium text-gray-600">Avg. Attendance</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {analytics.events.length > 0 ? 
-                    Math.round((analytics.events.reduce((sum, e) => sum + (e.capacity - e.remainingSeats), 0) / analytics.events.length)) 
+                    (() => {
+                      const avg = (analytics.events.reduce((sum, e) => sum + (e.capacity - e.remainingSeats), 0) / analytics.events.length);
+                      return avg < 1 ? avg.toFixed(1) : Math.round(avg);
+                    })()
                     : 0
                   }
                 </p>
@@ -418,7 +430,10 @@ export default function AnalyticsPage() {
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
                 <span className="text-sm text-gray-600">
                   Average event attendance: {analytics.events.length > 0 ? 
-                    Math.round((analytics.events.reduce((sum, e) => sum + (e.capacity - e.remainingSeats), 0) / analytics.events.length)) 
+                    (() => {
+                      const avg = (analytics.events.reduce((sum, e) => sum + (e.capacity - e.remainingSeats), 0) / analytics.events.length);
+                      return avg < 1 ? avg.toFixed(1) : Math.round(avg);
+                    })()
                     : 0
                   } people
                 </span>

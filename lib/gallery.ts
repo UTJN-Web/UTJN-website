@@ -10,7 +10,7 @@ export interface EventGallery {
   years: YearBlock[];       // newest → oldest
 }
 
-import { NAME_MAP } from '@/lib/eventMeta';
+import { NAME_MAP, EventSlug } from '@/lib/eventMeta';
 
 /** Absolute path to /public/Gallery */
 const GALLERY_DIR = path.join(process.cwd(), 'public', 'Gallery');
@@ -48,7 +48,7 @@ export async function loadEvent(slug: string): Promise<EventGallery> {
 
   return {
     slug,
-    displayName: NAME_MAP[slug] ?? slug.replace(/_/g, ' '),
+    displayName: (NAME_MAP as Record<string, string>)[slug] ?? slug.replace(/_/g, ' '),
     description: description ?? 'NULL',   // ← 読み込めなければ "NULL"
     years,
   };

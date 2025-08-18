@@ -24,8 +24,18 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     console.log('API route: events backend response status:', response.status);
+    console.log('API route: events data length:', data.length);
+    console.log('API route: events data sample:', data.slice(0, 2).map((e: any) => ({
+      id: e.id,
+      name: e.name,
+      enableAdvancedTicketing: e.enableAdvancedTicketing,
+      enableSubEvents: e.enableSubEvents,
+      ticketTiersCount: e.ticketTiers?.length || 0,
+      subEventsCount: e.subEvents?.length || 0
+    })));
 
     if (response.ok) {
+      console.log('API route: returning events data to frontend');
       return NextResponse.json(data);
     } else {
       return NextResponse.json(
