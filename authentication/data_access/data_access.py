@@ -9,7 +9,7 @@ import webbrowser
 import boto3
 from pycognito import aws_srp
 from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
-from authentication.data_access.cognito_idp_actions import UsernameExistsError, InvalidPasswordError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError
+from authentication.data_access.cognito_idp_actions import UsernameExistsError, InvalidPasswordError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError, PasswordSameError
 from authentication import display_strings as ds
 
 def signup_user(email, password, password2):
@@ -214,22 +214,25 @@ def request_password_reset(email):
     Args:
         email (str): The user's email address.
     Returns:
-        bool: True if the password reset request is successful, False otherwise.
+        A tuple containing...
+            - bool: True if the password reset request is successful, False otherwise.
+            - str: A message indicating the result of the request.
     """
     cog_wrapper = CognitoIdentityProviderWrapper()
 
     # Call the boto3 function that requests password reset
     try:
-        response = cog_wrapper.request_password_reset(email)
+        response = cog_wrapper.forgot_password(email)
         if response:
-            print(f"Password reset requested for {email}.")
-            return True
+            return (True, f"Password reset requested for {email}.")
         else:
-            print(f"Failed to request password reset for {email}.")
-            return False
+            return (False, "There was an error requesting for a password reset. Please try again later.")
+        
     except EmailNotFoundError:
-        print(f"Email {email} not found.")
-        return False
+        return (False, f"An account with {email} does not exist. Please enter the correct email adress or sign up for an account first.")
+    
+    except Exception as e:
+        return (False, ds.GENERAL_ERROR) 
     
 def reset_password(email, code, new_password):
     """
@@ -245,16 +248,33 @@ def reset_password(email, code, new_password):
 
     # Call the boto3 function that resets the password
     try:
-        response = cog_wrapper.reset_password(email, code, new_password)
+        response = cog_wrapper.confirm_forgot_password(email, code, new_password)
         if response:
-            print(f"Password reset successful for {email}.")
-            return True
+            return (True, f"Password reset successful for {email}.")
+
         else:
-            print(f"Failed to reset password for {email}.")
-            return False
-    except EmailNotFoundError:
-        print(f"Email {email} not found.")
-        return False
+            return (False, ds.GENERAL_ERROR)
+        
+    except IncorrectCodeError:
+        return(False, ds.INCORRECT_VERFICATION_CODE)
+    
+    except ExpiredCodeError:
+        return(False, ds.VERIFICATION_CODE_EXPIRED)
+    
+    except InvalidPasswordError:
+        return(False, ds.RSP_PASSWORD_MISMATCH)
+    
+    except PasswordSameError:
+        return(False, ds.PASSWORD_SAME)
+    
+    except UserNotConfirmedError:
+        return(False, ds.RSP_USER_UNCONFIRMED)
+    
+    except TooManyFailedAttemptsError:
+        return(False, ds.RSP_TOO_MANY_FAILED_ATTEMPTS)
+    
+    except Exception as e:
+        return (False, ds.GENERAL_ERROR) 
 
 
 def call_admin_get_user(email):
