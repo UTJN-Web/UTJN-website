@@ -163,6 +163,8 @@ async def get_user_profile(email: str):
                     "email": db_user["email"],
                     "major": db_user["major"],
                     "graduationYear": db_user["graduationYear"],
+                    "currentYear": db_user["currentYear"],
+                    "university": db_user["university"],
                     "cognitoSub": db_user["cognitoSub"],
                     "joinedAt": db_user["joinedAt"].isoformat() if db_user["joinedAt"] else None
                 }

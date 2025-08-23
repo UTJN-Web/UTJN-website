@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
+import PasswordInput from './PasswordInput';
 
 export default function LoginModal({ onClose }: { onClose: () => void }) {
   const { login } = useUser();
@@ -18,13 +19,13 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     setLoading(true);
     
     try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-      headers: { 'Content-Type': 'application/json' },
-    });
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-    if (res.ok) {
+      if (res.ok) {
         const data = await res.json();
         // ログイン成功後、ユーザーコンテキストを更新
         if (data.user) {
@@ -32,9 +33,49 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
         } else {
           login({ email });
         }
+        
+        // ユーザープロファイルを確認
+        try {
+          const profileResponse = await fetch(`/api/users/profile?email=${encodeURIComponent(email)}`);
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.success && profileData.user) {
+              // プロファイルが完全かチェック
+              const user = profileData.user;
+              const hasCompleteProfile = user.firstName && user.lastName && user.major && 
+                                       user.graduationYear && user.university && user.currentYear &&
+                                       user.firstName.trim() !== '' && user.lastName.trim() !== '';
+              
+              if (!hasCompleteProfile) {
+                // プロファイルが不完全な場合、プロファイル入力画面に遷移
+                onClose();
+                window.location.href = `/information?email=${encodeURIComponent(email)}`;
+                return;
+              }
+            } else {
+              // プロファイルが存在しない場合、プロファイル入力画面に遷移
+              onClose();
+              window.location.href = `/information?email=${encodeURIComponent(email)}`;
+              return;
+            }
+          } else {
+            // プロファイル取得に失敗した場合、プロファイル入力画面に遷移
+            onClose();
+            window.location.href = `/information?email=${encodeURIComponent(email)}`;
+            return;
+          }
+        } catch (profileErr) {
+          console.error('Profile check error:', profileErr);
+          // プロファイル確認に失敗した場合、プロファイル入力画面に遷移
+          onClose();
+          window.location.href = `/information?email=${encodeURIComponent(email)}`;
+          return;
+        }
+        
+        // プロファイルが完全な場合、ホームページにリダイレクト
         onClose();
-      window.location.href = '/';
-    } else {
+        window.location.href = '/';
+      } else {
         const data = await res.json();
         setError(data.detail || 'You entered an invalid email or password.');
       }
@@ -61,13 +102,12 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
             className="w-full rounded border p-2"
             required
           />
-          <input
-            type="password"
-            placeholder="Password"
+          <PasswordInput
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border p-2"
+            onChange={setPassword}
+            placeholder="Password"
             required
+            disabled={loading}
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button

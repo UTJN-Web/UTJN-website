@@ -8,6 +8,7 @@ import asyncio
 # 認証ルーターを読み込む
 from authentication.use_case.signup.signup_controller import router as signup_router
 from authentication.use_case.login.login_controller import login_router
+from authentication.use_case.forgot_password.forgotpass_controller import forgotpass_router
 from authentication.use_case.contact.contact_controller import contact_router
 from authentication.use_case.user.user_controller import user_router
 from authentication.use_case.form.form_controller import form_router
@@ -38,6 +39,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ─── ルーター登録 ─────────────────────────────────────
 app.include_router(signup_router)
 app.include_router(login_router)
+app.include_router(forgotpass_router)
 app.include_router(contact_router)
 app.include_router(user_router)
 app.include_router(form_router)

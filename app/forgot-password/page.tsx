@@ -2,14 +2,43 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/Toast';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleNext = (e: React.FormEvent) => {
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`/forgot-password/verify?email=${encodeURIComponent(email)}`);
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        showSuccess('Reset code sent to your email!', 'Success');
+        setTimeout(() => {
+          router.push(`/forgot-password/verify?email=${encodeURIComponent(email)}`);
+        }, 1500);
+      } else {
+        showError(data.detail || 'Failed to send reset code');
+      }
+    } catch (err: any) {
+      showError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,12 +57,14 @@ export default function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 rounded px-4 py-2"
             required
+            disabled={loading}
           />
           <button
             type="submit"
-            className="w-full bg-[#2e2e2e] hover:bg-[#1c2a52] text-white py-2 rounded"
+            className="w-full bg-[#2e2e2e] hover:bg-[#1c2a52] text-white py-2 rounded disabled:opacity-50"
+            disabled={loading}
           >
-            Send
+            {loading ? 'Sending...' : 'Send'}
           </button>
           <p className="text-sm text-center mt-4">
             Back to{' '}
@@ -47,6 +78,14 @@ export default function ForgotPasswordPage() {
           </p>
         </form>
       </div>
+      
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={hideToast}
+        title={toast.title}
+        message={toast.message}
+        type={toast.type}
+      />
     </div>
   );
 }
