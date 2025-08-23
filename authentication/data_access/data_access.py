@@ -234,7 +234,7 @@ def request_password_reset(email):
     except Exception as e:
         return (False, ds.GENERAL_ERROR) 
     
-def reset_password(email, code, new_password):
+def reset_password(email, code, new_password1, new_password2):
     """
     Resets the password for the user with the given email.
     Args:
@@ -246,15 +246,21 @@ def reset_password(email, code, new_password):
     """
     cog_wrapper = CognitoIdentityProviderWrapper()
 
+    # Check if the passwords match
+    if new_password1 != new_password2:
+        # If not, return False
+        return (False, ds.RSP_PASSWORD_MISMATCH)
+
     # Call the boto3 function that resets the password
     try:
-        response = cog_wrapper.confirm_forgot_password(email, code, new_password)
+        response = cog_wrapper.confirm_forgot_password(email, code, new_password1)
         if response:
             return (True, f"Password reset successful for {email}.")
 
         else:
             return (False, ds.GENERAL_ERROR)
-        
+    
+    # Display errors as necessary
     except IncorrectCodeError:
         return(False, ds.INCORRECT_VERFICATION_CODE)
     

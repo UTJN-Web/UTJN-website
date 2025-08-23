@@ -31,3 +31,4 @@ PASSWORD_SAME = "The new password you entered is the same as your old password. 
 RSP_TOO_MANY_FAILED_ATTEMPTS = "Too many failed attempts. Please try again later."
 RSP_USER_UNCONFIRMED = "You are not confirmed yet. Please complete your sign in process first."
 INCORRECT_VERFICATION_CODE = "The verification code you entered is incorrect. Please try again."
+RSP_PASSWORD_MISMATCH = "Passwords do not match. Please try again."
