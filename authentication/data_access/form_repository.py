@@ -686,14 +686,18 @@ class FormRepository(BaseRepository):
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                     RETURNING *
                 """
+                # Ensure discount values are float
+                discount_value = float(coupon_data["discountValue"])
+                min_amount = float(coupon_data.get("minAmount")) if coupon_data.get("minAmount") else None
+                
                 row = await conn.fetchrow(
                     query,
                     coupon_data["code"],
                     coupon_data["name"],
                     coupon_data.get("description"),
                     coupon_data["discountType"],
-                    coupon_data["discountValue"],
-                    coupon_data.get("minAmount"),
+                    discount_value,
+                    min_amount,
                     coupon_data.get("maxUses"),
                     coupon_data.get("isActive", True),
                     coupon_data.get("expiresAt"),
@@ -744,12 +748,15 @@ class FormRepository(BaseRepository):
                         VALUES ($1, $2, $3, $4)
                         RETURNING *
                     """
+                    # Ensure discount amount is float
+                    discount_amount = float(usage_data["discountAmount"])
+                    
                     usage_row = await conn.fetchrow(
                         usage_query,
                         usage_data["couponId"],
                         usage_data["userId"],
                         usage_data["eventId"],
-                        usage_data["discountAmount"]
+                        discount_amount
                     )
                     
                     # Increment usage count
@@ -815,14 +822,18 @@ class FormRepository(BaseRepository):
                                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                                     RETURNING *
                                 """
+                                # Ensure discount values are float
+                                discount_value = float(coupon["discountValue"])
+                                min_amount = float(coupon["minAmount"]) if coupon["minAmount"] else None
+                                
                                 user_coupon = await conn.fetchrow(
                                     user_coupon_query,
                                     user_coupon_code,
                                     f"{coupon['name']} - {user_row['firstName']}",
                                     f"Auto-generated for {user_row['firstName']} {user_row['lastName']}",
                                     coupon["discountType"],
-                                    coupon["discountValue"],
-                                    coupon["minAmount"],
+                                    discount_value,
+                                    min_amount,
                                     1,  # maxUses = 1 for individual coupons
                                     True,
                                     coupon["expiresAt"],
@@ -986,7 +997,7 @@ class FormRepository(BaseRepository):
                 total_earned = user_row["totalCreditsEarned"]
                 print(f"💰 User {user_id} credits: {credits}, total earned: {total_earned}")
                 
-                # Handle both int and float types
+                # Ensure credits are float values (handle Decimal types from database)
                 current_credits = float(credits) if credits is not None else 0.0
                 total_credits_earned = float(total_earned) if total_earned is not None else 0.0
                 
@@ -1035,7 +1046,7 @@ class FormRepository(BaseRepository):
                     if not user_row:
                         raise Exception(f"User {user_id} not found")
                     
-                    current_credits = user_row["credits"] or 0
+                    current_credits = float(user_row["credits"] or 0)
                     if current_credits < amount:
                         raise Exception(f"Insufficient credits. Current: {current_credits}, Required: {amount}")
                     

@@ -496,10 +496,23 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading events...</p>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Loading content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading Events</h2>
+          <p className="text-gray-600">Please wait while we fetch the latest events...</p>
         </div>
       </div>
     );

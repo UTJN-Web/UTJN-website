@@ -283,30 +283,54 @@ export default function AdminFormsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading forms...</p>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Loading content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading Forms</h2>
+          <p className="text-gray-600">Please wait while we fetch forms data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Full width container */}
-      <div className="w-full px-6 py-6">
+    <div
+      className="relative min-h-screen w-full"
+      style={{
+        backgroundImage: "url('/UofT.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Dark faded overlay */}
+      <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+      {/* Content */}
+      <div className="relative z-10 w-full px-6 py-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Forms Management</h1>
-          <p className="text-gray-600 mt-2">Design event forms and manage submissions</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-[#1c2a52] mb-2">Forms Management</h1>
+          <p className="text-gray-700 text-lg">Design event forms and manage submissions</p>
         </div>
 
         {/* Forms Content */}
         {(
           <div className="space-y-6">
             {/* Controls Bar */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm p-4">
               <div className="flex flex-wrap items-center gap-4">
                 {/* Search */}
                 <div className="flex-1 min-w-64">
@@ -317,7 +341,7 @@ export default function AdminFormsPage() {
                       placeholder="Search events..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -328,7 +352,7 @@ export default function AdminFormsPage() {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#1c2a52] focus:border-transparent"
                   >
                     {EVENT_TYPES.map(type => (
                       <option key={type.value} value={type.value}>
@@ -344,7 +368,7 @@ export default function AdminFormsPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#1c2a52] focus:border-transparent"
                   >
                     <option value="date-desc">Newest First</option>
                     <option value="date-asc">Oldest First</option>
@@ -360,7 +384,7 @@ export default function AdminFormsPage() {
                     type="checkbox"
                     checked={showArchived}
                     onChange={(e) => setShowArchived(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-[#1c2a52] border-gray-300 rounded focus:ring-[#1c2a52]"
                   />
                   <span className="text-sm text-gray-600">Show Archived</span>
                 </label>
@@ -374,7 +398,7 @@ export default function AdminFormsPage() {
                 const categoryType = EVENT_TYPES.find(t => t.value === event.type);
                 
                 return (
-                  <div key={event.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <div key={event.id} className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
                     {/* Event Header */}
                     <div className="p-4 border-b border-gray-100">
                       <div className="flex items-start justify-between">

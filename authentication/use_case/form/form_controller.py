@@ -509,13 +509,22 @@ async def use_coupon(usage_request: CouponUsageRequest):
             if not coupon:
                 raise HTTPException(status_code=404, detail="Coupon not found or inactive")
             
-            # Calculate discount amount (this would be calculated on frontend based on event price)
-            # For now, we'll just record the usage
+            # Calculate discount amount based on coupon type and value
+            # Note: This is a placeholder - actual calculation should be done with event price
+            discount_amount = 0.0
+            if coupon["discountType"] == "percentage":
+                # For percentage discounts, we need the event price to calculate
+                # This will be calculated on the frontend with actual event price
+                discount_amount = 0.0
+            elif coupon["discountType"] == "fixed":
+                # For fixed amount discounts
+                discount_amount = float(coupon["discountValue"])
+            
             usage_data = {
                 "couponId": coupon["id"],
                 "userId": usage_request.userId,
                 "eventId": usage_request.eventId,
-                "discountAmount": 0  # This should be calculated based on actual event price
+                "discountAmount": discount_amount
             }
             
             usage = await form_repo.use_coupon(usage_data)

@@ -155,214 +155,223 @@ export default function AdminRefundsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-700">Loading refund requests...</p>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Loading content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading Refunds</h2>
+          <p className="text-gray-600">Please wait while we fetch refund requests...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link 
-              href="/admin"
-              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-            >
-              ← Back to Admin Dashboard
-            </Link>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Refund Management</h1>
-          <p className="text-gray-600">Manage user refund requests for paid events</p>
-        </div>
+    <div
+      className="relative min-h-screen w-full"
+      style={{
+        backgroundImage: "url('/UofT.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Dark faded overlay */}
+      <div className="absolute inset-0 bg-black opacity-20 z-0" />
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{refunds.length}</p>
-              </div>
+      {/* Content */}
+      <div className="relative z-10 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <Link 
+                href="/admin"
+                className="text-sm text-gray-700 hover:text-[#1c2a52] flex items-center gap-1 transition-colors"
+              >
+                ← Back to Admin Dashboard
+              </Link>
+            </div>
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-[#1c2a52] mb-2">Refund Management</h1>
+              <p className="text-gray-700 text-lg">Manage user refund requests for paid events</p>
             </div>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Clock className="w-6 h-6 text-amber-600" />
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-600">Total Requests</p>
+                <p className="text-2xl font-bold text-[#1c2a52]">{refunds.length}</p>
               </div>
-              <div className="ml-4">
+            </div>
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {refunds.filter(r => r.status === 'pending').length}
                 </p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {refunds.filter(r => r.status === 'approved').length}
                 </p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="ml-4">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Rejected</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {refunds.filter(r => r.status === 'rejected').length}
                 </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border mb-6">
-          <div className="p-6">
-            <div className="flex gap-4">
-              {['all', 'pending', 'approved', 'rejected'].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setFilter(status as any)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filter === status
-                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                  {status !== 'all' && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-200 text-xs">
-                      {refunds.filter(r => r.status === status).length}
-                    </span>
-                  )}
-                </button>
-              ))}
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm border mb-6">
+            <div className="p-6">
+              <div className="flex gap-4">
+                {['all', 'pending', 'approved', 'rejected'].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilter(status as any)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filter === status
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                    {status !== 'all' && (
+                      <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-200 text-xs">
+                        {refunds.filter(r => r.status === status).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Refund Requests */}
-        <div className="space-y-6">
-          {filteredRefunds.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
-              <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No refund requests</h3>
-              <p className="text-gray-500">No refund requests found for the selected filter.</p>
-            </div>
-          ) : (
-            filteredRefunds.map((refund) => (
-              <div key={refund.id} className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      <DollarSign className="w-6 h-6 text-gray-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {refund.eventName}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          {refund.email}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(refund.requestDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl font-bold text-gray-900">
-                      {refund.currency} ${refund.amount.toFixed(2)}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getStatusColor(refund.status)}`}>
-                      {getStatusIcon(refund.status)}
-                      {refund.status.charAt(0).toUpperCase() + refund.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-
-                {refund.reason && (
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <FileText className="w-4 h-4 text-gray-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Reason:</p>
-                        <p className="text-sm text-gray-600">{refund.reason}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {refund.adminNotes && (
-                  <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm font-medium text-blue-700 mb-1">Admin Notes:</p>
-                    <p className="text-sm text-blue-600">{refund.adminNotes}</p>
-                  </div>
-                )}
-
-                {refund.status === 'pending' && (
-                  <div className="flex gap-3 pt-4 border-t">
-                    <button
-                      onClick={() => handleRefundAction(refund.id, 'approve', 'Approved by admin')}
-                      disabled={processing === refund.id}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {processing === refund.id ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          Approve Refund
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleRefundAction(refund.id, 'reject', 'Rejected by admin')}
-                      disabled={processing === refund.id}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Reject Refund
-                    </button>
-                  </div>
-                )}
-
-                {refund.processedDate && (
-                  <div className="pt-4 border-t">
-                    <p className="text-xs text-gray-500">
-                      Processed on {new Date(refund.processedDate).toLocaleString()}
-                    </p>
-                  </div>
-                )}
+          {/* Refund Requests */}
+          <div className="space-y-6">
+            {filteredRefunds.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
+                <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No refund requests</h3>
+                <p className="text-gray-500">No refund requests found for the selected filter.</p>
               </div>
-            ))
-          )}
+            ) : (
+              filteredRefunds.map((refund) => (
+                <div key={refund.id} className="bg-white rounded-lg shadow-sm border p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <DollarSign className="w-6 h-6 text-gray-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                          {refund.eventName}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            {refund.email}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(refund.requestDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl font-bold text-gray-900">
+                        {refund.currency} ${refund.amount.toFixed(2)}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getStatusColor(refund.status)}`}>
+                        {getStatusIcon(refund.status)}
+                        {refund.status.charAt(0).toUpperCase() + refund.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {refund.reason && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <FileText className="w-4 h-4 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-1">Reason:</p>
+                          <p className="text-sm text-gray-600">{refund.reason}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {refund.adminNotes && (
+                    <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm font-medium text-blue-700 mb-1">Admin Notes:</p>
+                      <p className="text-sm text-blue-600">{refund.adminNotes}</p>
+                    </div>
+                  )}
+
+                  {refund.status === 'pending' && (
+                    <div className="flex gap-3 pt-4 border-t">
+                      <button
+                        onClick={() => handleRefundAction(refund.id, 'approve', 'Approved by admin')}
+                        disabled={processing === refund.id}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {processing === refund.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            Approve Refund
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleRefundAction(refund.id, 'reject', 'Rejected by admin')}
+                        disabled={processing === refund.id}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Reject Refund
+                      </button>
+                    </div>
+                  )}
+
+                  {refund.processedDate && (
+                    <div className="pt-4 border-t">
+                      <p className="text-xs text-gray-500">
+                        Processed on {new Date(refund.processedDate).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
