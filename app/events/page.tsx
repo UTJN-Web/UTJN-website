@@ -998,12 +998,10 @@ function EventCard({
               Seats {effectiveCapacity - effectiveRemainingSeats}/{effectiveCapacity}
             </span>
             {!archived && (
-              <div className={`mt-1 w-full bg-gray-200 rounded-full h-2 ${
-                isFull ? 'bg-red-200' : effectiveRemainingSeats <= 5 ? 'bg-yellow-200' : 'bg-green-200'
-              }`}>
+              <div className={`mt-1 w-full bg-[#1c2a52] bg-opacity-10 rounded-full h-2`}>
                 <div 
                   className={`h-2 rounded-full ${
-                    isFull ? 'bg-red-500' : effectiveRemainingSeats <= 5 ? 'bg-yellow-500' : 'bg-green-500'
+                    isFull ? 'bg-red-500' : effectiveRemainingSeats <= 5 ? 'bg-yellow-500' : 'bg-[#1c2a52] bg-opacity-30'
                   }`}
                   style={{ width: `${((effectiveCapacity - effectiveRemainingSeats) / effectiveCapacity) * 100}%` }}
                 ></div>
@@ -1018,16 +1016,18 @@ function EventCard({
             <span
               className={`ml-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
                 event.type === 'career'
-                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                  ? 'bg-[#1c2a52] text-white'
+                  : 'bg-[#1c2a52] text-white'
               }`}
             >
-              {event.type === 'career' ? '💼 Career' : '🎉 Social'}
+              {event.type === 'career' ? 'Career' : 'Social'}
             </span>
           </div>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {event.description}
-          </p>
+          <div className="mt-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-[#1c2a52] rounded-r-lg p-3 shadow-sm">
+            <p className="text-sm text-gray-700 leading-relaxed font-medium">
+              {event.description}
+            </p>
+          </div>
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
             <span className="flex items-center gap-1">
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
