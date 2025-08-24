@@ -163,79 +163,102 @@ export default function EventsPage() {
   const archivedEvents = filteredEvents.filter((e) => e.archived);
 
   return (
-    <section className="fade-in-up w-full max-w-4xl px-4 pb-20">
-      <h1 className="mb-8 text-center text-4xl font-bold">Member Events</h1>
-
-      <div className="mb-10 flex justify-center gap-2">
-        <label htmlFor="filter" className="sr-only">
-          Search events
-        </label>
-        <input
-          id="filter"
-          type="text"
-          placeholder="Search by keyword"
-          className="w-full max-w-sm rounded-md border border-gray-300 bg-transparent px-3 py-2 focus:border-[#1c2a52] focus:outline-none"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
+    <div className="min-h-screen w-full">
+      {/* ───────── Hero banner (Option B) ───────── */}
+      <section className="relative h-[36vh] w-full fade-in-up">
+        <Image
+          src="/trinity_college.jpg"    // put a big, crisp image in /public
+          alt="Member Events"
+          fill
+          priority
+          quality={100}
+          sizes="100vw"
+          className="object-cover"
         />
-      </div>
+        {/* readability overlay */}
+        <div className="absolute inset-0 bg-black/35" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <h1 className="px-6 text-center text-4xl font-extrabold text-white drop-shadow">
+            Member Events
+          </h1>
+        </div>
+      </section>
 
-      <div className="mb-10 flex justify-center gap-4">
-        {(['all', 'career', 'social'] as const).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`rounded-full px-4 py-2 text-sm border transition ${
-              category === c
-                ? 'bg-[#1c2a52] text-white border-[#1c2a52]'
-                : 'border-gray-400 hover:bg-gray-100 dark:hover:bg-[#171717]'
-            }`}
-          >
-            {c === 'all'
-              ? 'All'
-              : c === 'career'
-              ? 'Career'
-              : 'Social'}
-          </button>
-        ))}
-      </div>
+      {/* ───────── Main content ───────── */}
+      <section className="fade-in-up mx-auto w-full max-w-4xl px-4 pb-20 pt-10">
+        {/* keep an accessible heading for screen readers */}
+        <h1 className="sr-only">Member Events</h1>
 
-      <div className="space-y-8">
-        {liveEvents.length === 0 && (
-          <p className="text-center text-gray-500">
-            No events found.
-          </p>
-        )}
-        {liveEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
+        {/* search */}
+        <div className="mb-10 flex justify-center gap-2">
+          <label htmlFor="filter" className="sr-only">
+            Search events
+          </label>
+          <input
+            id="filter"
+            type="text"
+            placeholder="Search by keyword"
+            className="w-full max-w-sm rounded-md border border-gray-300 bg-transparent px-3 py-2 focus:border-[#1c2a52] focus:outline-none"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+        </div>
 
-      <div className="mt-16 text-center">
-        <button
-          className="inline-flex items-center gap-2 rounded-md border border-gray-400 px-4 py-2 text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
-          onClick={() => setShowArchived((prev) => !prev)}
-        >
-          {showArchived ? (
-            <>
-              Hide archived <ChevronUp size={18} />
-            </>
-          ) : (
-            <>
-              View archived events <ChevronDown size={18} />
-            </>
-          )}
-        </button>
-      </div>
-
-      {showArchived && (
-        <div className="mt-10 space-y-8">
-          {archivedEvents.map((event) => (
-            <EventCard key={event.id} event={event} archived />
+        {/* filter tabs */}
+        <div className="mb-10 flex justify-center gap-4">
+          {(['all', 'career', 'social'] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setCategory(c)}
+              className={`rounded-full px-4 py-2 text-sm border transition ${
+                category === c
+                  ? 'bg-[#1c2a52] text-white border-[#1c2a52]'
+                  : 'border-gray-400 hover:bg-gray-100 dark:hover:bg-[#171717]'
+              }`}
+            >
+              {c === 'all' ? 'All' : c === 'career' ? 'Career' : 'Social'}
+            </button>
           ))}
         </div>
-      )}
-    </section>
+
+        {/* live events */}
+        <div className="space-y-8">
+          {liveEvents.length === 0 && (
+            <p className="text-center text-gray-500">No events found.</p>
+          )}
+          {liveEvents.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+
+        {/* archived toggle */}
+        <div className="mt-16 text-center">
+          <button
+            className="inline-flex items-center gap-2 rounded-md border border-gray-400 px-4 py-2 text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
+            onClick={() => setShowArchived((prev) => !prev)}
+          >
+            {showArchived ? (
+              <>
+                Hide archived <ChevronUp size={18} />
+              </>
+            ) : (
+              <>
+                View archived events <ChevronDown size={18} />
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* archived list */}
+        {showArchived && (
+          <div className="mt-10 space-y-8">
+            {archivedEvents.map((event) => (
+              <EventCard key={event.id} event={event} archived />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -251,6 +274,7 @@ function EventCard({
 
   return (
     <article className="flex flex-col rounded-lg border border-gray-300 p-4 shadow-sm md:flex-row md:items-center md:gap-4">
+      {/* date / seats */}
       <div className="flex w-full items-center justify-between md:w-[120px] md:flex-col md:justify-center">
         <span className="text-2xl font-bold md:text-3xl">{dateLabel}</span>
         <span className="text-sm text-gray-500">
@@ -258,6 +282,7 @@ function EventCard({
         </span>
       </div>
 
+      {/* text */}
       <div className="mt-3 grow md:mt-0">
         <h2 className="text-lg font-semibold">{event.title}</h2>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -266,6 +291,7 @@ function EventCard({
         <p className="mt-1 text-xs text-gray-500">For: {event.years}</p>
       </div>
 
+      {/* tag + action */}
       <div className="mt-4 flex shrink-0 flex-col items-end gap-2 md:mt-0 md:w-[150px]">
         <span
           className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${

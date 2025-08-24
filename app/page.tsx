@@ -1,31 +1,30 @@
-// app/page.tsx
-
 'use client';
 
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { NAME_MAP } from '@/lib/eventMeta';
+
 export default function HomePage() {
   /* ─────────────────────────────── events data */
-  const eventMap = [
-    { slug: 'Halloween',      cover: 'halloween.png' },
-    { slug: 'New_Year_Event', cover: 'happy-new-year.png' },
-    { slug: 'Sports_Fes',     cover: 'sports-fes.png' },
-    { slug: 'Ball_Game',      cover: 'ball-game.png' },
-    { slug: 'End_of_Year',    cover: 'end-year.png' },
-  ] as const;
+  const baseEvents = [
+    'halloween.png',
+    'happy_new_year.png',
+    'new_sports_fes.png',
+    'new_utjn_advice.png',
+    'new_ball_game.png',
+    'new_end_of_year_party.png',
+  ];
 
   /** 10 loops left + centre + 10 loops right  = 126 tiles */
   const loops  = 10;
-  const events = Array.from({ length: loops * 2 + 1 }, () => eventMap).flat();
+  const events = Array.from({ length: loops * 2 + 1 }, () => baseEvents).flat();
 
   /* ─────────────────────────────── layout helpers */
   const gap       = 32;   // gap-x-8  in Tailwind → 32 px
   const imgWidth  = 300;  // fixed card width
   const step      = imgWidth + gap;
-  const centerIdx = loops * eventMap.length;
+  const centerIdx = loops * baseEvents.length;
   const centerPos = centerIdx * step;
 
   const carouselRef = useRef<HTMLDivElement | null>(null);
@@ -106,20 +105,20 @@ export default function HomePage() {
             paddingRight: 'calc(50% - 150px)',
           }}
         >
-          {events.map(({ slug, cover }, idx) => (
+          {events.map((file, idx) => (
             <div
-              key={`${slug}-${idx}`}
+              key={`${file}-${idx}`}
               className="fade-in-up flex w-[300px] flex-shrink-0 snap-center flex-col items-center"
             >
               <Image
-                src={`/${cover}`}
-                alt={NAME_MAP[slug] ?? slug.replace(/_/g, ' ')}
+                src={`/${file}`}
+                alt={`Event ${(idx % baseEvents.length) + 1}`}
                 width={300}
                 height={300}
                 className="rounded-lg object-cover"
               />
               <Link
-                href={`/gallery/${slug}`}
+                href="#"
                 className="
                   mt-4 block w-full rounded-md border border-white
                   py-2 text-center font-medium transition-colors
@@ -153,7 +152,7 @@ export default function HomePage() {
       </div>
 
       {/* ─────────── Membership Section (unchanged) ─────────── */}
-      <div className="fade-in-up bg-white px-4 py-16 text-center text-[#171717]">
+      <div id="become-a-member" className="fade-in-up bg-white px-4 py-16 text-center text-[#171717]">
         <h2 className="mb-6 text-3xl font-bold md:text-4xl">Become a Member</h2>
         <p className="mx-auto mb-8 max-w-3xl text-lg">
           UTJNでは2023–2024年度もネットワーキング、就職、同窓会など、多様なニーズに応えた
@@ -165,6 +164,19 @@ export default function HomePage() {
           <CTA href="#" label="卒業生の方" />
         </div>
       </div>
+
+      {/* ─────────── Footer (unchanged) ─────────── */}
+      {/* <footer className="fade-in-up w-full bg-[#1c2a52] py-8 text-center text-sm text-white">
+        <p className="mb-2 font-bold">University of Toronto Japan Network</p>
+        <p className="mb-2">
+          27 King&apos;s College Circle, Toronto, Ontario M5S 1A1
+        </p>
+        <div className="mt-4 flex justify-center gap-4">
+          <Social icon="/facebook.png"  alt="Facebook"  href="https://www.facebook.com/uoftjn/" />
+          <Social icon="/instagram.png" alt="Instagram" href="https://www.instagram.com/uoftjn" />
+          <Social icon="/tiktok.png"    alt="TikTok"    href="https://www.tiktok.com/@uoftjn" />
+        </div>
+      </footer> */}
     </div>
   );
 }
@@ -190,17 +202,19 @@ function CTA({ href, label }: { href: string; label: string }) {
   );
 }
 
-function Social({
-  icon,
-  alt,
-  href,
-  invert = false,
-}: {
-  icon: string;
-  alt: string;
-  href?: string; // external or internal URL
-  invert?: boolean; // sets the Tailwind “invert” filter
-}) {
+function Social(
+  {
+    icon,
+    alt,
+    href,
+    invert = false,
+  }: {
+    icon: string;
+    alt: string;
+    href?: string;       // external or internal URL
+    invert?: boolean;    // sets the Tailwind “invert” filter
+  },
+) {
   const img = (
     <Image
       src={icon}

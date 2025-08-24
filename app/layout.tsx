@@ -53,6 +53,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
               <Link href="https://note.com/torontonians" target="_blank" rel="noopener noreferrer" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
               {/* <Link href="/login" className="hover:text-[#1c2a52]">Login</Link> */}
+              <Link href="/about" className="hover:text-[#1c2a52]">About</Link>
               <div className="absolute bottom-10 flex gap-6">
                 <Link href="https://www.facebook.com/uoftjn/" target="_blank" rel="noopener noreferrer">
                   <img src="/facebook.png" alt="Facebook" className="h-6 w-6" />
@@ -90,6 +91,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </Link>
 
           {/* ───────── Right-side socials + desktop Login ───────── */}
+          <nav
+            className="
+              absolute top-1/2 -translate-y-1/2
+              right-[210px] hidden md:flex gap-6 text-lg font-semibold
+            "
+          >
+            <Link href="/about" className="hover:text-[#1c2a52]">About</Link>
+          </nav>
           <div
             className="
               absolute right-5 top-1/2 -translate-y-1/2
