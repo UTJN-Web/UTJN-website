@@ -70,6 +70,7 @@ export default function EventsPage() {
   const [category, setCategory] = useState<'all' | 'career' | 'social'>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [registering, setRegistering] = useState<number | null>(null);
+  const [showDiscountInfo, setShowDiscountInfo] = useState(false);
 
   // Credit system state
   const [userCredits, setUserCredits] = useState<number>(0);
@@ -496,17 +497,30 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading events...</p>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Loading content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading Events</h2>
+          <p className="text-gray-600">Please wait while we fetch the latest events...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen p-8 w-full">
       <h1 className="text-4xl font-bold text-center mb-8">Member Events</h1>
 
       <div className="mb-10 flex justify-center gap-2">
@@ -543,7 +557,16 @@ export default function EventsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="mb-6 flex justify-center">
+        <button
+          onClick={() => setShowDiscountInfo(true)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-400 px-4 py-2 text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
+        >
+          割引特典について
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         {liveEvents.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
@@ -561,24 +584,25 @@ export default function EventsPage() {
           </div>
         )}
         {liveEvents.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            user={user}
-            onRegister={handleRegister}
-            onFreeRegister={handleFreeEventRegistration}
-            onCancel={handleCancelRegistration}
-            registering={registering === event.id}
-            userCredits={userCredits}
-            useCredits={useCredits[event.id] || false}
-            creditsToUse={creditsToUse[event.id] || 0}
-            onToggleCredits={(eventId, enabled) =>
-              setUseCredits((prev) => ({ ...prev, [eventId]: enabled }))
-            }
-            onCreditsChange={(eventId, amount) =>
-              setCreditsToUse((prev) => ({ ...prev, [eventId]: amount }))
-            }
-          />
+          <div key={event.id}>
+            <EventCard
+              event={event}
+              user={user}
+              onRegister={handleRegister}
+              onFreeRegister={handleFreeEventRegistration}
+              onCancel={handleCancelRegistration}
+              registering={registering === event.id}
+              userCredits={userCredits}
+              useCredits={useCredits[event.id] || false}
+              creditsToUse={creditsToUse[event.id] || 0}
+              onToggleCredits={(eventId, enabled) =>
+                setUseCredits((prev) => ({ ...prev, [eventId]: enabled }))
+              }
+              onCreditsChange={(eventId, amount) =>
+                setCreditsToUse((prev) => ({ ...prev, [eventId]: amount }))
+              }
+            />
+          </div>
         ))}
       </div>
 
@@ -600,8 +624,8 @@ export default function EventsPage() {
       </div>
 
       {showArchived && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-300 mb-6 col-span-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-300 mb-6 w-full">
             Archived Events
           </h2>
           {archivedEvents.length === 0 ? (
@@ -610,16 +634,17 @@ export default function EventsPage() {
             </div>
           ) : (
             archivedEvents.map((event) => (
-              <EventCard 
-                key={event.id} 
-                event={event} 
-                archived 
-                user={user}
-                onRegister={handleRegister}
-                onFreeRegister={handleFreeEventRegistration}
-                onCancel={handleCancelRegistration}
-                registering={false}
-              />
+              <div key={event.id}>
+                <EventCard 
+                  event={event} 
+                  archived 
+                  user={user}
+                  onRegister={handleRegister}
+                  onFreeRegister={handleFreeEventRegistration}
+                  onCancel={handleCancelRegistration}
+                  registering={false}
+                />
+              </div>
             ))
                    )}
        </div>
@@ -637,6 +662,31 @@ export default function EventsPage() {
         type="danger"
         loading={registering === confirmModal.eventId}
       />
+
+      {/* Discount Info Modal */}
+      {showDiscountInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-[#0f0f0f] border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-semibold text-[#1c2a52] dark:text-blue-300 mb-3">割引特典について</h3>
+            <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+              <p>
+                Careerイベントに参加し、所定のフォームに回答することで、次回以降のSocialイベントの参加料を割引できます。
+              </p>
+              <p>
+                積極的に参加し、Socialイベントを楽しもう！
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowDiscountInfo(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-[#171717]"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Refund Request Modal */}
       <RefundRequestModal
@@ -733,29 +783,12 @@ function EventCard({
   });
 
   // Get available sub-events
-  const availableSubEvents = event.subEvents?.filter(subEvent => subEvent.isAvailable) || [];
+  const availableSubEvents: any[] = [];
 
   // Debug: Log sub-events availability
-  console.log('🎊 Sub-events debug for event:', event.name, {
-    allSubEvents: event.subEvents?.map(se => ({
-      id: se.id,
-      name: se.name,
-      isAvailable: se.isAvailable,
-      remaining_capacity: se.remaining_capacity,
-      capacity: se.capacity
-    })),
-    availableSubEvents: availableSubEvents.length
-  });
+  // Sub-events disabled
 
-  // Auto-select sub-events for Matrix Pricing if none are selected
-  useEffect(() => {
-    if (event.enableAdvancedTicketing && event.enableSubEvents && selectedSubEventIds.length === 0 && availableSubEvents.length > 0) {
-      // Auto-select all available sub-events for Matrix Pricing
-      const availableSubEventIds = availableSubEvents.map(se => se.id);
-      setSelectedSubEventIds(availableSubEventIds);
-      console.log('🎯 Auto-selected sub-events for Matrix Pricing:', availableSubEventIds);
-    }
-  }, [event.enableAdvancedTicketing, event.enableSubEvents, availableSubEvents, selectedSubEventIds.length]);
+  
 
   // Calculate effective values on client side only (after currentTier is defined)
   useEffect(() => {
@@ -774,25 +807,13 @@ function EventCard({
     let remaining = event.remainingSeats;
     let price: number | string = event.fee;
 
-    if (event.enableAdvancedTicketing && event.enableSubEvents && event.ticketTiers && event.ticketTiers.length > 0) {
-      // Matrix Pricing: Show tier capacity and price range for sub-events
-      if (currentTier) {
+    if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
+              if (currentTier) {
         capacity = currentTier.capacity;
         remaining = currentTier.remaining_capacity || 0;
         
-        // Show price range for sub-events in this tier
-        if (currentTier.subEventPrices && event.subEvents) {
-          const prices = currentTier.subEventPrices.filter(p => p !== undefined && p > 0);
-          if (prices.length > 0) {
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-            price = minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
-          } else {
-            price = 0;
-          }
-        } else {
-          price = 0;
-        }
+        // Sub-events disabled: use tier base price
+        price = currentTier.price;
       } else {
         // Fallback to total capacity and price range
         capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
@@ -812,35 +833,6 @@ function EventCard({
         const regularTier = event.ticketTiers.find(t => t.name === 'Regular');
         price = regularTier ? regularTier.price : event.fee;
       }
-    } else if (event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
-      // Simple Sub-Events: show total capacity and price range
-      capacity = event.subEvents.reduce((total, subEvent) => total + subEvent.capacity, 0);
-      remaining = event.subEvents.reduce((total, subEvent) => total + (subEvent.remaining_capacity || 0), 0);
-      const prices = event.subEvents.map(se => se.price);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-      price = minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
-    } else if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
-      // Simple Advanced Ticketing: use current tier's capacity and price
-      if (currentTier) {
-        capacity = currentTier.capacity;
-        remaining = currentTier.remaining_capacity || 0;
-        price = currentTier.price;
-      } else {
-        // Fallback to total capacity and regular price
-        capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
-        remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
-        const regularTier = event.ticketTiers.find(t => t.name === 'Regular');
-        price = regularTier ? regularTier.price : event.fee;
-      }
-    } else if (event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
-      // Simple Sub-Events: show total capacity and price range
-      capacity = event.subEvents.reduce((total, subEvent) => total + subEvent.capacity, 0);
-      remaining = event.subEvents.reduce((total, subEvent) => total + (subEvent.remaining_capacity || 0), 0);
-      const prices = event.subEvents.map(se => se.price);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-      price = minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
     }
 
     setEffectiveCapacity(capacity);
@@ -850,69 +842,14 @@ function EventCard({
 
   // Calculate current price based on selections
   const getCurrentPrice = () => {
-    if (event.enableAdvancedTicketing && event.enableSubEvents) {
-      // Matrix Pricing: Tier + SubEvent combination
-      if (currentTier && selectedSubEventIds.length > 0) {
-        console.log(`🔍 Total price calculation for "${event.name}":`, {
-          currentTier: currentTier.name,
-          selectedSubEventIds,
-          currentTierSubEventPrices: currentTier.subEventPrices,
-          allSubEvents: event.subEvents?.map(se => ({ id: se.id, name: se.name, price: se.price })),
-          subEventsInOrder: event.subEvents?.map((se, index) => ({ index, id: se.id, name: se.name }))
-        });
-        
-        return selectedSubEventIds.reduce((total, subEventId) => {
-          const subEventIndex = event.subEvents?.findIndex(se => se.id === subEventId) || -1;
-          const subEvent = event.subEvents?.find(se => se.id === subEventId);
-          let priceToAdd = 0;
-          
-          // Try to get price by index first
-          if (subEventIndex >= 0 && currentTier.subEventPrices && currentTier.subEventPrices[subEventIndex] !== undefined) {
-            priceToAdd = currentTier.subEventPrices[subEventIndex];
-            console.log(`  ✅ Using tier price by index for "${subEvent?.name || 'Unknown'}" (ID: ${subEventId}, index: ${subEventIndex}): $${priceToAdd}`);
-          } 
-          // Fallback: Try to map by name
-          else if (subEvent && currentTier.subEventPrices) {
-            const nameBasedMapping: { [key: string]: number } = {
-              '1st party': 0,  // First index
-              '2nd party': 1,  // Second index
-              '2nd party ': 1  // Handle name with trailing space
-            };
-            
-            const mappedIndex = nameBasedMapping[subEvent.name.trim()];
-            if (mappedIndex !== undefined && currentTier.subEventPrices[mappedIndex] !== undefined) {
-              priceToAdd = currentTier.subEventPrices[mappedIndex];
-              console.log(`  🔄 Using tier price by name mapping for "${subEvent.name}" (ID: ${subEventId}, mapped index: ${mappedIndex}): $${priceToAdd}`);
-            } else {
-              // Final fallback to sub-event's base price
-              priceToAdd = subEvent.price || 0;
-              console.log(`  ⚠️ Using fallback base price for "${subEvent.name}" (ID: ${subEventId}): $${priceToAdd} (no tier price available)`);
-            }
-          } else {
-            // Final fallback to sub-event's base price
-            priceToAdd = subEvent?.price || 0;
-            console.log(`  ⚠️ Using fallback base price for "Unknown" (ID: ${subEventId}): $${priceToAdd} (sub-event not found)`);
-          }
-          
-          return total + priceToAdd;
-        }, 0);
-      }
-      // If no sub-events selected, return 0
-      return 0;
-    } else if (event.enableAdvancedTicketing) {
-      // Simple Advanced Ticketing: use current tier price
+    if (event.enableAdvancedTicketing) {
       if (!event.ticketTiers || event.ticketTiers.length === 0) {
         return event.fee;
       }
       if (currentTier) {
         return currentTier.price;
       }
-    } else if (event.enableSubEvents && selectedSubEventIds.length > 0) {
-      // Simple Sub-Events: sum of selected sub-event prices
-      return selectedSubEventIds.reduce((total, subEventId) => {
-        const subEvent = event.subEvents?.find(se => se.id === subEventId);
-        return total + (subEvent?.price || 0);
-      }, 0);
+      return event.fee;
     }
     return event.fee;
   };
@@ -938,24 +875,13 @@ function EventCard({
     return effectiveRemainingSeats > 0;
   };
 
-  const handleSubEventSelection = (subEventId: number, checked: boolean) => {
-    const subEvent = event.subEvents?.find(se => se.id === subEventId);
-    if (!subEvent) return;
-
-    if (checked) {
-      if (subEvent.isComboOption) {
-        // If this is a combo option, it might replace other selections
-        setSelectedSubEventIds([subEventId]);
-      } else {
-        setSelectedSubEventIds(prev => [...prev, subEventId]);
-      }
-    } else {
-      setSelectedSubEventIds(prev => prev.filter(id => id !== subEventId));
-    }
+  const handleSubEventSelection = (_subEventId: number, _checked: boolean) => {
+    // Sub-events disabled: no-op
+    return;
   };
 
   return (
-    <article className={`flex flex-col md:flex-row rounded-lg border p-4 shadow-sm transition-all hover:shadow-md md:items-center md:gap-4 ${
+    <article className={`w-full flex flex-col md:flex-row rounded-lg border p-4 shadow-sm transition-all hover:shadow-md md:items-center md:gap-4 ${
       archived 
         ? 'border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600' 
         : 'border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700'
@@ -1009,7 +935,7 @@ function EventCard({
                   : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
               }`}
             >
-              {event.type === 'career' ? '💼 Career' : '🎉 Social'}
+              {event.type === 'career' ? 'Career' : 'Social'}
             </span>
           </div>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -1050,7 +976,7 @@ function EventCard({
           </div>
         </div>
 
-        <div className="mt-4 flex shrink-0 flex-col items-end gap-2 md:mt-0 md:w-[200px]">
+        <div className="mt-4 flex shrink-0 flex-col gap-3 md:mt-0 w-full">
           {archived ? (
             <div className="w-full text-center">
               <span className="inline-block rounded-full bg-gray-500 px-3 py-1 text-xs text-white mb-2">
@@ -1107,11 +1033,7 @@ function EventCard({
                   Event Full
                 </div>
               )}
-              {event.enableSubEvents && availableSubEvents.length === 0 && (
-                <div className="w-full rounded-md border border-orange-400 bg-orange-50 py-2 text-center text-sm text-orange-700">
-                  No sub-events available
-                </div>
-              )}
+              
             </div>
           ) : (
             <div className="w-full space-y-2">
@@ -1124,7 +1046,21 @@ function EventCard({
                       Current Tier
                     </div>
                   </div>
-                  <div className="text-blue-700 font-semibold text-lg">${currentTier.price}</div>
+                  <div className="text-blue-700 font-semibold text-lg">
+                    ${(() => {
+                      // If this tier has subEventPrices and the event has sub-events, show price range
+                      if (currentTier.subEventPrices && event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
+                        const prices = currentTier.subEventPrices.filter((p: number) => p > 0);
+                        if (prices.length > 0) {
+                          const minPrice = Math.min(...prices);
+                          const maxPrice = Math.max(...prices);
+                          return minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
+                        }
+                      }
+                      // Otherwise show the tier's base price
+                      return Number(currentTier.price).toFixed(2).replace(/\.00$/, '');
+                    })()}
+                  </div>
                   <div className="text-xs text-blue-600">
                     {currentTier.remaining_capacity} seats left
                     {currentTier.targetYear !== 'All years' && (
@@ -1155,7 +1091,18 @@ function EventCard({
                                 : 'bg-gray-100 text-gray-600'
                             }`}
                           >
-                            {tier.name}: ${tier.price}
+                            {tier.name}: ${(() => {
+                              // If this tier has subEventPrices and the event has sub-events, show price range
+                              if (tier.subEventPrices && event.enableSubEvents && event.subEvents && event.subEvents.length > 0) {
+                                const prices = tier.subEventPrices.filter((p: number) => p > 0);
+                                if (prices.length > 0) {
+                                  const minPrice = Math.min(...prices);
+                                  const maxPrice = Math.max(...prices);
+                                  return minPrice === maxPrice ? minPrice : `${minPrice}-${maxPrice}`;
+                                }
+                              }
+                              return Number(tier.price).toFixed(2).replace(/\.00$/, '');
+                            })()}
                             {tier.id === currentTier.id && ' (Current)'}
                             {tier.remaining_capacity === 0 && ' (Sold out)'}
                             {!tier.isAvailable && tier.remaining_capacity > 0 && ' (Upcoming)'}
@@ -1164,68 +1111,6 @@ function EventCard({
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* Sub-Events Selection */}
-              {event.enableSubEvents && availableSubEvents.length > 0 && (
-                <div className="w-full border border-gray-200 rounded-md p-3 text-sm">
-                  <div className="font-medium text-gray-900 mb-2">Choose Events:</div>
-                  <div className="space-y-2">
-                    {availableSubEvents.map(subEvent => (
-                      <label key={subEvent.id} className="flex items-center space-x-2 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={selectedSubEventIds.includes(subEvent.id)}
-                          onChange={(e) => handleSubEventSelection(subEvent.id, e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium">{subEvent.name}</div>
-                          <div className="text-green-600">
-                            ${(() => {
-                              if (event.enableAdvancedTicketing && event.enableSubEvents && currentTier) {
-                                const subEventIndex = event.subEvents?.findIndex(se => se.id === subEvent.id) || -1;
-                                console.log(`🔍 SubEvent price debug for "${subEvent.name}":`, {
-                                  subEventId: subEvent.id,
-                                  subEventIndex,
-                                  currentTierSubEventPrices: currentTier.subEventPrices,
-                                  priceAtIndex: currentTier.subEventPrices?.[subEventIndex],
-                                  fallbackPrice: subEvent.price,
-                                  allSubEventsOrder: event.subEvents?.map(se => ({ id: se.id, name: se.name }))
-                                });
-                                
-                                // Try to get price by index first
-                                if (subEventIndex >= 0 && currentTier.subEventPrices && currentTier.subEventPrices[subEventIndex] !== undefined) {
-                                  const priceByIndex = currentTier.subEventPrices[subEventIndex];
-                                  console.log(`  💰 Using price by index for "${subEvent.name}": $${priceByIndex}`);
-                                  return priceByIndex;
-                                }
-                                
-                                // Fallback: Try to map by name (for backward compatibility)
-                                if (currentTier.subEventPrices && event.subEvents) {
-                                  const nameBasedMapping: { [key: string]: number } = {
-                                    '1st party': 0,  // First index
-                                    '2nd party': 1,  // Second index
-                                    '2nd party ': 1  // Handle name with trailing space
-                                  };
-                                  
-                                  const mappedIndex = nameBasedMapping[subEvent.name.trim()];
-                                  if (mappedIndex !== undefined && currentTier.subEventPrices[mappedIndex] !== undefined) {
-                                    const priceByName = currentTier.subEventPrices[mappedIndex];
-                                    console.log(`  🔄 Using price by name mapping for "${subEvent.name}": $${priceByName} (mapped index: ${mappedIndex})`);
-                                    return priceByName;
-                                  }
-                                }
-                              }
-                              return subEvent.price;
-                            })()}
-                          </div>
-                          <div className="text-gray-500">{subEvent.remaining_capacity} left</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -1296,8 +1181,19 @@ function EventCard({
               {/* Current Price Display */}
               <div className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 text-center">
                 <div className="text-sm font-medium text-gray-900">
-                  {/* TODO: Fix credit usage display */}
-                  <>Total: ${getCurrentPrice()}</>
+                  Total: ${(() => {
+                    const basePrice = getCurrentPrice();
+                    if (useCredits && creditsToUse > 0) {
+                      const finalPrice = Math.max(0, basePrice - creditsToUse);
+                      return finalPrice.toFixed(2).replace(/\.00$/, '');
+                    }
+                    return basePrice;
+                  })()}
+                  {useCredits && creditsToUse > 0 && (
+                    <span className="text-sm text-green-600 ml-2">
+                      (${getCurrentPrice()} - ${creditsToUse} credits)
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1322,7 +1218,7 @@ function EventCard({
                 </button>
               ) : (
                 <Link
-                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&subEventIds=${selectedSubEventIds.join(',')}&price=${getCurrentPrice()}`}
+                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&price=${getCurrentPrice()}&useCredits=${useCredits}&creditsAmount=${creditsToUse}`}
                   className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
                     canRegister()
                       ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
@@ -1330,7 +1226,14 @@ function EventCard({
                   }`}
                 >
                   <CreditCard size={16} />
-                  <>Pay & Register (${getCurrentPrice()})</>
+                  <>Pay & Register (${(() => {
+                    const basePrice = getCurrentPrice();
+                    if (useCredits && creditsToUse > 0) {
+                      const finalPrice = Math.max(0, basePrice - creditsToUse);
+                      return finalPrice.toFixed(2).replace(/\.00$/, '');
+                    }
+                    return basePrice;
+                  })()})</>
                 </Link>
               )}
               

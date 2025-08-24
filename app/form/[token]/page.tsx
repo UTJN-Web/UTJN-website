@@ -371,7 +371,7 @@ export default function PublicFormPage() {
             type="text"
             value={value || ''}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
+            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]`}
             placeholder={field.description || 'Your answer'}
             id={`field-${field.id}`}
           />
@@ -385,7 +385,7 @@ export default function PublicFormPage() {
             key={`textarea-${field.id}`}
             value={value || ''}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none`}
+            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52] resize-none`}
             placeholder={field.description || 'Your answer'}
             rows={4}
             id={`field-${field.id}`}
@@ -399,7 +399,7 @@ export default function PublicFormPage() {
             key={`select-${field.id}`}
             value={value || ''}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
+            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]`}
             id={`field-${field.id}`}
           >
             <option value="">Choose an option</option>
@@ -422,7 +422,7 @@ export default function PublicFormPage() {
                   value={option}
                   checked={value === option}
                   onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                  className="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+                  className="w-5 h-5 text-[#1c2a52] border-gray-300 focus:ring-[#1c2a52]"
                   id={`field-${field.id}-radio-${index}`}
                 />
                 <span className="text-base text-gray-700">{option}</span>
@@ -448,7 +448,7 @@ export default function PublicFormPage() {
                       handleFieldChange(field.id, currentValues.filter((v: string) => v !== option));
                     }
                   }}
-                  className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  className="w-5 h-5 text-[#1c2a52] border-gray-300 rounded focus:ring-[#1c2a52]"
                   id={`field-${field.id}-checkbox-${index}`}
                 />
                 <span className="text-base text-gray-700">{option}</span>
@@ -487,7 +487,7 @@ export default function PublicFormPage() {
               type="text"
               value={value || ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]"
               placeholder="Enter file URL or description for now"
               id={`field-${field.id}`}
             />
@@ -503,7 +503,7 @@ export default function PublicFormPage() {
               type="text"
               value={value || ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]"
               placeholder="Enter your response here as text"
               id={`field-${field.id}`}
             />
@@ -514,10 +514,23 @@ export default function PublicFormPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading form...</p>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Loading content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading Form</h2>
+          <p className="text-gray-600">Please wait while we load the feedback form...</p>
         </div>
       </div>
     );
@@ -525,10 +538,22 @@ export default function PublicFormPage() {
 
   if (!form || !form.allowPublicAccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Form Not Available</h2>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Error content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <FileText className="w-16 h-16 mx-auto mb-6 text-gray-400" />
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Form Not Available</h2>
           <p className="text-gray-600 mb-4">
             This form is not available or the link has expired.
           </p>
@@ -539,12 +564,25 @@ export default function PublicFormPage() {
 
   if (submitted || alreadySubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "fixed"
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Success content */}
+        <div className="relative z-10 w-full max-w-4xl mx-4 bg-white bg-opacity-95 p-8 rounded-lg shadow-xl backdrop-blur-sm text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">
             {alreadySubmitted ? 'Already Submitted!' : 'Thank You!'}
           </h2>
           <p className="text-gray-600 mb-4">
@@ -555,60 +593,60 @@ export default function PublicFormPage() {
           </p>
 
           {alreadySubmitted && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">📋 Submission Information</h3>
-              <p className="text-blue-800 mb-3">
+            <div className="bg-[#1c2a52]/10 border border-[#1c2a52]/20 rounded-lg p-6 mb-4">
+              <h3 className="text-lg font-semibold text-[#1c2a52] mb-2">📋 Submission Information</h3>
+              <p className="text-[#1c2a52] mb-3">
                 You previously submitted this form. You cannot submit it again.
               </p>
-              <p className="text-sm text-blue-600">
+              <p className="text-sm text-[#1c2a52]/80">
                 ℹ️ If you need to make changes to your responses, please contact the event organizers.
               </p>
             </div>
           )}
           
           {!alreadySubmitted && generatedCoupons.length > 0 && (
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 mb-4">
-              <h3 className="text-lg font-semibold text-purple-900 mb-2">🎉 Congratulations!</h3>
-              <p className="text-purple-800 mb-3">
+            <div className="bg-gradient-to-r from-[#1c2a52]/10 to-blue-50 border border-[#1c2a52]/20 rounded-lg p-6 mb-4">
+              <h3 className="text-lg font-semibold text-[#1c2a52] mb-2">Congratulations!</h3>
+              <p className="text-[#1c2a52] mb-3">
                 You've earned {generatedCoupons.length} discount coupon{generatedCoupons.length > 1 ? 's' : ''} for future events!
               </p>
-              <div className="space-y-2">
-                {generatedCoupons.map((coupon, index) => (
-                  <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-mono text-lg font-bold text-purple-700">{coupon.code}</p>
-                        <p className="text-sm text-gray-600">{coupon.name}</p>
+                                <div className="space-y-2">
+                    {generatedCoupons.map((coupon, index) => (
+                      <div key={index} className="bg-white rounded-lg p-3 border border-[#1c2a52]/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-lg font-bold text-[#1c2a52]">{coupon.code}</p>
+                            <p className="text-sm text-gray-600">{coupon.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-green-600 font-semibold">
+                              {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `$${coupon.discountValue} OFF`}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-green-600 font-semibold">
-                          {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `$${coupon.discountValue} OFF`}
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-purple-600 mt-3">
-                Save these codes! Use them when registering for future events.
-              </p>
+                  <p className="text-xs text-[#1c2a52] mt-3">
+                    Save these codes! Use them when registering for future events.
+                  </p>
             </div>
           )}
 
           {!alreadySubmitted && creditsAwarded > 0 && (
-            <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg p-6 mb-4">
-              <h3 className="text-lg font-semibold text-green-900 mb-2"> Credits Awarded!</h3>
-              <p className="text-green-800 mb-3">
+            <div className="bg-gradient-to-r from-[#1c2a52]/10 to-blue-50 border border-[#1c2a52]/20 rounded-lg p-6 mb-4">
+              <h3 className="text-lg font-semibold text-[#1c2a52] mb-2"> Credits Awarded!</h3>
+              <p className="text-[#1c2a52] mb-3">
                 You've earned {creditsAwarded} credit{creditsAwarded > 1 ? 's' : ''} for future events!
               </p>
-              <p className="text-xs text-green-600 mt-3">
+              <p className="text-xs text-[#1c2a52]/80 mt-3">
                 These credits can be used towards future UTJN events.
               </p>
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-blue-800">
+          <div className="bg-[#1c2a52]/10 border border-[#1c2a52]/20 rounded-lg p-4 mb-4">
+            <p className="text-sm text-[#1c2a52]">
               💡 <strong>Tip:</strong> Join UTJN to stay updated on future events and exclusive opportunities!
             </p>
           </div>
@@ -618,19 +656,32 @@ export default function PublicFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-6xl mx-auto px-6">
+    <div
+      className="relative min-h-screen w-full py-6"
+      style={{
+        backgroundImage: "url('/UofT.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      {/* Dark faded overlay */}
+      <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
         {/* Wider Header */}
-        <div className="bg-white rounded-lg shadow-sm border mb-6">
+        <div className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm mb-6">
           <div className="p-8">
             {/* Event Info */}
             {event && (
               <div className="mb-6 pb-6 border-b border-gray-100">
                 <div className="flex items-center gap-3 mb-3">
-                  <QrCode className="w-6 h-6 text-purple-600" />
-                  <span className="text-sm text-purple-600 font-medium">Accessed via QR Code</span>
+                  <QrCode className="w-6 h-6 text-[#1c2a52]" />
+                  <span className="text-sm text-[#1c2a52] font-medium">Accessed via QR Code</span>
                 </div>
-                <h1 className="text-3xl font-semibold text-gray-900 mb-3">{event.name}</h1>
+                <h1 className="text-3xl font-bold text-[#1c2a52] mb-3">{event.name}</h1>
                 <p className="text-gray-600 mb-3">{event.description}</p>
                 <div className="flex items-center gap-6 text-sm text-gray-500">
                   <span>{new Date(event.date).toLocaleDateString('en-US', {
@@ -646,9 +697,9 @@ export default function PublicFormPage() {
 
             {/* Form Header */}
             <div className="flex items-center gap-4">
-              <FileText className="w-8 h-8 text-purple-600" />
+              <FileText className="w-8 h-8 text-[#1c2a52]" />
               <div className="flex-1">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-2">{form.title}</h2>
+                <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">{form.title}</h2>
                 <div className="flex items-center gap-3">
                   {form.isRequired && (
                     <span className="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-full">
@@ -666,9 +717,9 @@ export default function PublicFormPage() {
 
         {/* User Info Section - Wide */}
         {!user && (
-          <div className="bg-white rounded-lg shadow-sm border mb-6">
+          <div className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm mb-6">
             <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Your Information</h3>
+              <h3 className="text-lg font-bold text-[#1c2a52] mb-4">Your Information</h3>
               
               {!showLoginForm ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -680,7 +731,7 @@ export default function PublicFormPage() {
                       type="email"
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]"
                       placeholder="your.email@example.com"
                     />
                     {errors.email && (
@@ -696,7 +747,7 @@ export default function PublicFormPage() {
                       type="text"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]"
                       placeholder="Your full name"
                     />
                     {errors.name && (
@@ -712,7 +763,7 @@ export default function PublicFormPage() {
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]"
                       required
                     />
                   </div>
@@ -723,7 +774,7 @@ export default function PublicFormPage() {
                       type="password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52]"
                       required
                     />
                   </div>
@@ -735,7 +786,7 @@ export default function PublicFormPage() {
                   <div className="flex items-center gap-3 col-span-2">
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                      className="px-6 py-3 bg-[#1c2a52] text-white rounded-lg hover:bg-[#2a3c6b]"
                     >
                       Login
                     </button>
@@ -755,7 +806,7 @@ export default function PublicFormPage() {
                   <button
                     type="button"
                     onClick={() => setShowLoginForm(true)}
-                    className="text-purple-600 text-sm hover:text-purple-700"
+                    className="text-[#1c2a52] text-sm hover:text-[#2a3c6b]"
                   >
                     Already have an account? Login instead
                   </button>
@@ -766,9 +817,9 @@ export default function PublicFormPage() {
         )}
 
         {user && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-            <User className="w-5 h-5 text-green-600" />
-            <span className="text-green-800">Logged in as {user.email}</span>
+          <div className="bg-white bg-opacity-95 border border-[#1c2a52]/30 rounded-lg p-4 mb-6 flex items-center gap-3 shadow-sm">
+            <User className="w-5 h-5 text-[#1c2a52]" />
+            <span className="text-[#1c2a52] font-medium">Logged in as {user.email}</span>
           </div>
         )}
 
@@ -791,7 +842,7 @@ export default function PublicFormPage() {
             form.fields
               .sort((a, b) => a.order - b.order)
               .map((field, index) => (
-                <div key={field.id} className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
+                <div key={field.id} className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm p-6 hover:shadow-xl transition-shadow">
                   <div className="mb-4">
                     <label className="block text-lg font-medium text-gray-900 mb-2">
                       {index + 1}. {field.question || `Question ${index + 1}`}
@@ -829,14 +880,14 @@ export default function PublicFormPage() {
                 </div>
               ))
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+            <div className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm p-8 text-center">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 mb-3">No Questions Found</h3>
+              <h3 className="text-xl font-bold text-[#1c2a52] mb-3">No Questions Found</h3>
               <p className="text-gray-600 mb-4">
                 This form doesn't have any questions configured yet.
               </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-[#1c2a52]/10 border border-[#1c2a52]/20 rounded-lg p-4">
+                <p className="text-sm text-[#1c2a52]">
                   <strong>Debug Info:</strong> Form ID: {form.id}, Fields: {form.fields?.length || 0}
                 </p>
               </div>
@@ -845,12 +896,12 @@ export default function PublicFormPage() {
 
           {/* Submit Button - Wide */}
           {form.fields && form.fields.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white bg-opacity-95 rounded-lg shadow-lg border border-gray-200 backdrop-blur-sm p-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-base font-medium"
+                  className="px-8 py-3 bg-[#1c2a52] text-white rounded-lg hover:bg-[#2a3c6b] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-base font-medium"
                 >
                   {submitting ? (
                     <>

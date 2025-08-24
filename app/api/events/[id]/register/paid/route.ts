@@ -23,41 +23,11 @@ export async function POST(
         );
       }
 
-      // If credits are being used, spend them first
+      // Credits are already deducted on the frontend before payment
+      // The finalPrice already reflects the credit discount
       let creditTransaction = null;
       if (creditsUsed > 0) {
-        try {
-          const creditResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/forms/users/${userId}/credits/spend`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              amount: creditsUsed,
-              description: `Event registration discount for event ${id}`,
-              eventId: parseInt(id)
-            })
-          });
-
-          if (!creditResponse.ok) {
-            const errorData = await creditResponse.text();
-            console.error('Credit spending failed:', errorData);
-            return NextResponse.json(
-              { success: false, error: 'Failed to apply credit discount' },
-              { status: 400 }
-            );
-          }
-
-          const creditData = await creditResponse.json();
-          creditTransaction = creditData.transaction;
-          console.log(`✅ Successfully spent ${creditsUsed} credits for user ${userId}`);
-        } catch (error) {
-          console.error('Error spending credits:', error);
-          return NextResponse.json(
-            { success: false, error: 'Failed to process credit discount' },
-            { status: 500 }
-          );
-        }
+        console.log(`ℹ️ Credits (${creditsUsed}) were already applied on frontend. Final price: ${finalPrice}`);
       }
 
     // Register user for the paid event via backend API

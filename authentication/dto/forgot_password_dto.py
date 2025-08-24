@@ -12,7 +12,8 @@ class ForgotPasswordResponseDTO(BaseModel):
 class ConfirmForgotPasswordRequestDTO(BaseModel):
     email: EmailStr
     code: str
-    new_password: str
+    new_password1: str
+    new_password2: str
 
 class ConfirmForgotPasswordResponseDTO(BaseModel):
     success: bool

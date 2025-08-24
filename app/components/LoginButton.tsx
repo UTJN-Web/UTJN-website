@@ -24,7 +24,7 @@ export default function LoginButton() {
 
   if (isLoading) {
     return (
-      <div className="text-lg font-semibold text-gray-400">
+      <div className="text-lg font-normal text-gray-400">
         Loading...
       </div>
     );
@@ -37,7 +37,7 @@ export default function LoginButton() {
           onClick={() => setOpen((v) => !v)}
           className="flex items-center gap-2 px-3 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#222] transition"
         >
-          <span className="text-lg font-semibold">
+          <span className="text-lg font-normal">
             Hi, {user.firstName || user.name || user.email.split('@')[0]}
           </span>
           {/* Chevron Down SVG */}
@@ -82,7 +82,7 @@ export default function LoginButton() {
   return (
     <button
       onClick={() => window.dispatchEvent(new Event('open-login-modal'))}
-      className="text-lg font-semibold hover:text-[#1c2a52]"
+      className="text-lg font-normal hover:text-[#1c2a52]"
     >
       Login
     </button>

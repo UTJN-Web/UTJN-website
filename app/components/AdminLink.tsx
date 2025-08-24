@@ -16,7 +16,7 @@ export default function AdminLink() {
   return (
     <Link 
       href="/admin" 
-      className="text-lg font-semibold hover:text-[#1c2a52] text-orange-600"
+      className="text-lg font-normal hover:text-[#1c2a52] text-orange-600"
       title="Admin Dashboard"
     >
       Admin

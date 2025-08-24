@@ -23,11 +23,7 @@ interface DetailedAnalytics {
   eventDate: string;
   totalCapacity: number;
   totalRegistrations: number;
-  ticketAnalysis: {
-    regular: { count: number; price: number };
-    earlyBird: { count: number; price: number };
-    walkIn: { count: number; price: number };
-  };
+  ticketAnalysis: { [tierName: string]: { count: number; price: number } } | Array<{ name: string; count: number; price: number }>;
   yearLevelAnalysis: { [key: string]: number };
   refundAnalysis: { [key: number]: { count: number; users: string[] } };
   cancellationAnalysis: {
@@ -86,25 +82,31 @@ export default function DetailedAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+                <div className="min-h-screen w-full py-8 px-4 sm:px-6 lg:px-8" style={{
+        backgroundImage: "url('/UofT.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
+      }}>
+        <div className="w-full max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Link 
             href="/admin/analytics"
-            className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+            className="inline-flex items-center text-gray-700 hover:text-[#1c2a52] mb-4"
           >
             <ArrowLeft size={20} className="mr-2" />
             Back to Analytics
           </Link>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Detailed Event Analytics</h1>
-              <p className="text-gray-600 mt-2">Detailed attendee analytics by ticket type, year, and price</p>
+              <h1 className="text-3xl font-bold text-[#1c2a52]">Detailed Event Analytics</h1>
+              <p className="text-gray-700 mt-2">Detailed attendee analytics by ticket tier, year, and refunds</p>
             </div>
             <button
               onClick={fetchDetailedAnalytics}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="inline-flex items-center px-4 py-2 bg-[#1c2a52] text-white rounded-lg hover:bg-[#2a3c6b]"
             >
               <RefreshCw size={16} className="mr-2" />
               Refresh
@@ -117,7 +119,7 @@ export default function DetailedAnalyticsPage() {
           {analytics.map((event) => (
             <div 
               key={event.eventId}
-              className="bg-white rounded-lg p-6 shadow-sm border cursor-pointer hover:shadow-md transition-shadow"
+              className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm cursor-pointer hover:shadow-xl transition-shadow"
               onClick={() => setSelectedEvent(event)}
             >
               <div className="flex items-center justify-between mb-4">
@@ -155,8 +157,8 @@ export default function DetailedAnalyticsPage() {
 
         {/* Event Detail Modal */}
         {selectedEvent && (
-          <div className="fixed inset-0 bg-transparent flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+            <div className="bg-white bg-opacity-95 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 backdrop-blur-sm">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">{selectedEvent.eventName}</h2>
@@ -223,29 +225,15 @@ export default function DetailedAnalyticsPage() {
                       By Ticket Type
                     </h3>
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-blue-900">Regular</p>
-                          <p className="text-sm text-blue-600">¥{selectedEvent.ticketAnalysis.regular.price.toLocaleString()}</p>
+                      {Object.entries((selectedEvent.ticketAnalysis as any)).map(([tierName, data]: any, idx) => (
+                        <div key={tierName} className={`flex justify-between items-center p-3 rounded-lg ${idx % 3 === 0 ? 'bg-blue-50' : idx % 3 === 1 ? 'bg-green-50' : 'bg-purple-50'}`}>
+                          <div>
+                            <p className="font-medium text-gray-900">{tierName}</p>
+                            <p className="text-sm text-gray-600">¥{Number(data.price).toLocaleString()}</p>
+                          </div>
+                          <span className="text-xl font-bold text-gray-900">{data.count} people</span>
                         </div>
-                        <span className="text-xl font-bold text-blue-900">{selectedEvent.ticketAnalysis.regular.count} people</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-green-900">Early Bird</p>
-                          <p className="text-sm text-green-600">¥{selectedEvent.ticketAnalysis.earlyBird.price.toLocaleString()}</p>
-                        </div>
-                        <span className="text-xl font-bold text-green-900">{selectedEvent.ticketAnalysis.earlyBird.count} people</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-purple-900">Walk-in</p>
-                          <p className="text-sm text-purple-600">¥{selectedEvent.ticketAnalysis.walkIn.price.toLocaleString()}</p>
-                        </div>
-                        <span className="text-xl font-bold text-purple-900">{selectedEvent.ticketAnalysis.walkIn.count} people</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
 

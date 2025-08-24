@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PasswordInput from '../components/PasswordInput';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -66,21 +67,19 @@ export default function SignupPage() {
             className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
             required
           />
-          <input
-            type="password"
-            placeholder="Create Password"
+          <PasswordInput
             value={password1}
-            onChange={(e) => setPw1(e.target.value)}
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+            onChange={setPw1}
+            placeholder="Create Password"
             required
+            disabled={loading}
           />
-          <input
-            type="password"
-            placeholder="Re-type Password"
+          <PasswordInput
             value={password2}
-            onChange={(e) => setPw2(e.target.value)}
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+            onChange={setPw2}
+            placeholder="Re-type Password"
             required
+            disabled={loading}
           />
           <ul className="text-sm text-gray-700 dark:text-white pl-5 list-disc space-y-1 text-left">
             <li>At least 8 characters</li>

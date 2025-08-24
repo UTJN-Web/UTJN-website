@@ -4,8 +4,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { post } from '@/lib/api';
 import { useUser } from '../contexts/UserContext';
+import PasswordInput from '../components/PasswordInput';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,22 +20,69 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const response = await post<{ user?: { email: string; name?: string } }>('/auth/login', { email, password });
-      // ログイン成功後、ユーザーコンテキストを更新
-      if (response.user) {
-        login({ email: response.user.email, name: response.user.name });
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // ログイン成功後、ユーザーコンテキストを更新
+        if (data.user) {
+          login({ email: data.user.email, name: data.user.name });
+        } else {
+          login({ email });
+        }
+        
+        // ユーザープロファイルを確認
+        try {
+          const profileResponse = await fetch(`/api/users/profile?email=${encodeURIComponent(email)}`);
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.success && profileData.user) {
+              // プロファイルが完全かチェック
+              const user = profileData.user;
+              const hasCompleteProfile = user.firstName && user.lastName && user.major && 
+                                       user.graduationYear && user.university && user.currentYear &&
+                                       user.firstName.trim() !== '' && user.lastName.trim() !== '';
+              
+              if (!hasCompleteProfile) {
+                // プロファイルが不完全な場合、プロファイル入力画面に遷移
+                router.push(`/information?email=${encodeURIComponent(email)}`);
+                return;
+              }
+            } else {
+              // プロファイルが存在しない場合、プロファイル入力画面に遷移
+              router.push(`/information?email=${encodeURIComponent(email)}`);
+              return;
+            }
+          } else {
+            // プロファイル取得に失敗した場合、プロファイル入力画面に遷移
+            router.push(`/information?email=${encodeURIComponent(email)}`);
+            return;
+          }
+        } catch (profileErr) {
+          console.error('Profile check error:', profileErr);
+          // プロファイル確認に失敗した場合、プロファイル入力画面に遷移
+          router.push(`/information?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        
+        // プロファイルが完全な場合、ホームページにリダイレクト
+        router.push('/');
       } else {
-        login({ email });
+        // ユーザーが未確認の場合、確認画面にリダイレクト
+        if (data.detail && data.detail.includes('You are not confirmed yet')) {
+          router.push(`/confirmation?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setError(data.detail || 'Login failed');
       }
-      // ホームページにリダイレクト
-      router.push('/');
     } catch (err: any) {
-      // ユーザーが未確認の場合、確認画面にリダイレクト
-      if (err.message.includes('You are not confirmed yet')) {
-        router.push(`/confirmation?email=${encodeURIComponent(email)}`);
-        return;
-      }
-      setError(err.message);
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -72,13 +119,12 @@ export default function LoginPage() {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
+          <PasswordInput
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
+            placeholder="Password"
             required
+            disabled={loading}
           />
 
           {error && <p className="text-sm text-red-600">{error}</p>}

@@ -93,224 +93,165 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your UTJN platform</p>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
+  return (
+    <div
+      className="relative min-h-screen w-full"
+      style={{
+        backgroundImage: "url('/UofT.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Dark faded overlay */}
+      <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+      {/* Content */}
+      <div className="relative z-10 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold text-[#1c2a52] mb-2">Admin Dashboard</h1>
+            <p className="text-gray-700 text-lg">Manage your UTJN platform</p>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Active Events</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {loading ? '...' : stats.activeEvents}
                 </p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Total Members</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {loading ? '...' : stats.totalUsers}
                 </p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-amber-600" />
-              </div>
-              <div className="ml-4">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Pending Refunds</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {loading ? '...' : stats.pendingRefunds}
                 </p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
+            <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-600">Total Registrations</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-[#1c2a52]">
                   {loading ? '...' : stats.totalRegistrations}
                 </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Management Modules */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Events Management */}
-          <Link href="/admin/events" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                  <Calendar className="w-8 h-8 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Events</h3>
+          {/* Management Modules */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Events Management */}
+            <Link href="/admin/events" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Events</h3>
                   <p className="text-sm text-gray-500">Manage events</p>
                 </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Create, edit, and manage member events. Handle registrations and event capacity.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-600">Manage Events →</span>
-                <div className="flex gap-1">
-                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                    {loading ? '...' : stats.activeEvents} Active
-                  </span>
-                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                    {loading ? '...' : stats.archivedEvents} Archived
-                  </span>
+                <p className="text-gray-600 mb-4">
+                  Create, edit, and manage member events. Handle registrations and event capacity.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-[#1c2a52]">Manage Events →</span>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Refunds Management */}
-          <Link href="/admin/refunds" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="p-3 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors">
-                  <DollarSign className="w-8 h-8 text-amber-600" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Refunds</h3>
+            {/* Refunds Management */}
+            <Link href="/admin/refunds" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Refunds</h3>
                   <p className="text-sm text-gray-500">Process refund requests</p>
                 </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Review and process refund requests from members who cancel paid events.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-amber-600">Manage Refunds →</span>
-                <div className="flex gap-1">
-                  <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs">
-                    {loading ? '...' : stats.pendingRefunds} Pending
-                  </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                    {loading ? '...' : stats.processedRefunds} Processed
-                  </span>
+                <p className="text-gray-600 mb-4">
+                  Review and process refund requests from members who cancel paid events.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-[#1c2a52]">Manage Refunds →</span>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
 
-          {/* User Management */}
-          <Link href="/admin/users" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                  <Users className="w-8 h-8 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Users</h3>
+            {/* User Management */}
+            <Link href="/admin/users" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Users</h3>
                   <p className="text-sm text-gray-500">Member management</p>
                 </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Manage member accounts, profiles, and permissions.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-green-600">Manage Users →</span>
-                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                  {loading ? '...' : stats.totalUsers} Members
-                </span>
-              </div>
-            </div>
-          </Link>
-
-          {/* Analytics */}
-          <Link href="/admin/analytics" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-                  <BarChart3 className="w-8 h-8 text-purple-600" />
+                <p className="text-gray-600 mb-4">
+                  Manage member accounts, profiles, and permissions.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-[#1c2a52]">Manage Users →</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
+              </div>
+            </Link>
+
+            {/* Analytics */}
+            <Link href="/admin/analytics" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Analytics</h3>
                   <p className="text-sm text-gray-500">Reports & insights</p>
                 </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                View detailed analytics about events, registrations, and member engagement.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-purple-600">View Analytics →</span>
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
-                  ${loading ? '...' : Math.round(stats.revenueThisMonth)}
-                </span>
-              </div>
-            </div>
-          </Link>
-
-          {/* Forms */}
-          <Link href="/admin/forms" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-                  <FileText className="w-8 h-8 text-purple-600" />
+                <p className="text-gray-600 mb-4">
+                  View detailed analytics about events, registrations, and member engagement.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-[#1c2a52]">View Analytics →</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Forms</h3>
+              </div>
+            </Link>
+
+            {/* Forms */}
+            <Link href="/admin/forms" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Forms</h3>
                   <p className="text-sm text-gray-500">Event forms & feedback</p>
                 </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Design feedback forms for events, manage submissions, and create discount coupons.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-purple-600">Active</span>
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Design</span>
-              </div>
-            </div>
-          </Link>
-
-          {/* Permissions */}
-          <Link href="/admin/permissions" className="group">
-            <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow opacity-50">
-              <div className="flex items-center mb-4">
-                <div className="p-3 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
-                  <Shield className="w-8 h-8 text-red-600" />
+                <p className="text-gray-600 mb-4">
+                  Design feedback forms for events, manage submissions, and create discount coupons.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-[#1c2a52]">Active</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Permissions</h3>
+              </div>
+            </Link>
+
+            {/* Permissions */}
+            <Link href="/admin/permissions" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm opacity-50">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Permissions</h3>
                   <p className="text-sm text-gray-500">Access control</p>
                 </div>
+                <p className="text-gray-600 mb-4">
+                  Manage admin roles, permissions, and access control for different features.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-gray-400">Coming Soon</span>
+                </div>
               </div>
-              <p className="text-gray-600 mb-4">
-                Manage admin roles, permissions, and access control for different features.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-400">Coming Soon</span>
-                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">Roles</span>
-              </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   );
-} 
+}
