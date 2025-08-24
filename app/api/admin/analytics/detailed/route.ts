@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         refund.eventId === event.id
       );
 
-      // Analyze by ticket type and price
+      // Analyze by ticket type and price (tier-aware)
       const ticketAnalysis = analyzeTicketTypes(eventRegistrations, event);
       
       // Analyze by year level
@@ -78,6 +78,46 @@ export async function GET(request: NextRequest) {
 }
 
 function analyzeTicketTypes(registrations: any[], event: any) {
+  // If the backend provides ticket tiers, aggregate by tier name
+  const tiers = Array.isArray(event.ticketTiers) ? event.ticketTiers : [];
+  if (tiers.length > 0) {
+    const byTier: Record<string, { count: number; price: number }> = {};
+    tiers.forEach((t: any) => {
+      byTier[t.name] = { count: 0, price: Number(t.price) || 0 };
+    });
+
+    registrations.forEach((user: any) => {
+      const reg = user.registrations?.find((r: any) => r.eventId === event.id);
+      if (!reg) return;
+      // Prefer ticketTierId mapping if present
+      if (reg.ticketTierId) {
+        const tier = tiers.find((t: any) => t.id === reg.ticketTierId);
+        if (tier) {
+          byTier[tier.name].count += 1;
+          return;
+        }
+      }
+      // Fallback: infer by amount vs tier price
+      const amount = Number(reg.finalPrice ?? reg.amount ?? event.fee ?? 0);
+      let matched = false;
+      for (const t of tiers) {
+        if (Math.abs(Number(t.price) - amount) < 0.01) {
+          byTier[t.name].count += 1;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        // Put unmatched into first tier as a last resort
+        const first = tiers[0];
+        if (first) byTier[first.name].count += 1;
+      }
+    });
+
+    return byTier;
+  }
+
+  // Legacy fallback (no tiers)
   const ticketTypes = {
     regular: { count: 0, price: event.fee || 0 },
     earlyBird: { count: 0, price: event.earlyBirdFee || event.fee || 0 },
