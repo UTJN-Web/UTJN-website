@@ -1361,7 +1361,7 @@ export default function AdminEventsPage() {
                                   return (
                                     <span
                                       key={index}
-                                      className="inline-flex items-center px-2 py-1 rounded-md bg-[#1c2a52] bg-opacity-10 text-[#1c2a52] text-xs"
+                                      className="inline-flex items-center px-2 py-1 rounded-md bg-[#1c2a52] bg-opacity-10 text-white text-xs"
                                     >
                                       {user.firstName} {user.lastName}
                                     </span>
