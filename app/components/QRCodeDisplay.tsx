@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { QrCode, Download, Copy, Check, ExternalLink } from 'lucide-react';
+import { QrCode, Copy, Check, ExternalLink } from 'lucide-react';
 
 /**
  * QRCodeDisplay Component
@@ -81,16 +81,7 @@ export default function QRCodeDisplay({ formId, onClose }: QRCodeDisplayProps) {
     }
   };
 
-  const downloadQRCode = () => {
-    if (qrCodeDataUrl) {
-      const link = document.createElement('a');
-      link.href = qrCodeDataUrl;
-      link.download = `form-qr-${qrData?.formTitle?.replace(/\s+/g, '-') || 'code'}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -181,14 +172,6 @@ export default function QRCodeDisplay({ formId, onClose }: QRCodeDisplayProps) {
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied!' : 'Copy Link'}
-            </button>
-            
-            <button
-              onClick={downloadQRCode}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Download className="w-4 h-4" />
-              Download QR
             </button>
             
             <a

@@ -212,11 +212,33 @@ export default function SquarePaymentForm({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex items-center mb-6">
-        <Lock className="w-5 h-5 text-green-600 mr-2" />
-        <h2 className="text-xl font-semibold text-gray-900">Payment Information</h2>
-      </div>
+    <>
+      {/* Full-screen loading overlay */}
+      {processing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
+             style={{
+               backgroundImage: "url('/UofT.jpg')",
+               backgroundSize: "cover",
+               backgroundPosition: "center",
+               backgroundRepeat: "no-repeat",
+             }}>
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-black opacity-40" />
+          
+          {/* Loading content */}
+          <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded-lg shadow-xl backdrop-blur-sm text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+            <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Processing Payment</h2>
+            <p className="text-gray-600">Please wait while we process your payment securely...</p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center mb-6">
+          <Lock className="w-5 h-5 text-green-600 mr-2" />
+          <h2 className="text-xl font-semibold text-gray-900">Payment Information</h2>
+        </div>
       
       <div className="space-y-6">
         {/* Email for receipt */}
@@ -259,7 +281,7 @@ export default function SquarePaymentForm({
         >
           {processing ? (
             <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-4 border-white border-t-transparent mr-2"></div>
               Processing Payment...
             </div>
           ) : (
@@ -281,5 +303,6 @@ export default function SquarePaymentForm({
         </div>
       </div>
     </div>
+    </>
   );
 } 
