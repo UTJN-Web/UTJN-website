@@ -44,10 +44,19 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users from /api/users...');
       const response = await fetch('/api/users');
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const userData = await response.json();
+        console.log('Users fetched from database:', userData.length, 'users');
+        console.log('User data:', userData);
         setUsers(userData);
+      } else {
+        console.error('Failed to fetch users, status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);

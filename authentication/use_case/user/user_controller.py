@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from authentication.data_access.data_access import get_user_sub
 from authentication.data_access.user_repository import UserRepository
+from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
 
 user_router = APIRouter(prefix="/users", tags=["users"])
 
@@ -17,12 +18,15 @@ async def get_all_users():
         
         try:
             # Get all users from database
-            users = await user_repo.get_all_users()
-            print(f"✅ Retrieved {len(users)} users from database")
+            db_users = await user_repo.get_all_users()
+            print(f"✅ Retrieved {len(db_users)} users from database")
             
-            # Format users for response
+            # Build map by email for quick lookup (lowercased for safety)
+            email_to_db_user = {u["email"].lower(): u for u in db_users}
+            
+            # Start with formatted DB users (they already have full profiles)
             formatted_users = []
-            for user in users:
+            for user in db_users:
                 formatted_users.append({
                     "id": user["id"],
                     "firstName": user["firstName"],
@@ -32,8 +36,43 @@ async def get_all_users():
                     "graduationYear": user["graduationYear"],
                     "cognitoSub": user["cognitoSub"],
                     "joinedAt": user["joinedAt"].isoformat() if user["joinedAt"] else None,
-                    "hasProfile": True  # All users in DB have profiles
+                    "hasProfile": True,
                 })
+            
+            # Also list users from Cognito to include those who haven't completed a profile yet
+            try:
+                cognito = CognitoIdentityProviderWrapper()
+                cognito_users = cognito.list_users() or []
+                print(f"🔎 Retrieved {len(cognito_users)} users from Cognito user pool")
+                
+                for cu in cognito_users:
+                    # Extract email from Cognito attributes
+                    attrs = cu.get("Attributes", [])
+                    email = None
+                    for a in attrs:
+                        if a.get("Name") == "email":
+                            email = a.get("Value")
+                            break
+                    if not email:
+                        continue
+                    if email.lower() in email_to_db_user:
+                        # Already included from DB
+                        continue
+                    # Include minimal stub for Cognito-only users
+                    formatted_users.append({
+                        "id": None,
+                        "firstName": "",
+                        "lastName": "",
+                        "email": email,
+                        "major": "",
+                        "graduationYear": 0,
+                        "cognitoSub": cu.get("Username"),
+                        "joinedAt": (cu.get("UserCreateDate").isoformat() if cu.get("UserCreateDate") else None),
+                        "hasProfile": False,
+                    })
+            except Exception as e:
+                # If Cognito listing fails, proceed with DB users only but log it
+                print(f"⚠️ Failed to list Cognito users: {e}")
             
             return formatted_users
         except Exception as e:
