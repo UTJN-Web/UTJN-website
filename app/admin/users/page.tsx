@@ -44,28 +44,44 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
-      console.log('Fetching users from /api/users...');
+      console.log('🔍 Fetching users from /api/users...');
       const response = await fetch('/api/users');
-      console.log('Response status:', response.status);
+      console.log('📡 Response status:', response.status);
       
       if (response.ok) {
         const userData = await response.json();
-        console.log('Users fetched from database:', userData.length, 'users');
-        console.log('User data:', userData);
-        setUsers(userData);
+        console.log('👥 Users fetched from database:', userData.length, 'users');
+        console.log('📊 User data:', userData);
+        
+        // Remove duplicates based on email (case-insensitive)
+        const uniqueUsers = userData.filter((user: any, index: number, self: any[]) => 
+          index === self.findIndex((u: any) => u.email.toLowerCase() === user.email.toLowerCase())
+        );
+        
+        console.log('✅ After deduplication:', uniqueUsers.length, 'users');
+        console.log('📊 Deduplicated user data:', uniqueUsers);
+        
+        setUsers(uniqueUsers);
       } else {
-        console.error('Failed to fetch users, status:', response.status);
+        console.error('❌ Failed to fetch users, status:', response.status);
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.error('❌ Error response:', errorText);
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      console.error('❌ Failed to fetch users:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredUsers = users.filter(user => {
+    // For Incomplete profiles, only match by email search
+    if (!user.hasProfile) {
+      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    }
+    
+    // For Complete profiles, use full filtering
     const matchesSearch = 
       user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,8 +91,37 @@ export default function UsersManagement() {
     const matchesYear = filterYear === 'all' || user.graduationYear.toString() === filterYear;
     const matchesMajor = filterMajor === 'all' || user.major === filterMajor;
 
-    return matchesSearch && matchesYear && matchesMajor;
+    const matches = matchesSearch && matchesYear && matchesMajor;
+    
+    // Debug logging for Incomplete profiles
+    if (!user.hasProfile) {
+      console.log('🔍 Filtering Incomplete user:', {
+        email: user.email,
+        searchTerm,
+        matchesSearch
+      });
+    }
+
+    return matches;
   });
+
+  console.log('📊 Filtered users count:', filteredUsers.length);
+  console.log('📊 Filtered users:', filteredUsers.map(u => ({ email: u.email, hasProfile: u.hasProfile })));
+
+  // Additional deduplication for filtered results
+  const uniqueFilteredUsers = filteredUsers.filter((user: User, index: number, self: User[]) => {
+    const firstIndex = self.findIndex((u: User) => u.email.toLowerCase() === user.email.toLowerCase());
+    const isDuplicate = index !== firstIndex;
+    
+    if (isDuplicate) {
+      console.log('🚫 Removing duplicate:', user.email, 'at index', index, 'first found at', firstIndex);
+    }
+    
+    return index === firstIndex;
+  });
+
+  console.log('✅ Unique filtered users count:', uniqueFilteredUsers.length);
+  console.log('✅ Unique filtered users:', uniqueFilteredUsers.map(u => ({ email: u.email, hasProfile: u.hasProfile })));
 
   const uniqueYears = [...new Set(users.map(u => u.graduationYear))].sort();
   const uniqueMajors = [...new Set(users.map(u => u.major))].sort();
@@ -84,7 +129,7 @@ export default function UsersManagement() {
   const exportUsers = () => {
     const csvData = [
       ['First Name', 'Last Name', 'Email', 'Major', 'Graduation Year', 'Joined Date'],
-      ...filteredUsers.map(user => [
+      ...uniqueFilteredUsers.map(user => [
         user.firstName,
         user.lastName,
         user.email,
@@ -248,14 +293,14 @@ export default function UsersManagement() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.length === 0 ? (
+                      {uniqueFilteredUsers.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                             No users found matching your criteria
                           </td>
                         </tr>
                       ) : (
-                        filteredUsers.map((user) => (
+                        uniqueFilteredUsers.map((user) => (
                           <tr key={user.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">

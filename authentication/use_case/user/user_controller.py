@@ -45,6 +45,9 @@ async def get_all_users():
                 cognito_users = cognito.list_users() or []
                 print(f"🔎 Retrieved {len(cognito_users)} users from Cognito user pool")
                 
+                # Track processed emails to avoid duplicates
+                processed_emails = set()
+                
                 for cu in cognito_users:
                     # Extract email from Cognito attributes
                     attrs = cu.get("Attributes", [])
@@ -55,9 +58,17 @@ async def get_all_users():
                             break
                     if not email:
                         continue
-                    if email.lower() in email_to_db_user:
+                    
+                    email_lower = email.lower()
+                    if email_lower in email_to_db_user:
                         # Already included from DB
                         continue
+                    if email_lower in processed_emails:
+                        # Already processed this email from Cognito
+                        continue
+                    
+                    processed_emails.add(email_lower)
+                    
                     # Include minimal stub for Cognito-only users
                     formatted_users.append({
                         "id": None,
