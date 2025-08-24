@@ -27,17 +27,18 @@ async def get_all_users():
             # Start with formatted DB users (they already have full profiles)
             formatted_users = []
             for user in db_users:
-                formatted_users.append({
-                    "id": user["id"],
-                    "firstName": user["firstName"],
-                    "lastName": user["lastName"],
-                    "email": user["email"],
-                    "major": user["major"],
-                    "graduationYear": user["graduationYear"],
-                    "cognitoSub": user["cognitoSub"],
-                    "joinedAt": user["joinedAt"].isoformat() if user["joinedAt"] else None,
-                    "hasProfile": True,
-                })
+                    formatted_users.append({
+                        "id": user["id"],
+                        "firstName": user["firstName"],
+                        "lastName": user["lastName"],
+                        "email": user["email"],
+                        "major": user["major"],
+                        "graduationYear": user["graduationYear"],
+                        "cognitoSub": user["cognitoSub"],
+                        "joinedAt": user["joinedAt"].isoformat() if user["joinedAt"] else None,
+                        "hasProfile": True,
+                        "isAdmin": user.get("isAdmin", False),
+                    })
             
             # Also list users from Cognito to include those who haven't completed a profile yet
             try:
@@ -80,6 +81,7 @@ async def get_all_users():
                         "cognitoSub": cu.get("Username"),
                         "joinedAt": (cu.get("UserCreateDate").isoformat() if cu.get("UserCreateDate") else None),
                         "hasProfile": False,
+                        "isAdmin": False,
                     })
             except Exception as e:
                 # If Cognito listing fails, proceed with DB users only but log it
@@ -247,4 +249,71 @@ async def get_major_options():
         }
     except Exception as e:
         print(f"❌ Error getting major options: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get major options: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to get major options: {str(e)}")
+
+@user_router.put("/admin-status")
+async def update_user_admin_status(email: str, is_admin: bool):
+    """Update admin status for a user (only complete profiles can be made admin)"""
+    try:
+        print(f"👑 Updating admin status for {email} to {is_admin}")
+        
+        # Initialize user repository
+        user_repo = UserRepository()
+        
+        try:
+            # Check if user exists and has complete profile
+            db_user = await user_repo.get_user_by_email(email)
+            
+            if not db_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            if not db_user.get("firstName") or not db_user.get("lastName"):
+                raise HTTPException(status_code=400, detail="Only users with complete profiles can be made admin")
+            
+            # Update admin status
+            success = await user_repo.update_user_admin_status(email, is_admin)
+            
+            if success:
+                return {
+                    "success": True,
+                    "message": f"Admin status updated for {email}",
+                    "isAdmin": is_admin
+                }
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update admin status")
+                
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Controller error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update admin status: {str(e)}")
+
+@user_router.get("/admin-status/{email}")
+async def get_user_admin_status(email: str):
+    """Get admin status for a user"""
+    try:
+        print(f"🔍 Getting admin status for {email}")
+        
+        # Initialize user repository
+        user_repo = UserRepository()
+        
+        try:
+            # Get admin status
+            is_admin = await user_repo.get_user_admin_status(email)
+            
+            if is_admin is None:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            return {
+                "success": True,
+                "email": email,
+                "isAdmin": is_admin
+            }
+                
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Controller error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get admin status: {str(e)}") 
