@@ -7,11 +7,17 @@ import { UserContext } from '../contexts/UserContext';
 export default function AdminLink() {
   const userContext = useContext(UserContext);
   const user = userContext?.user;
+  const isLoading = userContext?.isLoading;
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      // Wait for UserContext to finish loading
+      if (isLoading) {
+        return;
+      }
+
       if (!user?.email) {
         setLoading(false);
         return;
@@ -35,15 +41,21 @@ export default function AdminLink() {
     };
 
     checkAdminStatus();
-  }, [user?.email]);
+  }, [user?.email, isLoading]);
 
   // Debug logging
   console.log('🔍 AdminLink render:', { 
     user: user?.email, 
-    loading, 
+    userContextLoading: isLoading,
+    adminCheckLoading: loading, 
     isAdmin,
     shouldShow: user && !loading && isAdmin 
   });
+
+  // Don't show anything while UserContext is loading
+  if (isLoading) {
+    return null;
+  }
 
   // Only show admin link for logged-in users with admin privileges
   if (!user || loading || !isAdmin) {

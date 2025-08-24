@@ -13,11 +13,18 @@ export default function AdminLayout({
   const router = useRouter();
   const userContext = useContext(UserContext);
   const user = userContext?.user;
+  const isLoading = userContext?.isLoading;
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
+      // Wait for UserContext to finish loading
+      if (isLoading) {
+        console.log('⏳ UserContext still loading, waiting...');
+        return;
+      }
+
       if (!user?.email) {
         console.log('❌ No user logged in, redirecting to login');
         router.push('/login');
@@ -49,7 +56,29 @@ export default function AdminLayout({
     };
 
     checkAdminAccess();
-  }, [user?.email, router]);
+  }, [user?.email, isLoading, router]);
+
+  // Debug logging
+  console.log('🔍 AdminLayout render:', { 
+    user: user?.email, 
+    userContextLoading: isLoading,
+    adminCheckLoading: loading, 
+    isAdmin,
+    shouldShow: !loading && isAdmin 
+  });
+
+  // Show loading if UserContext is still loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-white bg-opacity-95 rounded-lg p-8 shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading User Data</h2>
+          <p className="text-gray-600">Please wait while we load your profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
