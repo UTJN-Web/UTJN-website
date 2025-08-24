@@ -35,6 +35,8 @@ export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterYear, setFilterYear] = useState<string>('all');
   const [filterMajor, setFilterMajor] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('joinedAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
@@ -44,19 +46,44 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
+      console.log('🔍 Fetching users from /api/users...');
       const response = await fetch('/api/users');
+      console.log('📡 Response status:', response.status);
+      
       if (response.ok) {
         const userData = await response.json();
-        setUsers(userData);
+        console.log('👥 Users fetched from database:', userData.length, 'users');
+        console.log('📊 User data:', userData);
+        
+        // Remove duplicates based on email (case-insensitive)
+        const uniqueUsers = userData.filter((user: any, index: number, self: any[]) => 
+          index === self.findIndex((u: any) => u.email.toLowerCase() === user.email.toLowerCase())
+        );
+        
+        console.log('✅ After deduplication:', uniqueUsers.length, 'users');
+        console.log('📊 Deduplicated user data:', uniqueUsers);
+        
+        setUsers(uniqueUsers);
+      } else {
+        console.error('❌ Failed to fetch users, status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      console.error('❌ Failed to fetch users:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredUsers = users.filter(user => {
+    // For Incomplete profiles, only match by email search
+    if (!user.hasProfile) {
+      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    }
+    
+    // For Complete profiles, use full filtering
     const matchesSearch = 
       user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -66,8 +93,72 @@ export default function UsersManagement() {
     const matchesYear = filterYear === 'all' || user.graduationYear.toString() === filterYear;
     const matchesMajor = filterMajor === 'all' || user.major === filterMajor;
 
-    return matchesSearch && matchesYear && matchesMajor;
+    const matches = matchesSearch && matchesYear && matchesMajor;
+    
+    // Debug logging for Incomplete profiles
+    if (!user.hasProfile) {
+      console.log('🔍 Filtering Incomplete user:', {
+        email: user.email,
+        searchTerm,
+        matchesSearch
+      });
+    }
+
+    return matches;
   });
+
+  console.log('📊 Filtered users count:', filteredUsers.length);
+  console.log('📊 Filtered users:', filteredUsers.map(u => ({ email: u.email, hasProfile: u.hasProfile })));
+
+  // Additional deduplication for filtered results
+  const uniqueFilteredUsers = filteredUsers.filter((user: User, index: number, self: User[]) => {
+    const firstIndex = self.findIndex((u: User) => u.email.toLowerCase() === user.email.toLowerCase());
+    const isDuplicate = index !== firstIndex;
+    
+    if (isDuplicate) {
+      console.log('🚫 Removing duplicate:', user.email, 'at index', index, 'first found at', firstIndex);
+    }
+    
+    return index === firstIndex;
+  });
+
+  // Sort users
+  const sortedUsers = uniqueFilteredUsers.sort((a: User, b: User) => {
+    let aValue: any, bValue: any;
+    
+    switch (sortBy) {
+      case 'name':
+        aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+        bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+        break;
+      case 'email':
+        aValue = a.email.toLowerCase();
+        bValue = b.email.toLowerCase();
+        break;
+      case 'major':
+        aValue = a.major.toLowerCase();
+        bValue = b.major.toLowerCase();
+        break;
+      case 'graduationYear':
+        aValue = a.graduationYear;
+        bValue = b.graduationYear;
+        break;
+      case 'joinedAt':
+      default:
+        aValue = new Date(a.joinedAt).getTime();
+        bValue = new Date(b.joinedAt).getTime();
+        break;
+    }
+    
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+
+  console.log('✅ Unique filtered users count:', uniqueFilteredUsers.length);
+  console.log('✅ Unique filtered users:', uniqueFilteredUsers.map(u => ({ email: u.email, hasProfile: u.hasProfile })));
 
   const uniqueYears = [...new Set(users.map(u => u.graduationYear))].sort();
   const uniqueMajors = [...new Set(users.map(u => u.major))].sort();
@@ -75,7 +166,7 @@ export default function UsersManagement() {
   const exportUsers = () => {
     const csvData = [
       ['First Name', 'Last Name', 'Email', 'Major', 'Graduation Year', 'Joined Date'],
-      ...filteredUsers.map(user => [
+      ...sortedUsers.map(user => [
         user.firstName,
         user.lastName,
         user.email,
@@ -175,6 +266,24 @@ export default function UsersManagement() {
                         <option key={major} value={major}>{major}</option>
                       ))}
                     </select>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-transparent"
+                    >
+                      <option value="joinedAt">Sort by Join Date</option>
+                      <option value="name">Sort by Name</option>
+                      <option value="email">Sort by Email</option>
+                      <option value="major">Sort by Major</option>
+                      <option value="graduationYear">Sort by Year</option>
+                    </select>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-transparent hover:bg-gray-50"
+                      title={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
                   </div>
                   <button
                     onClick={exportUsers}
@@ -191,14 +300,14 @@ export default function UsersManagement() {
                 <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
                   <div className="text-center">
                     <p className="text-sm font-medium text-gray-600">Total Users</p>
-                    <p className="text-2xl font-bold text-[#1c2a52]">{users.length}</p>
+                    <p className="text-2xl font-bold text-[#1c2a52]">{sortedUsers.length}</p>
                   </div>
                 </div>
                 <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
                   <div className="text-center">
                     <p className="text-sm font-medium text-gray-600">Complete Profiles</p>
                     <p className="text-2xl font-bold text-[#1c2a52]">
-                      {users.filter(u => u.hasProfile).length}
+                      {sortedUsers.filter(u => u.hasProfile).length}
                     </p>
                   </div>
                 </div>
@@ -206,7 +315,7 @@ export default function UsersManagement() {
                   <div className="text-center">
                     <p className="text-sm font-medium text-gray-600">Incomplete Profiles</p>
                     <p className="text-2xl font-bold text-[#1c2a52]">
-                      {users.filter(u => !u.hasProfile).length}
+                      {sortedUsers.filter(u => !u.hasProfile).length}
                     </p>
                   </div>
                 </div>
@@ -239,14 +348,14 @@ export default function UsersManagement() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.length === 0 ? (
+                      {sortedUsers.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                             No users found matching your criteria
                           </td>
                         </tr>
                       ) : (
-                        filteredUsers.map((user) => (
+                        sortedUsers.map((user) => (
                           <tr key={user.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">

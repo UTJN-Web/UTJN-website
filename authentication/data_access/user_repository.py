@@ -279,6 +279,26 @@ class UserRepository(BaseRepository):
                         print("✅ currentYear column added to User table")
                     else:
                         print("✅ currentYear column already exists in User table")
+                    
+                    # Check if isAdmin column exists and add it if not
+                    is_admin_column_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'User'
+                            AND column_name = 'isAdmin'
+                        );
+                    """)
+                    
+                    if not is_admin_column_exists:
+                        print("🆕 Adding isAdmin column to User table...")
+                        await conn.execute("""
+                            ALTER TABLE "User" 
+                            ADD COLUMN "isAdmin" BOOLEAN NOT NULL DEFAULT FALSE;
+                        """)
+                        print("✅ isAdmin column added to User table")
+                    else:
+                        print("✅ isAdmin column already exists in User table")
                         
             except Exception as e:
                 print(f"❌ Error ensuring tables exist: {e}")
@@ -442,7 +462,7 @@ class UserRepository(BaseRepository):
             self.log_operation("Getting all users")
             
             query = """
-            SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt"
+            SELECT id, "firstName", "lastName", email, major, "graduationYear", "currentYear", university, "cognitoSub", "joinedAt", "isAdmin"
             FROM "User"
             ORDER BY "joinedAt" DESC
             """
@@ -461,7 +481,8 @@ class UserRepository(BaseRepository):
                     "currentYear": row["currentYear"],
                     "university": row["university"],
                     "cognitoSub": row["cognitoSub"],
-                    "joinedAt": row["joinedAt"]
+                    "joinedAt": row["joinedAt"],
+                    "isAdmin": row["isAdmin"]
                 })
             
             self.log_success(f"Retrieved {len(users)} users")
@@ -469,4 +490,50 @@ class UserRepository(BaseRepository):
             
         except Exception as e:
             self.log_error("Getting all users", e)
+            raise e
+    
+    async def get_user_admin_status(self, email: str) -> Optional[bool]:
+        """Get admin status for a user by email"""
+        try:
+            self.log_operation("Getting user admin status", email)
+            
+            query = """
+            SELECT "isAdmin"
+            FROM "User"
+            WHERE email = $1
+            """
+            
+            row = await self.fetchrow_query(query, email)
+            
+            if row:
+                return row["isAdmin"]
+            return None
+            
+        except Exception as e:
+            self.log_error("Getting user admin status", e)
+            raise e
+    
+    async def update_user_admin_status(self, email: str, is_admin: bool) -> bool:
+        """Update admin status for a user by email"""
+        try:
+            self.log_operation("Updating user admin status", f"{email} -> {is_admin}")
+            
+            query = """
+            UPDATE "User"
+            SET "isAdmin" = $2
+            WHERE email = $1
+            RETURNING id
+            """
+            
+            row = await self.fetchrow_query(query, email, is_admin)
+            
+            if row:
+                self.log_success(f"Updated admin status for {email}")
+                return True
+            else:
+                self.log_error("User not found for admin status update", email)
+                return False
+                
+        except Exception as e:
+            self.log_error("Updating user admin status", e)
             raise e 

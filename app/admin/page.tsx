@@ -236,7 +236,7 @@ export default function AdminDashboard() {
 
             {/* Permissions */}
             <Link href="/admin/permissions" className="group">
-              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm opacity-50">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-[#1c2a52]">Permissions</h3>
                   <p className="text-sm text-gray-500">Access control</p>
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                   Manage admin roles, permissions, and access control for different features.
                 </p>
                 <div className="text-center">
-                  <span className="text-sm font-medium text-gray-400">Coming Soon</span>
+                  <span className="text-sm font-medium text-[#1c2a52]">Manage Permissions →</span>
                 </div>
               </div>
             </Link>
