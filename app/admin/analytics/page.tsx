@@ -64,16 +64,37 @@ export default function AnalyticsPage() {
       const events = eventsRes.ok ? await eventsRes.json() : [];
       const users = usersRes.ok ? await usersRes.json() : [];
 
-      // Calculate analytics
-      const totalRevenue = events.reduce((sum: number, e: any) => {
+      // Calculate analytics with proper monthly breakdown
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      
+      // Calculate total revenue and monthly breakdown
+      let totalRevenue = 0;
+      let thisMonthRevenue = 0;
+      let lastMonthRevenue = 0;
+      
+      events.forEach((e: any) => {
         const registrations = e.capacity - e.remainingSeats;
-        return sum + (e.fee * registrations);
-      }, 0);
-
-      // Mock monthly data for demonstration
-      const thisMonth = totalRevenue * 0.3;
-      const lastMonth = totalRevenue * 0.25;
-      const growth = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
+        const eventRevenue = e.fee * registrations;
+        totalRevenue += eventRevenue;
+        
+        // Check if event is in current month
+        if (e.date) {
+          const eventDate = new Date(e.date);
+          if (eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear) {
+            thisMonthRevenue += eventRevenue;
+          }
+          // Check if event is in last month
+          else if (eventDate.getMonth() === (currentMonth - 1 + 12) % 12 && 
+                   eventDate.getFullYear() === (currentMonth === 0 ? currentYear - 1 : currentYear)) {
+            lastMonthRevenue += eventRevenue;
+          }
+        }
+      });
+      
+      // Calculate growth percentage
+      const growth = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
 
       const topEvents = events
         .map((e: any) => ({
@@ -87,9 +108,8 @@ export default function AnalyticsPage() {
 
       // Generate user growth data (last 6 months)
       const userGrowth = [];
-      const now = new Date();
       for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
         const monthUsers = users.filter((u: any) => {
           const joinDate = new Date(u.joinedAt);
           return joinDate.getFullYear() === date.getFullYear() && 
@@ -113,8 +133,8 @@ export default function AnalyticsPage() {
         registrations: [], // Would be fetched separately
         revenue: {
           total: totalRevenue,
-          thisMonth,
-          lastMonth,
+          thisMonth: thisMonthRevenue,
+          lastMonth: lastMonthRevenue,
           growth
         },
         topEvents,
