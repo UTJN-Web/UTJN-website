@@ -70,6 +70,7 @@ export default function EventsPage() {
   const [category, setCategory] = useState<'all' | 'career' | 'social'>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [registering, setRegistering] = useState<number | null>(null);
+  const [showDiscountInfo, setShowDiscountInfo] = useState(false);
 
   // Credit system state
   const [userCredits, setUserCredits] = useState<number>(0);
@@ -556,6 +557,15 @@ export default function EventsPage() {
         ))}
       </div>
 
+      <div className="mb-6 flex justify-center">
+        <button
+          onClick={() => setShowDiscountInfo(true)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-400 px-4 py-2 text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
+        >
+          割引特典について
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         {liveEvents.length === 0 && (
           <div className="text-center py-12">
@@ -652,6 +662,31 @@ export default function EventsPage() {
         type="danger"
         loading={registering === confirmModal.eventId}
       />
+
+      {/* Discount Info Modal */}
+      {showDiscountInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-[#0f0f0f] border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-semibold text-[#1c2a52] dark:text-blue-300 mb-3">割引特典について</h3>
+            <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+              <p>
+                Careerイベントに参加し、所定のフォームに回答することで、次回以降のSocialイベントの参加料を割引できます。
+              </p>
+              <p>
+                積極的に参加し、Socialイベントを楽しもう！
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowDiscountInfo(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-[#171717]"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Refund Request Modal */}
       <RefundRequestModal
