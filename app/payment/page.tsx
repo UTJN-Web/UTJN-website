@@ -160,8 +160,9 @@ export default function PaymentPage() {
       const paymentId = (window as any).lastPaymentId;
       console.log('Processing registration with payment ID:', paymentId);
       
-      // Spend credits if they were used
       const userIdToUse = userId || user?.id?.toString();
+      
+      // Spend credits first if they were used
       if (creditsUsed > 0 && userIdToUse) {
         try {
           const creditResponse = await fetch('/api/users/credits', {
@@ -178,15 +179,23 @@ export default function PaymentPage() {
           });
           
           if (!creditResponse.ok) {
-            console.error('Failed to spend credits, but continuing with registration');
+            const errorData = await creditResponse.text();
+            console.error('Failed to spend credits:', errorData);
+            setPaymentResult('failed');
+            setErrorMessage('Failed to apply credit discount');
+            return;
           }
+          
+          console.log(`✅ Successfully spent ${creditsUsed} credits for user ${userIdToUse}`);
         } catch (creditError) {
           console.error('Error spending credits:', creditError);
-          // Continue with registration even if credit spending fails
+          setPaymentResult('failed');
+          setErrorMessage('Failed to process credit discount');
+          return;
         }
       }
       
-      // Process the actual registration
+      // Process the actual registration (credits already deducted above)
       const response = await fetch(`/api/events/${eventId}/register/paid`, {
         method: 'POST',
         headers: {
@@ -197,7 +206,7 @@ export default function PaymentPage() {
           paymentId: paymentId,
           tierId: tierId ? parseInt(tierId) : null,
           subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : [],
-          creditsUsed: creditsUsed,
+          creditsUsed: creditsUsed, // For logging purposes only
           finalPrice: finalPrice
         }),
       });
@@ -226,10 +235,23 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600">Loading payment page...</p>
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Loading content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1c2a52] border-t-transparent mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-[#1c2a52] mb-2">Loading Payment</h2>
+          <p className="text-gray-600">Please wait while we prepare your payment page...</p>
         </div>
       </div>
     );
@@ -237,12 +259,24 @@ export default function PaymentPage() {
 
   if (!eventData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Error content */}
+        <div className="relative z-10 w-full max-w-md bg-white bg-opacity-95 p-8 rounded shadow-lg backdrop-blur-sm text-center">
+          <h1 className="text-2xl font-bold text-[#1c2a52] mb-4">
             {errorMessage || 'Event Not Found'}
           </h1>
-          <Link href="/events" className="text-blue-600 hover:text-blue-700">
+          <Link href="/events" className="text-[#1c2a52] hover:text-[#1c2a52]/80 font-medium">
             Return to Events
           </Link>
         </div>
@@ -252,12 +286,24 @@ export default function PaymentPage() {
 
   if (paymentResult === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Success content */}
+        <div className="relative z-10 max-w-md w-full bg-white bg-opacity-95 rounded-xl shadow-lg backdrop-blur-sm p-8 text-center mx-4">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+          <h1 className="text-2xl font-bold text-[#1c2a52] mb-2">Payment Successful!</h1>
           <p className="text-gray-600 mb-6">
             You have successfully registered for <strong>{eventData.name}</strong>
           </p>
@@ -279,7 +325,7 @@ export default function PaymentPage() {
           </p>
           <Link 
             href="/events"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-[#1c2a52] text-white rounded-lg hover:bg-[#1c2a52]/90 transition-colors"
           >
             <ArrowLeft size={16} className="mr-2" />
             Back to Events
@@ -291,12 +337,24 @@ export default function PaymentPage() {
 
   if (paymentResult === 'failed') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+      <div
+        className="relative min-h-screen w-full flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/UofT.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark faded overlay */}
+        <div className="absolute inset-0 bg-black opacity-20 z-0" />
+
+        {/* Failed content */}
+        <div className="relative z-10 max-w-md w-full bg-white bg-opacity-95 rounded-xl shadow-lg backdrop-blur-sm p-8 text-center mx-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h1>
+          <h1 className="text-2xl font-bold text-[#1c2a52] mb-2">Payment Failed</h1>
           <p className="text-gray-600 mb-4">
             {errorMessage || 'Unfortunately, your payment could not be processed. Please try again.'}
           </p>
@@ -307,13 +365,13 @@ export default function PaymentPage() {
                 setErrorMessage('');
                 window.location.reload();
               }}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full px-4 py-2 bg-[#1c2a52] text-white rounded-lg hover:bg-[#1c2a52]/90 transition-colors"
             >
               Try Again
             </button>
             <Link 
               href="/events"
-              className="block w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="block w-full px-4 py-2 border border-[#1c2a52] text-[#1c2a52] rounded-lg hover:bg-[#1c2a52]/10 transition-colors"
             >
               Back to Events
             </Link>

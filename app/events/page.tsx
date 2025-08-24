@@ -976,7 +976,7 @@ function EventCard({
           </div>
         </div>
 
-        <div className="mt-4 flex shrink-0 flex-col items-end gap-2 md:mt-0 md:w-[200px]">
+        <div className="mt-4 flex shrink-0 flex-col gap-3 md:mt-0 w-full">
           {archived ? (
             <div className="w-full text-center">
               <span className="inline-block rounded-full bg-gray-500 px-3 py-1 text-xs text-white mb-2">
@@ -1181,8 +1181,19 @@ function EventCard({
               {/* Current Price Display */}
               <div className="w-full bg-gray-100 border border-gray-300 rounded-md p-2 text-center">
                 <div className="text-sm font-medium text-gray-900">
-                  {/* TODO: Fix credit usage display */}
-                  <>Total: ${getCurrentPrice()}</>
+                  Total: ${(() => {
+                    const basePrice = getCurrentPrice();
+                    if (useCredits && creditsToUse > 0) {
+                      const finalPrice = Math.max(0, basePrice - creditsToUse);
+                      return finalPrice.toFixed(2).replace(/\.00$/, '');
+                    }
+                    return basePrice;
+                  })()}
+                  {useCredits && creditsToUse > 0 && (
+                    <span className="text-sm text-green-600 ml-2">
+                      (${getCurrentPrice()} - ${creditsToUse} credits)
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1207,7 +1218,7 @@ function EventCard({
                 </button>
               ) : (
                 <Link
-                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&price=${getCurrentPrice()}`}
+                  href={`/payment?eventId=${event.id}&userId=${user?.id}&tierId=${currentTier?.id || ''}&price=${getCurrentPrice()}&useCredits=${useCredits}&creditsAmount=${creditsToUse}`}
                   className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
                     canRegister()
                       ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
@@ -1215,7 +1226,14 @@ function EventCard({
                   }`}
                 >
                   <CreditCard size={16} />
-                  <>Pay & Register (${getCurrentPrice()})</>
+                  <>Pay & Register (${(() => {
+                    const basePrice = getCurrentPrice();
+                    if (useCredits && creditsToUse > 0) {
+                      const finalPrice = Math.max(0, basePrice - creditsToUse);
+                      return finalPrice.toFixed(2).replace(/\.00$/, '');
+                    }
+                    return basePrice;
+                  })()})</>
                 </Link>
               )}
               
