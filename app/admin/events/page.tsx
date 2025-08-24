@@ -123,9 +123,9 @@ export default function AdminEventsPage() {
   
   // Advanced ticketing state
   const [ticketTiers, setTicketTiers] = useState<TicketTier[]>([]);
-  const [subEvents, setSubEvents] = useState<SubEvent[]>([]);
+
   const [showTierConfig, setShowTierConfig] = useState(false);
-  const [showSubEventConfig, setShowSubEventConfig] = useState(false);
+
   
   const [formData, setFormData] = useState<EventFormData>({
     name: '',
@@ -347,12 +347,7 @@ export default function AdminEventsPage() {
 
   // Calculate basic fee and capacity from pricing configuration
   const calculateBasicValues = () => {
-    if (formData.enableSubEvents && subEvents.length > 0) {
-      // For sub-events, use the highest price and total capacity
-      const maxPrice = Math.max(...subEvents.map(se => se.price));
-      const totalCapacity = subEvents.reduce((sum, se) => sum + se.capacity, 0);
-      return { fee: maxPrice, capacity: totalCapacity };
-    } else if (formData.enableAdvancedTicketing && ticketTiers.length > 0) {
+    if (formData.enableAdvancedTicketing && ticketTiers.length > 0) {
       // For ticket tiers, use the regular price and total capacity
       const regularTier = ticketTiers.find(t => t.name === 'Regular') || ticketTiers[0];
       const totalCapacity = ticketTiers.reduce((sum, t) => sum + t.capacity, 0);
@@ -389,28 +384,7 @@ export default function AdminEventsPage() {
         console.log('Using default tiers:', finalTicketTiers);
       }
 
-      // Validate capacity for Matrix Pricing
-      if (formData.enableSubEvents && formData.enableAdvancedTicketing) {
-        const subEventCapacityErrors: string[] = [];
-        
-        subEvents.forEach((subEvent, subIndex) => {
-          const totalTierCapacityForSubEvent = finalTicketTiers.reduce((sum, tier) => 
-            sum + (tier.subEventCapacities?.[subIndex] || 0), 0
-          );
-          
-          if (totalTierCapacityForSubEvent !== subEvent.capacity) {
-            subEventCapacityErrors.push(
-              `${subEvent.name}: Tier total (${totalTierCapacityForSubEvent}) ≠ Sub-event capacity (${subEvent.capacity})`
-            );
-          }
-        });
-        
-        if (subEventCapacityErrors.length > 0) {
-          addNotification('error', `Capacity matrix validation failed: ${subEventCapacityErrors.join(', ')}. Please adjust the capacity matrix.`);
-          setSaving(false);
-          return;
-        }
-      }
+
 
       const url = editingEvent ? `/api/events/${editingEvent.id}` : '/api/events';
       const method = editingEvent ? 'PUT' : 'POST';
@@ -422,14 +396,15 @@ export default function AdminEventsPage() {
         image: imageUrl, // Use the uploaded image URL
         isArchived: editingEvent?.isArchived || false,
         ticketTiers: formData.enableAdvancedTicketing ? finalTicketTiers : [],
-        subEvents: formData.enableSubEvents ? subEvents : []
+        subEvents: []
       };
 
       console.log('Submitting event payload:', {
         enableAdvancedTicketing: formData.enableAdvancedTicketing,
         enableSubEvents: formData.enableSubEvents,
         ticketTiersCount: finalTicketTiers.length,
-        subEventsCount: subEvents.length,
+        subEventsCount: 0,
+        ticketTiers: finalTicketTiers,
         payload: payload
       });
 
@@ -484,7 +459,6 @@ export default function AdminEventsPage() {
     setImagePreview('');
     // Reset pricing configuration
     setTicketTiers([]);
-    setSubEvents([]);
   };
 
   const handleEdit = async (event: Event) => {
@@ -564,23 +538,7 @@ export default function AdminEventsPage() {
       setTicketTiers([]);
     }
 
-    if (event.enableSubEvents && (event as any).subEvents) {
-      console.log('Loading existing sub-events:', (event as any).subEvents);
-      const formattedSubEvents = (event as any).subEvents.map((subEvent: any) => ({
-        name: subEvent.name,
-        description: subEvent.description || '',
-        price: subEvent.price,
-        capacity: subEvent.capacity,
-        isStandalone: subEvent.isStandalone !== undefined ? subEvent.isStandalone : true,
-        isComboOption: subEvent.isComboOption !== undefined ? subEvent.isComboOption : false
-      }));
-      setSubEvents(formattedSubEvents);
-    } else if (event.enableSubEvents) {
-      console.log('Sub-events enabled but no sub-events found');
-      setSubEvents([]);
-    } else {
-      setSubEvents([]);
-    }
+    // SubEvents disabled - no longer loading sub-events
 
     setShowForm(true);
   };
@@ -998,87 +956,46 @@ export default function AdminEventsPage() {
                                   enableAdvancedTicketing: true,
                                   enableSubEvents: false 
                                 });
-                                // Don't clear existing data when switching modes
                               }}
                               className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                             />
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                  Simple Pricing
-                                </span>
+                                                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                Tier Pricing
+                              </span>
                               </div>
                               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                Early Bird → Regular pricing. One price per person. 
-                                Early Bird ends at midnight (00:00) on event date, then Regular begins.
+                                Early Bird → Regular pricing tiers. Configure different prices and capacities for each tier.
                               </p>
                             </div>
                           </label>
                         </div>
 
-                        {/* Complex Pricing Option */}
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                          <label className="flex items-start space-x-3 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="pricingMode"
-                              checked={formData.enableSubEvents}
-                              onChange={() => {
-                                setFormData({ 
-                                  ...formData, 
-                                  enableAdvancedTicketing: true,
-                                  enableSubEvents: true 
-                                });
-                                // Don't clear existing data when switching modes
-                              }}
-                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                  Matrix Pricing
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                Multiple sub-events with flexible pricing matrix.
-                              </p>
-                            </div>
-                          </label>
-                        </div>
+
 
                         {/* Configuration Links */}
-                        {(formData.enableAdvancedTicketing || formData.enableSubEvents) && (
+                        {true && (
                           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                               <div>
                                 <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {formData.enableSubEvents ? 'Price Matrix Configuration' : 'Tier Configuration'}
+                                  Tier Configuration
                                 </h4>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {formData.enableSubEvents 
-                                    ? `${ticketTiers.length} tiers × ${subEvents.length} sub-events = ${ticketTiers.length * subEvents.length} price points`
-                                    : ticketTiers.length === 0 
+                                  {ticketTiers.length === 0 
                                     ? 'Default tiers will be created automatically'
                                     : `${ticketTiers.length} ticket tiers configured`
                                   }
                                 </p>
                               </div>
                               <div className="flex space-x-2">
-                                {formData.enableSubEvents && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowSubEventConfig(true)}
-                                    className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-50"
-                                  >
-                                    Configure Sub-Events ({subEvents.length})
-                                  </button>
-                                )}
                                 <button
                                   type="button"
-                                  onClick={() => setShowTierConfig(true)}
+                                  onClick={() => { if (!formData.enableAdvancedTicketing) setFormData({ ...formData, enableAdvancedTicketing: true, enableSubEvents: false }); setShowTierConfig(true); }}
                                   className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                  {formData.enableSubEvents ? 'Configure Price Matrix' : 'Configure Tiers'} 
+                                  Configure Tiers
                                 </button>
                               </div>
                             </div>
@@ -1358,7 +1275,7 @@ export default function AdminEventsPage() {
                               <DollarSign size={16} className="mr-2 text-yellow-500" />
                               <div>
                                 <div className="font-medium">
-                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : `$${event.fee}`}
+                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : `$${Number(event.fee).toFixed(2).replace(/\.00$/, '')}`}
                                 </div>
                                 <div className="text-xs">
                                   {event.enableAdvancedTicketing || event.enableSubEvents ? 'Pricing' : 'Registration fee'}
@@ -1393,7 +1310,7 @@ export default function AdminEventsPage() {
                                           <div className="text-xs">
                                             <div className="font-medium text-[#1c2a52]">{tier.name}</div>
                                             <div className="text-gray-600">
-                                            ${tier.price} • {tier.capacity} spots
+                                            ${Number(tier.price).toFixed(2).replace(/\.00$/, '')} • {tier.capacity} spots
                                           </div>
                                                                                       {tier.targetYear !== 'All years' && (
                                               <div className="text-[#1c2a52] text-[10px]">
@@ -1419,7 +1336,7 @@ export default function AdminEventsPage() {
                                           <div className="text-xs">
                                             <div className="font-medium text-[#1c2a52]">{subEvent.name}</div>
                                             <div className="text-gray-600">
-                                            ${subEvent.price} • {subEvent.capacity} spots
+                                            ${Number(subEvent.price).toFixed(2).replace(/\.00$/, '')} • {subEvent.capacity} spots
                                           </div>
                                           <div className={`text-[10px] mt-1 ${subEvent.isAvailable ? 'text-green-600' : 'text-red-600'}`}>
                                             {subEvent.remaining_capacity || 0} remaining
@@ -1504,11 +1421,6 @@ export default function AdminEventsPage() {
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Configure Ticket Tiers
-                {formData.enableSubEvents && (
-                  <span className="text-sm font-normal text-blue-600 ml-2">
-                    (with Sub-Events Pricing)
-                  </span>
-                )}
               </h3>
               <button
                 onClick={() => setShowTierConfig(false)}
@@ -1695,182 +1607,18 @@ export default function AdminEventsPage() {
                   ))}
                 </div>
               ) : (
-                // Complex Mode: Tier + Sub-Event matrix pricing
+                // Complex Mode: DISABLED - SubEvents removed
                 <div className="space-y-6">
-                  {ticketTiers.length > 0 && subEvents.length > 0 ? (
-                    <>
-                      {/* Pricing Matrix */}
-                      <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-6">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-4">
-                          Pricing Matrix: Tiers × Sub-Events
-                        </h4>
-                        
-                        {/* Pricing Matrix Table */}
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full border border-gray-200 dark:border-gray-700">
-                            <thead className="bg-gray-100 dark:bg-gray-800">
-                              <tr>
-                                <th className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white">
-                                  Tier / Sub-Event
-                                </th>
-                                {subEvents.map((subEvent, subIndex) => (
-                                  <th key={subIndex} className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-white">
-                                    {subEvent.name}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {ticketTiers.map((tier, tierIndex) => (
-                                <tr key={tierIndex}>
-                                  <td className="border border-gray-200 dark:border-gray-700 px-4 py-2 font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">
-                                    {tier.name}
-                                  </td>
-                                  {subEvents.map((subEvent, subIndex) => (
-                                    <td key={subIndex} className="border border-gray-200 dark:border-gray-700 px-2 py-2">
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        value={tier.subEventPrices?.[subIndex] !== undefined 
-                                          ? (tier.subEventPrices[subIndex] === 0 ? '' : tier.subEventPrices[subIndex])
-                                          : ''
-                                        }
-                                        onChange={(e) => {
-                                          const newTiers = [...ticketTiers];
-                                          const newValue = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                          
-                                          if (!newTiers[tierIndex].subEventPrices) {
-                                            newTiers[tierIndex].subEventPrices = subEvents.map((_, i) => 
-                                              i === subIndex ? newValue : 0
-                                            );
-                                          } else {
-                                            newTiers[tierIndex].subEventPrices[subIndex] = newValue;
-                                          }
-                                          setTicketTiers(newTiers);
-                                        }}
-                                        className="w-full text-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
-                                        placeholder="Price"
-                                      />
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        
-                        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                          💡 <strong>Tip:</strong> Set different prices for each tier-subevent combination. 
-                          Early Bird 1次会 might be $30, while Regular 1次会 is $35.
-                        </div>
-                      </div>
-
-                      {/* Capacity Matrix */}
-                      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-4">
-                          Capacity Matrix: Tiers × Sub-Events
-                        </h4>
-                        
-                        {/* Capacity Matrix Table */}
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full border border-gray-200 dark:border-gray-700">
-                            <thead className="bg-blue-100 dark:bg-blue-800">
-                              <tr>
-                                <th className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white">
-                                  Tier / Sub-Event
-                                </th>
-                                {subEvents.map((subEvent, subIndex) => (
-                                  <th key={subIndex} className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-white">
-                                    {subEvent.name}
-                                  </th>
-                                ))}
-                                <th className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center text-sm font-medium text-gray-900 dark:text-white">
-                                  Total
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {ticketTiers.map((tier, tierIndex) => (
-                                <tr key={tierIndex}>
-                                  <td className="border border-gray-200 dark:border-gray-700 px-4 py-2 font-medium text-gray-900 dark:text-white bg-blue-50 dark:bg-blue-800">
-                                    {tier.name}
-                                  </td>
-                                  {subEvents.map((subEvent, subIndex) => (
-                                    <td key={subIndex} className="border border-gray-200 dark:border-gray-700 px-2 py-2">
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        value={tier.subEventCapacities?.[subIndex] !== undefined 
-                                          ? (tier.subEventCapacities[subIndex] === 0 ? '' : tier.subEventCapacities[subIndex])
-                                          : ''
-                                        }
-                                        onChange={(e) => {
-                                          const newTiers = [...ticketTiers];
-                                          const newValue = e.target.value === '' ? 0 : parseInt(e.target.value);
-                                          
-                                          if (!newTiers[tierIndex].subEventCapacities) {
-                                            newTiers[tierIndex].subEventCapacities = subEvents.map((_, i) => 
-                                              i === subIndex ? newValue : 0
-                                            );
-                                          } else {
-                                            newTiers[tierIndex].subEventCapacities[subIndex] = newValue;
-                                          }
-                                          
-                                          // Auto-calculate tier total capacity
-                                          const totalCapacity = newTiers[tierIndex].subEventCapacities.reduce((sum, cap) => sum + cap, 0);
-                                          newTiers[tierIndex].capacity = totalCapacity;
-                                          
-                                          setTicketTiers(newTiers);
-                                        }}
-                                        className="w-full text-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
-                                        placeholder="Capacity"
-                                      />
-                                    </td>
-                                  ))}
-                                  <td className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center font-medium text-gray-900 dark:text-white bg-blue-100 dark:bg-blue-700">
-                                    {tier.subEventCapacities ? tier.subEventCapacities.reduce((sum, cap) => sum + cap, 0) : 0}
-                                  </td>
-                                </tr>
-                              ))}
-                              <tr className="bg-gray-50 dark:bg-gray-800">
-                                <td className="border border-gray-200 dark:border-gray-700 px-4 py-2 font-medium text-gray-900 dark:text-white">
-                                  Sub-Event Total
-                                </td>
-                                {subEvents.map((subEvent, subIndex) => (
-                                  <td key={subIndex} className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center font-medium text-gray-900 dark:text-white">
-                                    {ticketTiers.reduce((sum, tier) => 
-                                      sum + (tier.subEventCapacities?.[subIndex] || 0), 0
-                                    )}
-                                  </td>
-                                ))}
-                                <td className="border border-gray-200 dark:border-gray-700 px-4 py-2 text-center font-medium text-gray-900 dark:text-white">
-                                  {ticketTiers.reduce((sum, tier) => 
-                                    sum + (tier.subEventCapacities ? tier.subEventCapacities.reduce((tierSum, cap) => tierSum + cap, 0) : 0), 0
-                                  )}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                        
-                        <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
-                          💡 <strong>Tip:</strong> Set capacity for each tier-subevent combination. 
-                          The tier total will be automatically calculated. Early Bird might have 30 for 1次会 and 20 for 2次会.
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                        ⚠️ Please configure both ticket tiers and sub-events first to set up the pricing and capacity matrices.
-                      </p>
-                    </div>
-                  )}
+                  <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ SubEvent system has been disabled. Please use simple tier pricing instead.
+                    </p>
+                  </div>
                   
                   {/* Tier Configuration for Complex Mode */}
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-4">
-                      {formData.enableSubEvents ? 'Tier Capacity Matrix' : 'Tier Capacity Settings'}
+                      Tier Capacity Settings
                     </h4>
                     <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4">
                       <div className="flex items-start space-x-3">
@@ -1881,73 +1629,14 @@ export default function AdminEventsPage() {
                         </div>
                         <div>
                           <h5 className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                            {formData.enableSubEvents ? 'How Tier Capacity Matrix Works' : 'How Tier Capacity Works'}
+                            How Tier Capacity Works
                           </h5>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {formData.enableSubEvents 
-                              ? 'Set capacity for each tier. Total capacity will be automatically calculated and validated against sub-event capacities.'
-                              : 'Early Bird gets first X spots, then Regular gets next Y spots. When Early Bird sells out, registration automatically moves to Regular pricing.'
-                            }
+                            Early Bird gets first X spots, then Regular gets next Y spots. When Early Bird sells out, registration automatically moves to Regular pricing.
                           </p>
                         </div>
                       </div>
                     </div>
-
-                    {/* Capacity Validation Error */}
-                    {formData.enableSubEvents && (() => {
-                      // For Matrix mode, validate that each sub-event's total capacity matches the sub-event's capacity
-                      const subEventCapacityErrors: string[] = [];
-                      
-                      subEvents.forEach((subEvent, subIndex) => {
-                        const totalTierCapacityForSubEvent = ticketTiers.reduce((sum, tier) => 
-                          sum + (tier.subEventCapacities?.[subIndex] || 0), 0
-                        );
-                        
-                        if (totalTierCapacityForSubEvent !== subEvent.capacity) {
-                          subEventCapacityErrors.push(
-                            `${subEvent.name}: Tier total (${totalTierCapacityForSubEvent}) ≠ Sub-event capacity (${subEvent.capacity})`
-                          );
-                        }
-                      });
-                      
-                      const hasError = subEventCapacityErrors.length > 0;
-                      
-                      return hasError ? (
-                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-                          <div className="flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                              Capacity Matrix Validation Error
-                            </span>
-                          </div>
-                          <div className="text-sm text-red-700 dark:text-red-300 mt-1">
-                            <p className="font-medium mb-2">The following sub-events have capacity mismatches:</p>
-                            <ul className="list-disc list-inside space-y-1">
-                              {subEventCapacityErrors.map((error, index) => (
-                                <li key={index}>{error}</li>
-                              ))}
-                            </ul>
-                            <p className="mt-2">Please adjust the capacity matrix to match the sub-event capacities.</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg">
-                          <div className="flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                              Capacity Matrix Validated
-                            </span>
-                          </div>
-                          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                            All sub-event capacities match their tier allocations in the capacity matrix.
-                          </p>
-                        </div>
-                      );
-                    })()}
 
                     <div className="space-y-3">
                       {ticketTiers.map((tier, index) => (
@@ -1968,45 +1657,23 @@ export default function AdminEventsPage() {
                                 className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                               />
                             </div>
-                            {!formData.enableSubEvents && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  Capacity
-                                  <span className="text-xs text-gray-500 ml-1">
-                                    (shared across all sub-events)
-                                  </span>
-                                </label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={tier.capacity === 0 ? '' : tier.capacity}
-                                  onChange={(e) => {
-                                    const newTiers = [...ticketTiers];
-                                    const newCapacity = e.target.value === '' ? 0 : parseInt(e.target.value);
-                                    newTiers[index].capacity = newCapacity;
-                                    setTicketTiers(newTiers);
-                                  }}
-                                  className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
-                                />
-                              </div>
-                            )}
-                            {formData.enableSubEvents && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  Tier Total Capacity
-                                  <span className="text-xs text-gray-500 ml-1">
-                                    (auto-calculated from matrix)
-                                  </span>
-                                </label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={tier.capacity === 0 ? '' : tier.capacity}
-                                  disabled
-                                  className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
-                                />
-                              </div>
-                            )}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Capacity
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={tier.capacity === 0 ? '' : tier.capacity}
+                                onChange={(e) => {
+                                  const newTiers = [...ticketTiers];
+                                  const newCapacity = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                  newTiers[index].capacity = newCapacity;
+                                  setTicketTiers(newTiers);
+                                }}
+                                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                              />
+                            </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Target Year
@@ -2147,7 +1814,10 @@ export default function AdminEventsPage() {
                 Cancel
               </button>
               <button
-                onClick={() => setShowTierConfig(false)}
+                onClick={() => {
+                  console.log('Saving tier configuration:', ticketTiers);
+                  setShowTierConfig(false);
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Save Configuration
@@ -2157,204 +1827,7 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {/* Sub-Event Configuration Modal */}
-      {showSubEventConfig && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Configure Sub-Events
-                <span className="text-sm font-normal text-gray-500 ml-2">
-                  (Set capacity for each part)
-                </span>
-              </h3>
-              <button
-                onClick={() => setShowSubEventConfig(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="text-blue-600 dark:text-blue-400 mt-1">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">Sub-Event Capacity Settings</h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                      Set the maximum number of people for each part of your event. Prices will be configured in the Price Matrix.
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {subEvents.map((subEvent, index) => (
-                <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      Sub-Event {index + 1}
-                    </h4>
-                    <button
-                      onClick={() => {
-                        const newSubEvents = subEvents.filter((_, i) => i !== index);
-                        setSubEvents(newSubEvents);
-                        
-                        // Update all ticket tiers to remove the corresponding sub-event price
-                        const newTiers = ticketTiers.map(tier => {
-                          if (tier.subEventPrices && tier.subEventPrices.length > index) {
-                            const newPrices = [...tier.subEventPrices];
-                            newPrices.splice(index, 1);
-                            return { ...tier, subEventPrices: newPrices };
-                          }
-                          return tier;
-                        });
-                        setTicketTiers(newTiers);
-                      }}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    >
-                      🗑️ 削除
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Event Name
-                      </label>
-                      <input
-                        type="text"
-                        value={subEvent.name}
-                        onChange={(e) => {
-                          const newSubEvents = [...subEvents];
-                          newSubEvents[index].name = e.target.value;
-                          setSubEvents(newSubEvents);
-                        }}
-                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
-                        placeholder="e.g., 1次会 (1st Party)"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Maximum Capacity
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={subEvent.capacity === 0 ? '' : subEvent.capacity}
-                        onChange={(e) => {
-                          const newSubEvents = [...subEvents];
-                          const newCapacity = e.target.value === '' ? 0 : parseInt(e.target.value);
-                          newSubEvents[index].capacity = newCapacity;
-                          setSubEvents(newSubEvents);
-                          
-                          // Auto-update tier capacities when sub-event capacity changes
-                          if (ticketTiers.length > 0) {
-                            const totalSubEventCapacity = newSubEvents.reduce((sum, se, i) => 
-                              sum + (i === index ? newCapacity : se.capacity), 0
-                            );
-                            
-                            const newTiers = [...ticketTiers];
-                            
-                            // If we have Early Bird and Regular tiers, distribute capacity
-                            if (newTiers.length >= 2) {
-                              const earlyBirdIndex = newTiers.findIndex(t => t.name.toLowerCase() === 'early bird');
-                              const regularIndex = newTiers.findIndex(t => t.name.toLowerCase() === 'regular');
-                              
-                              if (earlyBirdIndex !== -1 && regularIndex !== -1) {
-                                // Set Early Bird to 60% of total capacity
-                                const earlyBirdCapacity = Math.floor(totalSubEventCapacity * 0.6);
-                                newTiers[earlyBirdIndex].capacity = earlyBirdCapacity;
-                                
-                                // Set Regular to remaining capacity
-                                newTiers[regularIndex].capacity = totalSubEventCapacity - earlyBirdCapacity;
-                              }
-                            } else if (newTiers.length === 1) {
-                              // Single tier gets all capacity
-                              newTiers[0].capacity = totalSubEventCapacity;
-                            }
-                            
-                            setTicketTiers(newTiers);
-                          }
-                        }}
-                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Description (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={subEvent.description}
-                        onChange={(e) => {
-                          const newSubEvents = [...subEvents];
-                          newSubEvents[index].description = e.target.value;
-                          setSubEvents(newSubEvents);
-                        }}
-                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
-                        placeholder="Brief description"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => {
-                  setSubEvents([...subEvents, {
-                    name: '',
-                    description: '',
-                    price: 0,
-                    capacity: 0,
-                    isStandalone: true,
-                    isComboOption: false
-                  }]);
-                }}
-                className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg py-4 text-gray-500 dark:text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
-              >
-                + Add Sub-Event
-              </button>
-
-              <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="text-yellow-600 dark:text-yellow-400 mt-1">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-yellow-900 dark:text-yellow-200">💡 Pro Tip</h4>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                      Capacity is per sub-event, but tiers (Early Bird/Regular) share the same pool. 
-                      Set conservative capacities - you can always increase later!
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => setShowSubEventConfig(false)}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowSubEventConfig(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Save Sub-Events
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

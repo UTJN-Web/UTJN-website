@@ -587,7 +587,7 @@ export default function AdminFormsPage() {
 
                   {/* Credit Award Settings */}
                   <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="text-lg font-medium text-gray-900 mb-3">💰 Credit Rewards</h4>
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">Credit Rewards</h4>
                     
                     <div className="mb-4">
                       <label className="flex items-center gap-3">

@@ -425,11 +425,9 @@ class EventRepository(BaseRepository):
                         event_dict['ticketTiers'] = tiers
                         print(f"🎫 Event {event_id} has {len(tiers)} ticket tiers")
                     
-                    # Get sub-events if sub-events are enabled
-                    if event_dict.get('enableSubEvents'):
-                        sub_events = await self.get_available_sub_events(event_id)
-                        event_dict['subEvents'] = sub_events
-                        print(f"🎊 Event {event_id} has {len(sub_events)} sub-events")
+                    # SubEvents disabled by policy
+                    event_dict['subEvents'] = []
+                    event_dict['enableSubEvents'] = False
                     
                     # Calculate remaining seats
                     event_dict['remainingSeats'] = event_dict['capacity'] - event_dict['registration_count']
@@ -717,6 +715,12 @@ class EventRepository(BaseRepository):
                     # Tier is available if it's within date range AND has capacity
                     tier['isAvailable'] = is_date_available and has_capacity
                     tier['availabilityReason'] = ''
+                    
+                    # Debug: Log availability details
+                    print(f"🔍 Tier '{tier['name']}' availability check:")
+                    print(f"  - Date available: {is_date_available} (start: {tier['startDate']}, end: {tier['endDate']}, current: {current_time})")
+                    print(f"  - Has capacity: {has_capacity} (remaining: {tier['remaining_capacity']}, total: {tier['capacity']})")
+                    print(f"  - Final availability: {tier['isAvailable']}")
                     
                     if not is_date_available:
                         if tier['startDate'] and current_time < tier['startDate']:
