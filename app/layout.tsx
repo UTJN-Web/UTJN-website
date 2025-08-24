@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <nav className="
                 fixed inset-0 z-40 bg-[--color-background]
                 flex flex-col items-center justify-center
-                gap-12 text-4xl font-semibold tracking-wide
+                gap-12 text-4xl font-normal tracking-wide
               ">
               <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
               <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <nav
             className="
               absolute top-1/2 -translate-y-1/2
-              left-[50px] hidden md:flex gap-6 text-lg font-semibold
+              left-[50px] hidden md:flex gap-6 text-lg font-normal
             "
           >
             <Link href="/membership" className="hover:text-[#1c2a52]">Membership</Link>
@@ -98,7 +98,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               flex items-center gap-4 text-sm font-medium
             "
           >
-            <Link href="/contact" className="text-lg font-semibold hover:text-[#1c2a52]">Contact</Link>
+            <Link href="/contact" className="text-lg font-normal hover:text-[#1c2a52]">Contact</Link>
             <AdminLink />
             <LoginButton />
 
