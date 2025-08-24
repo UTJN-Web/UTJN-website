@@ -82,9 +82,9 @@ export default function HomePage() {
       {/* ─────────── Stats Section (unchanged) ─────────── */}
       <div className="fade-in-up grid w-full grid-cols-2 gap-8 bg-white py-12 text-center text-[#171717] md:grid-cols-4">
         <Stat value="2016" label="Founded" />
-        <Stat value="400+" label="Alumni" />
-        <Stat value="340+" label="Students" />
-        <Stat value="37" label="Executives" />
+        <Stat value="100+" label="Alumni" />
+        <Stat value="400+" label="Students" />
+        <Stat value="25" label="Executives" />
       </div>
 
       {/* ─────────── Events Section (updated) ─────────── */}
