@@ -10,7 +10,8 @@ import {
   Crown,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Search
 } from 'lucide-react';
 
 interface User {
@@ -31,6 +32,7 @@ export default function PermissionsManagement() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -113,8 +115,17 @@ export default function PermissionsManagement() {
     }
   };
 
-  const adminUsers = users.filter(user => user.isAdmin);
-  const regularUsers = users.filter(user => !user.isAdmin);
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => {
+    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+    const email = user.email.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    
+    return fullName.includes(searchLower) || email.includes(searchLower);
+  });
+
+  const adminUsers = filteredUsers.filter(user => user.isAdmin);
+  const regularUsers = filteredUsers.filter(user => !user.isAdmin);
 
   return (
     <div
@@ -163,6 +174,27 @@ export default function PermissionsManagement() {
               <span>{message.text}</span>
             </div>
           )}
+
+          {/* Search Bar */}
+          <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search users by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-transparent"
+                />
+              </div>
+              <div className="text-sm text-gray-600">
+                {searchTerm && (
+                  <span>Found {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}</span>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Loading Screen */}
           {loading && (
