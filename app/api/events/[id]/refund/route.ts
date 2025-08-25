@@ -87,6 +87,21 @@ export async function POST(
       );
     }
 
+    // Get the payment email from the registration
+    let paymentEmail = email; // fallback to provided email
+    try {
+      const paymentEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/events/${id}/payment-email?userId=${userId}`);
+      if (paymentEmailResponse.ok) {
+        const paymentEmailData = await paymentEmailResponse.json();
+        if (paymentEmailData.paymentEmail) {
+          paymentEmail = paymentEmailData.paymentEmail;
+          console.log('✅ Found payment email for refund:', paymentEmail);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not get payment email, using provided email:', error);
+    }
+
     // THIRD: Create refund request in the database WITH payment ID
     const refundResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/refunds`, {
       method: 'POST',
@@ -96,11 +111,11 @@ export async function POST(
       body: JSON.stringify({
         eventId: parseInt(id),
         userId: parseInt(userId),
-        email: email,
+        email: paymentEmail, // Use the payment email instead of user's registered email
         amount: paymentAmount,
         reason: reason || 'Event cancellation',
         currency: 'CAD',
-        paymentId: paymentId  // ← ADD THIS
+        paymentId: paymentId
       })
     });
 

@@ -6,7 +6,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { userId, paymentId, tierId, subEventIds, creditsUsed = 0, finalPrice } = await request.json();
+    const { userId, paymentId, tierId, subEventIds, creditsUsed = 0, finalPrice, paymentEmail } = await request.json();
 
           console.log('Paid event registration request:', {
         eventId: id,
@@ -36,14 +36,15 @@ export async function POST(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        userId: parseInt(userId),
-        paymentId: paymentId || null,
-        tierId: tierId ? parseInt(tierId) : null,
-        subEventIds: subEventIds || [],
-        creditsUsed: creditsUsed,
-        finalPrice: finalPrice // Pass the calculated final price with credits applied
-      })
+              body: JSON.stringify({
+          userId: parseInt(userId),
+          paymentId: paymentId || null,
+          tierId: tierId ? parseInt(tierId) : null,
+          subEventIds: subEventIds || [],
+          creditsUsed: creditsUsed,
+          finalPrice: finalPrice, // Pass the calculated final price with credits applied
+          paymentEmail: paymentEmail // Pass the payment email for refund notifications
+        })
     });
 
     if (!registrationResponse.ok) {

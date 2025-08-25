@@ -269,6 +269,26 @@ class EventRepository(BaseRepository):
                         print("✅ Advanced ticketing columns added to EventRegistration table")
                     else:
                         print("✅ Advanced ticketing columns already exist in EventRegistration table")
+                    
+                    # Check if paymentEmail column exists in EventRegistration
+                    payment_email_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'EventRegistration'
+                            AND column_name = 'paymentEmail'
+                        );
+                    """)
+                    
+                    if not payment_email_exists:
+                        print("🆕 Adding paymentEmail column to EventRegistration table...")
+                        await conn.execute("""
+                            ALTER TABLE "EventRegistration" 
+                            ADD COLUMN "paymentEmail" VARCHAR(255);
+                        """)
+                        print("✅ paymentEmail column added to EventRegistration table")
+                    else:
+                        print("✅ paymentEmail column already exists in EventRegistration table")
                 
                 # Check if TicketTier table exists
                 ticket_tier_table_exists = await conn.fetchval("""
@@ -947,8 +967,8 @@ class EventRepository(BaseRepository):
             raise e
     
     async def register_for_event_advanced(self, user_id: int, event_id: int, payment_id: str = None, 
-                                        ticket_tier_id: int = None, sub_event_id: int = None, 
-                                        final_price: float = None) -> Dict[str, Any]:
+                                       ticket_tier_id: int = None, sub_event_id: int = None, 
+                                       final_price: float = None, payment_email: str = None) -> Dict[str, Any]:
         """Register a user for an event with advanced ticketing support"""
         try:
             async with self.get_connection() as conn:
@@ -1014,12 +1034,12 @@ class EventRepository(BaseRepository):
                         raise Exception("Event is full")
                 
                 # Create registration with advanced ticketing data
-                print(f"🔍 Inserting advanced registration: user_id={user_id}, event_id={event_id}, tier_id={ticket_tier_id}, sub_event_id={sub_event_id}, final_price={final_price}")
+                print(f"🔍 Inserting advanced registration: user_id={user_id}, event_id={event_id}, tier_id={ticket_tier_id}, sub_event_id={sub_event_id}, final_price={final_price}, payment_email={payment_email}")
                 registration = await conn.fetchrow("""
-                    INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId")
-                    VALUES ($1, $2, $3, $4, $5, 'completed', $6)
+                    INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
+                    VALUES ($1, $2, $3, $4, $5, 'completed', $6, $7)
                     RETURNING *
-                """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id)
+                """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id, payment_email)
                 print(f"✅ Advanced registration created with ID: {registration['id']}")
                 
                 return {
@@ -1031,13 +1051,14 @@ class EventRepository(BaseRepository):
                     'finalPrice': float(registration['finalPrice']) if registration['finalPrice'] else None,
                     'registeredAt': registration['registeredAt'].isoformat(),
                     'paymentStatus': registration['paymentStatus'],
-                    'paymentId': registration['paymentId']
+                    'paymentId': registration['paymentId'],
+                    'paymentEmail': registration['paymentEmail']
                 }
         except Exception as e:
             print(f"❌ Error in advanced registration: {e}")
             raise e
-
-    async def register_for_event(self, user_id: int, event_id: int, payment_id: str = None) -> Dict[str, Any]:
+    
+    async def register_for_event(self, user_id: int, event_id: int, payment_id: str = None, payment_email: str = None) -> Dict[str, Any]:
         """Register a user for an event"""
         try:
             async with self.get_connection() as conn:
@@ -1069,12 +1090,12 @@ class EventRepository(BaseRepository):
                     raise Exception("User already registered for this event")
                 
                 # Create registration
-                print(f"🔍 Inserting registration: user_id={user_id}, event_id={event_id}, payment_id={payment_id}")
+                print(f"🔍 Inserting registration: user_id={user_id}, event_id={event_id}, payment_id={payment_id}, payment_email={payment_email}")
                 registration = await conn.fetchrow("""
-                    INSERT INTO "EventRegistration" ("userId", "eventId", "paymentStatus", "paymentId")
-                    VALUES ($1, $2, 'completed', $3)
+                    INSERT INTO "EventRegistration" ("userId", "eventId", "paymentStatus", "paymentId", "paymentEmail")
+                    VALUES ($1, $2, 'completed', $3, $4)
                     RETURNING *
-                """, user_id, event_id, payment_id)
+                """, user_id, event_id, payment_id, payment_email)
                 print(f"✅ Registration created with paymentId: {registration['paymentId']}")
                 
                 return {
@@ -1110,6 +1131,27 @@ class EventRepository(BaseRepository):
                     
         except Exception as e:
             print(f"❌ Error getting payment ID: {e}")
+            return None
+
+    async def get_payment_email_for_registration(self, user_id: int, event_id: int) -> Optional[str]:
+        """Get the payment email for a user's event registration"""
+        try:
+            async with self.get_connection() as conn:
+                print(f"🔍 Looking for payment email: user_id={user_id}, event_id={event_id}")
+                result = await conn.fetchrow("""
+                    SELECT "paymentEmail" FROM "EventRegistration" 
+                    WHERE "userId" = $1 AND "eventId" = $2
+                """, user_id, event_id)
+                print(f"🔍 Query result: {result}")
+                
+                if result and result['paymentEmail']:
+                    print(f"✅ Found payment email {result['paymentEmail']} for user {user_id}, event {event_id}")
+                    return result['paymentEmail']
+                else:
+                    print(f"⚠️ No payment email found for user {user_id}, event {event_id}")
+                    return None
+        except Exception as e:
+            print(f"❌ Error getting payment email: {e}")
             return None
     
     async def cancel_registration(self, user_id: int, event_id: int) -> bool:

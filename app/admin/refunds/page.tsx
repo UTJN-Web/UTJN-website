@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Clock, DollarSign, User, Calendar, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, DollarSign, User, Calendar, FileText, Mail } from 'lucide-react';
+import Toast from '@/app/components/Toast';
 
 interface RefundRequest {
   id: string;
@@ -24,6 +25,14 @@ export default function AdminRefundsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [processing, setProcessing] = useState<string | null>(null);
+  
+  // Toast state
+  const [toast, setToast] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning';
+  }>({ isOpen: false, title: '', message: '', type: 'success' });
 
   // Fetch real refund data from API
   useEffect(() => {
@@ -75,11 +84,25 @@ export default function AdminRefundsPage() {
     return refund.status === filter;
   });
 
+  const showToast = (title: string, message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ isOpen: true, title, message, type });
+  };
+
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, isOpen: false }));
+  };
+
   const handleRefundAction = async (refundId: string, action: 'approve' | 'reject', adminNotes?: string) => {
     setProcessing(refundId);
     
     try {
       console.log(`🔄 ${action === 'approve' ? 'Approving' : 'Rejecting'} refund ${refundId}`);
+      
+      // Get the refund details for email
+      const refund = refunds.find(r => r.id === refundId);
+      if (!refund) {
+        throw new Error('Refund not found');
+      }
       
       const response = await fetch('/api/admin/refunds', {
         method: 'PUT',
@@ -107,6 +130,39 @@ export default function AdminRefundsPage() {
         console.log('⚠️ Manual refund required - no payment ID found');
       }
 
+      // Try to send email notification
+      let emailSent = false;
+      let emailError = null;
+      
+      try {
+        const emailResponse = await fetch('/api/refund-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: refund.email, // Use the email from the refund request
+            event_name: refund.eventName,
+            amount: refund.amount,
+            currency: refund.currency,
+            status: action === 'approve' ? 'approved' : 'rejected',
+            adminNotes: adminNotes || `${action === 'approve' ? 'Approved' : 'Rejected'} by admin`
+          })
+        });
+
+        if (emailResponse.ok) {
+          emailSent = true;
+          console.log('📧 Refund notification email sent successfully');
+        } else {
+          const emailData = await emailResponse.json().catch(() => ({}));
+          emailError = emailData.detail || 'Failed to send email';
+          console.error('📧 Email sending failed:', emailError);
+        }
+      } catch (emailErr: any) {
+        console.error('📧 Email error:', emailErr);
+        emailError = emailErr.message || 'Failed to send email';
+      }
+
       // Update local state to reflect the change
       setRefunds(prev => prev.map(refund => 
         refund.id === refundId 
@@ -119,9 +175,28 @@ export default function AdminRefundsPage() {
           : refund
       ));
 
+      // Show success toast with email status
+      if (emailSent) {
+        showToast(
+          'Refund Processed Successfully',
+          `Refund ${action === 'approve' ? 'approved' : 'rejected'} and notification email sent to ${refund.email}`,
+          'success'
+        );
+      } else {
+        showToast(
+          'Refund Processed Successfully',
+          `Refund ${action === 'approve' ? 'approved' : 'rejected'} but email notification failed: ${emailError}`,
+          'warning'
+        );
+      }
+
     } catch (error) {
       console.error(`Error ${action}ing refund:`, error);
-      alert(`Failed to ${action} refund. Please try again.`);
+      showToast(
+        'Refund Processing Failed',
+        `Failed to ${action} refund. Please try again.`,
+        'error'
+      );
     } finally {
       setProcessing(null);
     }
@@ -291,7 +366,7 @@ export default function AdminRefundsPage() {
                         </h3>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span className="flex items-center gap-1">
-                            <User className="w-4 h-4" />
+                            <Mail className="w-4 h-4" />
                             {refund.email}
                           </span>
                           <span className="flex items-center gap-1">
@@ -374,6 +449,15 @@ export default function AdminRefundsPage() {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={closeToast}
+        title={toast.title}
+        message={toast.message}
+        type={toast.type}
+      />
     </div>
   );
 } 

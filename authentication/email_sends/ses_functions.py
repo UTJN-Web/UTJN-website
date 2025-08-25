@@ -195,6 +195,108 @@ def send_receipt(email: str, event_name: str, date: str):
     except ClientError:
         raise(False, "There has been an error while trying to send the receipt")
 
+def send_refund_notification(email: str, event_name: str, amount: float, currency: str, status: str, adminNotes: str):
+    """
+    A function that sends a refund notification email to inform users about their refund status.
+    """
+    ses = get_ses()
+
+    if not check_email(email):
+        return (False, "Please enter a valid email address")
+
+    # --- current time in Eastern Time (handles EST/EDT automatically) ---
+    now_et = datetime.now(ZoneInfo("America/Toronto"))
+    stamped = now_et.strftime("%Y-%m-%d %H:%M %Z")
+
+    # --- compose content (escape for HTML) ---
+    ev_html = html.escape(event_name)
+    amount_html = html.escape(f"{currency} {amount:.2f}")
+    status_html = html.escape(status.title())
+    notes_html = html.escape(adminNotes) if adminNotes else "No additional notes provided."
+    time_html = html.escape(stamped)
+
+    subject = f"Refund {status.title()} — {event_name}"
+    
+    if status == "approved":
+        text_body = (
+            f"Your refund request has been {status}!\n\n"
+            f"Event: {event_name}\n"
+            f"Amount: {currency} {amount:.2f}\n"
+            f"Status: {status.title()}\n"
+            f"Processed at: {stamped} (Eastern Time)\n\n"
+            "Your refund will be processed within 3-5 business days.\n\n"
+            f"Admin Notes: {notes_html}\n\n"
+            "If you have any questions, please reply to this email."
+        )
+        html_body = f"""
+        <html><body style="font-family:Arial,Helvetica,sans-serif">
+          <h2 style="margin:0 0 12px 0;color:#059669">Refund Approved!</h2>
+          <p style="margin:0 0 16px 0">Your refund request has been approved and will be processed shortly.</p>
+          <table style="border-collapse:collapse;margin-bottom:16px">
+            <tr><td style="padding:4px 8px"><strong>Event</strong></td><td style="padding:4px 8px">{ev_html}</td></tr>
+            <tr><td style="padding:4px 8px"><strong>Amount</strong></td><td style="padding:4px 8px">{amount_html}</td></tr>
+            <tr><td style="padding:4px 8px"><strong>Status</strong></td><td style="padding:4px 8px;color:#059669">{status_html}</td></tr>
+            <tr><td style="padding:4px 8px"><strong>Processed at</strong></td><td style="padding:4px 8px">{time_html} (Eastern Time)</td></tr>
+          </table>
+          <p style="margin:0 0 16px 0"><strong>Your refund will be processed within 3-5 business days.</strong></p>
+          <div style="background-color:#f3f4f6;padding:12px;border-radius:6px;margin-bottom:16px">
+            <p style="margin:0 0 8px 0"><strong>Admin Notes:</strong></p>
+            <p style="margin:0;color:#6b7280">{notes_html}</p>
+          </div>
+          <p style="margin:0">If you have any questions, please reply to this email.</p>
+        </body></html>
+        """
+    else:  # rejected
+        text_body = (
+            f"Your refund request has been {status}.\n\n"
+            f"Event: {event_name}\n"
+            f"Amount: {currency} {amount:.2f}\n"
+            f"Status: {status.title()}\n"
+            f"Processed at: {stamped} (Eastern Time)\n\n"
+            f"Admin Notes: {notes_html}\n\n"
+            "If you have any questions, please reply to this email."
+        )
+        html_body = f"""
+        <html><body style="font-family:Arial,Helvetica,sans-serif">
+          <h2 style="margin:0 0 12px 0;color:#dc2626">Refund Rejected</h2>
+          <p style="margin:0 0 16px 0">Your refund request has been rejected.</p>
+          <table style="border-collapse:collapse;margin-bottom:16px">
+            <tr><td style="padding:4px 8px"><strong>Event</strong></td><td style="padding:4px 8px">{ev_html}</td></tr>
+            <tr><td style="padding:4px 8px"><strong>Amount</strong></td><td style="padding:4px 8px">{amount_html}</td></tr>
+            <tr><td style="padding:4px 8px"><strong>Status</strong></td><td style="padding:4px 8px;color:#dc2626">{status_html}</td></tr>
+            <tr><td style="padding:4px 8px"><strong>Processed at</strong></td><td style="padding:4px 8px">{time_html} (Eastern Time)</td></tr>
+          </table>
+          <div style="background-color:#fef2f2;padding:12px;border-radius:6px;margin-bottom:16px;border-left:4px solid #dc2626">
+            <p style="margin:0 0 8px 0"><strong>Admin Notes:</strong></p>
+            <p style="margin:0;color:#6b7280">{notes_html}</p>
+          </div>
+          <p style="margin:0">If you have any questions, please reply to this email.</p>
+        </body></html>
+        """
+
+    # --- send via SESv2 ---
+    try:
+        resp = ses.send_email(
+            FromEmailAddress="test-noreply@uoftjn.com",
+            Destination={"ToAddresses": [email]},
+            ReplyToAddresses=(["utjnit@gmail.com"]),
+            Content={
+                "Simple": {
+                    "Subject": {"Data": subject},
+                    "Body": {
+                        "Text": {"Data": text_body},
+                        "Html": {"Data": html_body},
+                    },
+                }
+            },
+            EmailTags=[
+                {"Name": "type", "Value": "refund_notification"}
+            ],
+        )
+        return (True, "Refund notification has been sent.")
+    except ClientError:
+        raise(False, "There has been an error while trying to send the refund notification")
+
 # Example usage
 if __name__ == "__main__":
     #mid = send_contact_form(
