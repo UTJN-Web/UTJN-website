@@ -9,7 +9,7 @@ import webbrowser
 import boto3
 from pycognito import aws_srp
 from authentication.data_access.cognito_idp_actions import CognitoIdentityProviderWrapper
-from authentication.data_access.cognito_idp_actions import UsernameExistsError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError
+from authentication.data_access.cognito_idp_actions import UsernameExistsError, InvalidPasswordError, ExpiredCodeError, TooManyFailedAttemptsError, IncorrectCodeError, EmailNotFoundError, UserNotConfirmedError, IncorrectParameterError, PasswordSameError
 from authentication import display_strings as ds
 
 def signup_user(email, password, password2):
@@ -24,9 +24,9 @@ def signup_user(email, password, password2):
         - bool: True if the user is successfully signed up, False otherwise.
         - string: A message indicating the result of the sign-up process.
     """
-    # Check if the email is valid a uoft email
-    if verifyemail(email) == False:
-        return (False, ds.INVALID_EMAIL)
+    # Check if the email is valid a uoft email (REMOVED BY REQUEST)
+    #if verifyemail(email) == False:
+    #    return (False, ds.INVALID_EMAIL)
     
     # Check if the password matches
     if password != password2:
@@ -59,12 +59,16 @@ def signup_user(email, password, password2):
             print(ds.USER_UNCONFIRMED)
             return (False, ds.USER_UNCONFIRMED)
     
+    except InvalidPasswordError:
+        # If the password is invalid, return False with an error message indicating that password doesn't meet requirements
+        return (False, ds.INVALID_PASSWORD)
+    
     # For any other exception, return False
     except Exception as e:
         return (False, ds.GENERAL_ERROR)
 
 
-def login_user(email, password) -> tuple:
+async def login_user(email, password) -> tuple:
     """
     Function to log in a user with email and password.
     Args:
@@ -74,11 +78,8 @@ def login_user(email, password) -> tuple:
         A tuple containing...
         - bool: True if the user was successfully able to log in, False otherwise.
         - string: A message indicating the result of the log-in process.
+        - dict: User information if login is successful, None otherwise.
     """
-    #Check if the email is valid a uoft email
-    if verifyemail(email) == False:
-        return (False, ds.INVALID_EMAIL)
-    
     # Initialize the CognitoIdentityProviderWrapper to call the aws related functions.
     cog_wrapper = CognitoIdentityProviderWrapper()
 
@@ -87,21 +88,59 @@ def login_user(email, password) -> tuple:
         # Call the boto3 function that logs in the user
         login_confirmed = cog_wrapper.initiate_auth(email, password)
         if login_confirmed:
-            return (True, "Login successful.")
+            # Get user information from Cognito
+            user_info = call_admin_get_user(email)
+            user_data = {
+                "email": email,
+                "name": email.split('@')[0]  # Use email prefix as name for now
+            }
+            if user_info and user_info.get("UserAttributes"):
+                for attr in user_info["UserAttributes"]:
+                    if attr["Name"] == "name":
+                        user_data["name"] = attr["Value"]
+                        break
+            
+            # Try to get additional user data from database
+            try:
+                from authentication.data_access.user_repository import UserRepository
+                user_repo = UserRepository()
+                
+                db_user = await user_repo.get_user_by_email(email)
+                if db_user:
+                    # Merge database data with Cognito data
+                    user_data.update({
+                        "id": db_user["id"],
+                        "firstName": db_user["firstName"],
+                        "lastName": db_user["lastName"],
+                        "major": db_user["major"],
+                        "graduationYear": db_user["graduationYear"],
+                        "cognitoSub": db_user["cognitoSub"],
+                        "joinedAt": db_user["joinedAt"].isoformat() if db_user["joinedAt"] else None,
+                        "hasProfile": True
+                    })
+                else:
+                    user_data["hasProfile"] = False
+                
+            except Exception as db_error:
+                print(f"Warning: Could not retrieve database user data: {db_error}")
+                user_data["hasProfile"] = False
+            
+            return (True, "Login successful.", user_data)
         else:
-            return (False, ds.LOGIN_UNSUCCESSFUL)
+            return (False, ds.LOGIN_UNSUCCESSFUL, None)
     
     except EmailNotFoundError:
-        return (False, ds.INVALID_EMAIL)
+        return (False, ds.LOGIN_INVALID_EMAIL, None)
     
     except UserNotConfirmedError:
-        return (False, ds.USER_UNCONFIRMED)
+        return (False, ds.USER_UNCONFIRMED, None)
     
     except IncorrectParameterError:
-        return (False, ds.INVALID_PARAMETER)
+        return (False, ds.LOGIN_INVALID_EMAIL, None)
 
     except Exception as e:
-        return (False, ds.GENERAL_ERROR)
+        print(f"Login error: {e}")
+        return (False, ds.GENERAL_ERROR, None)
 
 
 def verifyemail(email) -> bool:
@@ -169,6 +208,80 @@ def resend_confirmation(email):
     )
     return True # Success once code reaches here
 
+def request_password_reset(email):
+    """
+    Requests a password reset for the user with the given email.
+    Args:
+        email (str): The user's email address.
+    Returns:
+        A tuple containing...
+            - bool: True if the password reset request is successful, False otherwise.
+            - str: A message indicating the result of the request.
+    """
+    cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Call the boto3 function that requests password reset
+    try:
+        response = cog_wrapper.forgot_password(email)
+        if response:
+            return (True, f"Password reset requested for {email}.")
+        else:
+            return (False, "There was an error requesting for a password reset. Please try again later.")
+        
+    except EmailNotFoundError:
+        return (False, f"An account with {email} does not exist. Please enter the correct email adress or sign up for an account first.")
+    
+    except Exception as e:
+        return (False, ds.GENERAL_ERROR) 
+    
+def reset_password(email, code, new_password1, new_password2):
+    """
+    Resets the password for the user with the given email.
+    Args:
+        email (str): The user's email address.
+        code (str): The confirmation code sent to the user's email.
+        new_password (str): The new password to set for the user.
+    Returns:
+        bool: True if the password reset is successful, False otherwise.
+    """
+    cog_wrapper = CognitoIdentityProviderWrapper()
+
+    # Check if the passwords match
+    if new_password1 != new_password2:
+        # If not, return False
+        return (False, ds.RSP_PASSWORD_MISMATCH)
+
+    # Call the boto3 function that resets the password
+    try:
+        response = cog_wrapper.confirm_forgot_password(email, code, new_password1)
+        if response:
+            return (True, f"Password reset successful for {email}.")
+
+        else:
+            return (False, ds.GENERAL_ERROR)
+    
+    # Display errors as necessary
+    except IncorrectCodeError:
+        return(False, ds.INCORRECT_VERFICATION_CODE)
+    
+    except ExpiredCodeError:
+        return(False, ds.VERIFICATION_CODE_EXPIRED)
+    
+    except InvalidPasswordError:
+        return(False, ds.RSP_PASSWORD_MISMATCH)
+    
+    except PasswordSameError:
+        return(False, ds.PASSWORD_SAME)
+    
+    except UserNotConfirmedError:
+        return(False, ds.RSP_USER_UNCONFIRMED)
+    
+    except TooManyFailedAttemptsError:
+        return(False, ds.RSP_TOO_MANY_FAILED_ATTEMPTS)
+    
+    except Exception as e:
+        return (False, ds.GENERAL_ERROR) 
+
 
 def call_admin_get_user(email):
     """
@@ -189,15 +302,19 @@ def get_user_sub(email):
     cog_wrapper = CognitoIdentityProviderWrapper()
 
     # Call admin_get_user to get user attributes
-    response = cog_wrapper.call_admin_get_user(email)
+    response = cog_wrapper.admin_get_user(email)
     if response is None:
         print(f"User {email} not found.")
         return None
     
     # Extract the 'sub' attribute from the response
     userattribute = response.get("UserAttributes", {})
-    user_sub = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
-    return user_sub
+    try:
+        user_sub = next(d['Value'] for d in userattribute if d['Name'] == 'sub')
+        return user_sub
+    except StopIteration:
+        print(f"Sub attribute not found for user {email}")
+        return None
 
 if __name__ == "__main__":
     import argparse, asyncio

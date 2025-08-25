@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { post } from '@/lib/api';
+import PasswordInput from '../components/PasswordInput';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -18,16 +18,27 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
     try {
-      await post('/auth/signup', { email, password1, password2 });
-      // 成功したら確認ページへ email をクエリに添付
-      router.push(`/confirmation?email=${encodeURIComponent(email)}`);
-    } catch (err: any) {
-      // ユーザーが未確認の場合、確認画面にリダイレクト
-      if (err.message.includes('You are not confirmed yet')) {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password1, password2 }),
+      });
+      
+      if (response.ok) {
+        // 成功したら確認ページへ email をクエリに添付
         router.push(`/confirmation?email=${encodeURIComponent(email)}`);
-        return;
+      } else {
+        const data = await response.json();
+        // ユーザーが未確認の場合、確認画面にリダイレクト
+        if (data.detail && data.detail.includes('You are not confirmed yet')) {
+          router.push(`/confirmation?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setError(data.detail || 'Signup failed');
       }
-      setError(err.message);
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -53,29 +64,27 @@ export default function SignupPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={input}
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]"
             required
           />
-          <input
-            type="password"
-            placeholder="Create Password"
+          <PasswordInput
             value={password1}
-            onChange={(e) => setPw1(e.target.value)}
-            className={input}
+            onChange={setPw1}
+            placeholder="Create Password"
             required
+            disabled={loading}
           />
-          <input
-            type="password"
-            placeholder="Re-type Password"
+          <PasswordInput
             value={password2}
-            onChange={(e) => setPw2(e.target.value)}
-            className={input}
+            onChange={setPw2}
+            placeholder="Re-type Password"
             required
+            disabled={loading}
           />
           <ul className="text-sm text-gray-700 dark:text-white pl-5 list-disc space-y-1 text-left">
             <li>At least 8 characters</li>
             <li>Includes both uppercase and lowercase letters</li>
-            <li>Includes a number or special character</li>
+            <li>Includes a number and special character</li>
           </ul>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -89,12 +98,15 @@ export default function SignupPage() {
         </form>
 
         <p className="text-sm text-center mt-4">
-          Already have an account? <a href="/login" className="underline">Login</a>
+          Already have an account? <button
+                                    type="button"
+                                    onClick={() => window.dispatchEvent(new Event('open-login-modal'))}
+                                    className="underline text-blue-600"
+                                  >
+                                    Login
+                                  </button>
         </p>
       </div>
     </div>
   );
 }
-
-/* Tailwind 共通 */
-const input = `w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a] rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1c2a52]`;

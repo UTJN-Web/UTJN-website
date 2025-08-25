@@ -81,9 +81,9 @@ export default function HomePage() {
       {/* ─────────── Stats Section (unchanged) ─────────── */}
       <div className="fade-in-up grid w-full grid-cols-2 gap-8 bg-white py-12 text-center text-[#171717] md:grid-cols-4">
         <Stat value="2016" label="Founded" />
-        <Stat value="400+" label="Alumni" />
-        <Stat value="340+" label="Students" />
-        <Stat value="37" label="Executives" />
+        <Stat value="100+" label="Alumni" />
+        <Stat value="400+" label="Students" />
+        <Stat value="25" label="Executives" />
       </div>
 
       {/* ─────────── Events Section (updated) ─────────── */}
@@ -155,9 +155,10 @@ export default function HomePage() {
       <div id="become-a-member" className="fade-in-up bg-white px-4 py-16 text-center text-[#171717]">
         <h2 className="mb-6 text-3xl font-bold md:text-4xl">Become a Member</h2>
         <p className="mx-auto mb-8 max-w-3xl text-lg">
-          UTJNでは2023–2024年度もネットワーキング、就職、同窓会など、多様なニーズに応えた
-          イベントを企画しています。会員登録をすることで、様々なイベントに参加できる
-          ようになります。会員登録は無料ですので、お気軽にご登録ください。
+          UTJNでは2025–2026年度以降、新たに多様なサービスを提供するべくウェブサイトを一新しました。
+          ネットワーキング、就職、同窓会など、多様なニーズに応えたイベントを企画しています。
+          会員登録をすることで、様々なイベントに参加できるようになります。
+          会員登録は無料ですので、お気軽にご登録ください。
         </p>
         <div className="flex justify-center gap-4">
           <CTA href="#" label="在校生の方" />

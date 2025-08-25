@@ -5,6 +5,7 @@ import ScrollObserver from './components/ScrollObserver';
 import Footer from './components/Footer';
 import ClientLayoutWrapper from './ClientLayoutWrapper';
 import LoginButton from './components/LoginButton';
+import AdminLink from './components/AdminLink';
 
 export const metadata = {
   title: 'UTJN - University of Toronto Japanese Network',
@@ -47,11 +48,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <nav className="
                 fixed inset-0 z-40 bg-[--color-background]
                 flex flex-col items-center justify-center
-                gap-12 text-4xl font-semibold tracking-wide
+                gap-12 text-4xl font-normal tracking-wide
               ">
               <Link href="#" className="hover:text-[#1c2a52]">Membership</Link>
               <Link href="/events" className="hover:text-[#1c2a52]">Member Events</Link>
               <Link href="https://note.com/torontonians" target="_blank" rel="noopener noreferrer" className="hover:text-[#1c2a52]">Torontonians Blog</Link>
+              <Link href="/contact" className="hover:text-[#1c2a52]">Contact</Link>
               {/* <Link href="/login" className="hover:text-[#1c2a52]">Login</Link> */}
               <Link href="/about" className="hover:text-[#1c2a52]">About</Link>
               <div className="absolute bottom-10 flex gap-6">
@@ -73,7 +75,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <nav
             className="
               absolute top-1/2 -translate-y-1/2
-              left-[50px] hidden md:flex gap-6 text-lg font-semibold
+              left-[50px] hidden md:flex gap-6 text-lg font-normal
             "
           >
             <Link href="/membership" className="hover:text-[#1c2a52]">Membership</Link>
@@ -105,7 +107,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               flex items-center gap-4 text-sm font-medium
             "
           >
-            {/* <Link href="/login" className="hidden md:inline text-lg font-semibold hover:text-[#1c2a52]">Login</Link> */}
+            <Link href="/contact" className="text-lg font-normal hover:text-[#1c2a52]">Contact</Link>
+            <AdminLink />
             <LoginButton />
 
             <Link href="https://www.facebook.com/uoftjn/" target="_blank" rel="noopener noreferrer">

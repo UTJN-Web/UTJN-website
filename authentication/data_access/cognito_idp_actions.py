@@ -26,6 +26,10 @@ class UsernameExistsError(Exception):
     """Raised when the user already exists in the user pool."""
     pass
 
+class InvalidPasswordError(Exception):
+    """Raised when the password does not meet the requirements for signup."""
+    pass
+
 class ExpiredCodeError(Exception):
     """Raised when the confirmatrion code used for sign up has expired."""
     pass
@@ -48,6 +52,10 @@ class UserNotConfirmedError(Exception):
 
 class IncorrectParameterError(Exception): 
     """Raised when the user enters an incorrect parameter for login, such as an incorrect email or password."""
+    pass
+
+class PasswordSameError(Exception):
+    """Raised when the password a user has enetered as their new password is the same as their old password"""
     pass
 
 # snippet-start:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
@@ -137,6 +145,10 @@ class CognitoIdentityProviderWrapper:
                 # User already exists, so not a new sign-up
                 logger.warning("User %s already exists in user pool.", user_name)
                 raise UsernameExistsError("The username already exists.")
+            
+            if error_code == "InvalidPasswordException":
+                # Password doesn't meet the requirements
+                raise InvalidPasswordError("The password does not meet the requirements.")
 
             # Any other unexpected error → re-raise
             logger.error(
@@ -286,15 +298,87 @@ class CognitoIdentityProviderWrapper:
             if error_code == "NotAuthorizedException":
                 raise IncorrectParameterError("The email or password you entered is incorrect.")
            
-           # Any other unexpected error → re-raise
+            # Any other unexpected error → re-raise
             logger.error(
                "Couldn't sign up %s. Here's why: %s: %s",
                email,
                error_code,
                err.response["Error"]["Message"],
             )
-            return False
+            raise 
+       
+    def forgot_password(self, email: str):
+        """
+        Initiates the password reset process for a user by sending a verification code to their email.
 
+        :param email: The email address of the user who wants to reset their password.
+        :return: True if the request was successful, False otherwise.
+        """
+        try:
+            kwargs = {
+                "ClientId": self.client_id,
+                "Username": email,
+            }
+            if self.client_secret is not None:
+                kwargs["SecretHash"] = self._secret_hash(email)
+            self.cognito_idp_client.forgot_password(**kwargs)
+            return True
+        except ClientError as err:
+            error_code = err.response["Error"]["Code"]
+            if error_code == "UserNotFoundException":
+                # User is not found, so email adress is incorrect
+                raise EmailNotFoundError("This email does not exist.")
+            raise
+        
+    def confirm_forgot_password(self, email: str, confirmation_code: str, new_password: str):
+        """
+        Confirms the new password for a user after they have received a verification code.
+
+        :param email: The email address of the user who is resetting their password.
+        :param confirmation_code: The verification code sent to the user's email.
+        :param new_password: The new password to set for the user.
+        :return: True if the password was successfully changed, False otherwise.
+        """
+        try:
+            kwargs = {
+                "ClientId": self.client_id,
+                "Username": email,
+                "ConfirmationCode": confirmation_code,
+                "Password": new_password,
+            }
+            if self.client_secret is not None:
+                kwargs["SecretHash"] = self._secret_hash(email)
+            self.cognito_idp_client.confirm_forgot_password(**kwargs)
+            return True
+        
+        except ClientError as err:
+            error_code = err.response["Error"]["Code"]
+
+            if error_code == "CodeMismatchException":
+                # The code does not match.
+                raise IncorrectCodeError("The code does not match")
+            
+            if error_code == "ExpiredCodeException":
+                # The code has expired, so generate a new code.
+                raise ExpiredCodeError
+            
+            if error_code == "InvalidPasswordException":
+                # The password does not match the requirements. Prompt the user to add the valid password
+                raise InvalidPasswordError
+            
+            if error_code == "PasswordHistoryPolicyViolationException":
+                # The password is the same as what the user had before. Ask the user to enter a new password
+                raise PasswordSameError
+            
+            if error_code == "UserNotConfirmedException":
+                # The user is not confirmed yet. Promt the user to their respective signin state
+                raise UserNotConfirmedError
+            
+            if error_code == "TooManyFailedAttemptsException":
+                # The user has failed their reset process too many times. Ask them to start a new one later.
+                raise TooManyFailedAttemptsError
+
+            raise
     ##################################################
 
     # snippet-start:[python.example_code.cognito-idp.ListUsers]
@@ -539,99 +623,4 @@ class CognitoIdentityProviderWrapper:
             return user_confirm
 
     # snippet-end:[python.example_code.cognito-idp.ConfirmDevice]
-
-    # snippet-start:[python.example_code.cognito-idp.InitiateAuth]
-    # snippet-start:[python.example_code.cognito-idp.RespondToAuthChallenge]
-    def sign_in_with_tracked_device(
-        self,
-        user_name,
-        password,
-        device_key,
-        device_group_key,
-        device_password,
-        aws_srp,
-    ):
-        """
-        Signs in to Amazon Cognito as a user who has a tracked device. Signing in
-        with a tracked device lets a user sign in without entering a new MFA code.
-
-        Signing in with a tracked device requires that the client respond to the SRP
-        protocol. The scenario associated with this example uses the warrant package
-        to help with SRP calculations.
-
-        For more information on SRP, see https://en.wikipedia.org/wiki/Secure_Remote_Password_protocol.
-
-        :param user_name: The user that is associated with the device.
-        :param password: The user's password.
-        :param device_key: The key of a tracked device.
-        :param device_group_key: The group key of a tracked device.
-        :param device_password: The password that is associated with the device.
-        :param aws_srp: A class that helps with SRP calculations. The scenario
-                        associated with this example uses the warrant package.
-        :return: The result of the authentication. When successful, this contains an
-                 access token for the user.
-        """
-        try:
-            srp_helper = aws_srp.AWSSRP(
-                username=user_name,
-                password=device_password,
-                pool_id="_",
-                client_id=self.client_id,
-                client_secret=None,
-                client=self.cognito_idp_client,
-            )
-
-            response_init = self.cognito_idp_client.initiate_auth(
-                ClientId=self.client_id,
-                AuthFlow="USER_PASSWORD_AUTH",
-                AuthParameters={
-                    "USERNAME": user_name,
-                    "PASSWORD": password,
-                    "DEVICE_KEY": device_key,
-                },
-            )
-            if response_init["ChallengeName"] != "DEVICE_SRP_AUTH":
-                raise RuntimeError(
-                    f"Expected DEVICE_SRP_AUTH challenge but got {response_init['ChallengeName']}."
-                )
-
-            auth_params = srp_helper.get_auth_params()
-            auth_params["DEVICE_KEY"] = device_key
-            response_auth = self.cognito_idp_client.respond_to_auth_challenge(
-                ClientId=self.client_id,
-                ChallengeName="DEVICE_SRP_AUTH",
-                ChallengeResponses=auth_params,
-            )
-            if response_auth["ChallengeName"] != "DEVICE_PASSWORD_VERIFIER":
-                raise RuntimeError(
-                    f"Expected DEVICE_PASSWORD_VERIFIER challenge but got "
-                    f"{response_init['ChallengeName']}."
-                )
-
-            challenge_params = response_auth["ChallengeParameters"]
-            challenge_params["USER_ID_FOR_SRP"] = device_group_key + device_key
-            cr = srp_helper.process_challenge(challenge_params, {"USERNAME": user_name})
-            cr["USERNAME"] = user_name
-            cr["DEVICE_KEY"] = device_key
-            response_verifier = self.cognito_idp_client.respond_to_auth_challenge(
-                ClientId=self.client_id,
-                ChallengeName="DEVICE_PASSWORD_VERIFIER",
-                ChallengeResponses=cr,
-            )
-            auth_tokens = response_verifier["AuthenticationResult"]
-        except ClientError as err:
-            logger.error(
-                "Couldn't start client sign in for %s. Here's why: %s: %s",
-                user_name,
-                err.response["Error"]["Code"],
-                err.response["Error"]["Message"],
-            )
-            raise
-        else:
-            return auth_tokens
-
-    # snippet-end:[python.example_code.cognito-idp.RespondToAuthChallenge]
-    # snippet-end:[python.example_code.cognito-idp.InitiateAuth]
-
-
 # snippet-end:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
