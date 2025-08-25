@@ -15,6 +15,7 @@ from authentication.use_case.form.form_controller import form_router
 from authentication.use_case.event.event_controller import event_router
 from authentication.use_case.refund.refund_controller import refund_router
 from authentication.use_case.admin.admin_controller import router as admin_router
+from authentication.use_case.send_contact_form.send_contact_form_controller import email_router as contact_form_router
 from authentication.data_access.database_init import init_database
 from authentication.data_access.database_pool import initialize_global_pool, close_global_pool
 
@@ -46,6 +47,7 @@ app.include_router(form_router)
 app.include_router(event_router)
 app.include_router(refund_router)
 app.include_router(admin_router)
+app.include_router(contact_form_router)
 
 @app.on_event("startup")
 async def startup_event():

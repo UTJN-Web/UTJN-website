@@ -96,13 +96,15 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
             "If you didn’t submit this, please reply to this email to let us know."
         ).format(name=(name or "there"), body=body)
 
+        safe_body = html.escape(body).replace("\n", "<br/>")
+
         to_contacter_html = f"""
         <html><body>
-          <p>Hi {html.escape(name) or "there"},</p>
-          <p>Thanks for reaching out! We’ve received your message and someone from UTJN will get back to you soon.</p>
+          <p>Hi {html.escape(name) if name else "there"},</p>
+          <p>Thanks for reaching out! We've received your message and someone from UTJN will get back to you soon.</p>
           <p><em>Copy of your message:</em></p>
           <blockquote style="border-left:3px solid #ccc;padding-left:10px">
-            {html.escape(body).replace('\\n', '<br/>')}
+            {safe_body}
           </blockquote>
           <p>If you didn’t submit this, please reply to this email to let us know.</p>
         </body></html>
