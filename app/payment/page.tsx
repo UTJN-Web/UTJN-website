@@ -211,16 +211,52 @@ export default function PaymentPage() {
         }),
       });
 
-      if (response.ok) {
-        setPaymentResult('success');
-        // Redirect to events page after 3 seconds
-        setTimeout(() => {
-          router.push('/events');
-        }, 3000);
-      } else {
+      if (!response.ok) {
         setPaymentResult('failed');
         setErrorMessage('Registration failed after payment');
+        return;
       }
+
+      try {
+        const buyerEmail = user?.email;
+        if (!buyerEmail) {
+          throw new Error('Unable to determine buyer email for receipt.');
+        }
+  
+        // Format date you want to show on the receipt (or pass server-side)
+        const iso = new Date(eventData.date);
+        const receiptDate = iso.toLocaleString('en-CA', { year:'numeric', month:'2-digit', day:'2-digit' });
+  
+        const receiptRes = await fetch('/api/receipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: buyerEmail,
+            event_name: eventData.name,
+            date: receiptDate
+          })
+        });
+  
+        if (!receiptRes.ok) {
+          const err = await receiptRes.json().catch(() => ({}));
+          throw new Error(err?.detail || 'Failed to send receipt');
+        }
+      } catch (receiptErr: any) {
+        console.error('Receipt error:', receiptErr);
+  
+        // OPTIONAL: attempt backend rollback if you have endpoints for it
+        // await fetch(`/api/events/${eventId}/register/cancel`, { method: 'POST', ... });
+        // await fetch(`/api/payments/${paymentId}/refund`, { method: 'POST', ... });
+        // If credits were deducted, you might also credit them back in the same rollback.
+  
+        setPaymentResult('failed');
+        setErrorMessage('Receipt could not be sent; your transaction was not completed.');
+        return;
+      }
+
+    setPaymentResult('success');
+    setTimeout(() => router.push('/events'), 3000);
+
     } catch (error) {
       console.error('Registration error:', error);
       setPaymentResult('failed');
