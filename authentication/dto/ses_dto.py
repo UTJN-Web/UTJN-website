@@ -9,3 +9,12 @@ class ContactFormRequestDTO(BaseModel):
 class ContactFormResponseDTO(BaseModel):
     success: bool
     message: str
+
+class SendReceiptRequestDTO(BaseModel):
+    email: EmailStr
+    event_name: str
+    date:str
+
+class SendReceiptResponseDTO(BaseModel):
+    success: bool
+    message: str

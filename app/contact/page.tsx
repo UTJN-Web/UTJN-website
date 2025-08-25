@@ -10,6 +10,7 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serverMsg, setServerMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,22 +18,33 @@ export default function ContactPage() {
     setError(null);
     setSuccess(false);
     try {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!emailOk) {
+        setSuccess(false);
+        setServerMsg("メールアドレスの形式が正しくありません。");
+        setLoading(false);
+        return;
+      
+      }
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, message }),
       });
+      
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
         setSuccess(true);
-        setName('');
-        setEmail('');
-        setMessage('');
+        setServerMsg(data.message || '送信が完了しました。ありがとうございました！');
+        setName(''); setEmail(''); setMessage('');
       } else {
-        const data = await res.json();
-        setError(data.detail || '送信に失敗しました。');
+        setSuccess(false);
+        setServerMsg(data.detail || '送信に失敗しました。');
       }
-    } catch (err) {
-      setError('送信に失敗しました。');
+    } catch {
+      setSuccess(false);
+      setServerMsg('送信に失敗しました。');
     } finally {
       setLoading(false);
     }
@@ -67,8 +79,11 @@ export default function ContactPage() {
             onChange={e => setMessage(e.target.value)}
             required
           />
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-          {success && <p className="text-green-600 text-sm">送信が完了しました。ありがとうございました！</p>}
+          {serverMsg && (
+            <p className={`text-sm ${success ? 'text-green-600' : 'text-red-600'}`}>
+              {serverMsg}
+            </p>
+          )}
           <button
             type="submit"
             disabled={loading}
