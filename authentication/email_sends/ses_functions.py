@@ -91,23 +91,44 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
 
         # Compose mail that will be sent back to the contacter
         to_contacter_subject = "We received your message — UTJN"
-        to_contacter_text = (
+
+        ja_name = f"{name} 様" if name else "お客さま"
+        ja_text = (
+            f"{ja_name}\n\n"
+            "この度はお問い合わせいただきありがとうございます。\n"
+            "担当者よりご連絡をいたしますので、今しばらくお待ちください。\n\n"
+            "— お問い合わせ内容 —\n"
+            f"{body}\n\n"
+            "もしお心当たりがない場合は、本メールに直接ご返信いただけますと幸いです。\n"
+        )
+
+        en_text = (
             "Hi {name},\n\nThanks for reaching out! We’ve received your message and "
             "someone from UTJN will get back to you soon.\n\n"
             "— Copy of your message —\n{body}\n\n"
             "If you didn’t submit this, please reply to this email to let us know."
         ).format(name=(name or "there"), body=body)
 
-        safe_body = html.escape(body).replace("\n", "<br/>")
+        to_contacter_text = ja_text + ("-" * 40) + "\n" + en_text
+
+        safe_body = "<br/>".join(html.escape(body).splitlines())
+        safe_name = html.escape(name) + " 様" if name else "お客さま"
 
         to_contacter_html = f"""
-        <html><body>
+        <html lang="ja"><body style="font-family:Arial,Helvetica,'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif">
+          <p>{safe_name}</p>
+          <p>この度はお問い合わせいただきありがとうございます。<br/>
+             担当者よりご連絡をいたしますので、今しばらくお待ちください。</p>
+          <p><em>— お問い合わせ内容 —</em></p>
+          <blockquote style="border-left:3px solid #ccc;padding-left:10px">{safe_body}</blockquote>
+          <p>もしお心当たりがない場合は、本メールに直接ご返信いただけますと幸いです。</p>
+
+          <hr style="margin:20px 0"/>
+
           <p>Hi {html.escape(name) if name else "there"},</p>
           <p>Thanks for reaching out! We've received your message and someone from UTJN will get back to you soon.</p>
-          <p><em>Copy of your message:</em></p>
-          <blockquote style="border-left:3px solid #ccc;padding-left:10px">
-            {safe_body}
-          </blockquote>
+          <p><em>— Copy of your message —</em></p>
+          <blockquote style="border-left:3px solid #ccc;padding-left:10px">{safe_body}</blockquote>
           <p>If you didn’t submit this, please reply to this email to let us know.</p>
         </body></html>
         """
@@ -119,10 +140,10 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
             ReplyToAddresses=["utjnit@gmail.com"],
             Content={
                 "Simple": {
-                    "Subject": {"Data": to_contacter_subject},
+                    "Subject": {"Data": to_contacter_subject, "Charset": "UTF-8"},
                     "Body": {
-                        "Text": {"Data": to_contacter_text},
-                        "Html": {"Data": to_contacter_html},
+                        "Text": {"Data": to_contacter_text, "Charset": "UTF-8"},
+                        "Html": {"Data": to_contacter_html, "Charset": "UTF-8"},
                     },
                 }
             },
@@ -299,16 +320,16 @@ def send_refund_notification(email: str, event_name: str, amount: float, currenc
 
 # Example usage
 if __name__ == "__main__":
-    #mid = send_contact_form(
-    #    name="Kenta",
-    #    email="kfploch@gmail.com",
-    #    body="Testing"
-    #)
-    #print("Reponse:", mid[1])
-
-    mid = send_receipt(
-        email = "kfploch@gmail.com",
-        event_name = "Halloween Party",
-        date = "August 2025, 2022"
+    mid = send_contact_form(
+        name="Kenta",
+        email="kfploch@gmail.com",
+        body="Testing"
     )
-    print(mid[1])
+    print("Reponse:", mid[1])
+
+    #mid = send_receipt(
+    #    email = "kfploch@gmail.com",
+    #    event_name = "Halloween Party",
+    #    date = "August 2025, 2022"
+    #)
+    #print(mid[1])
