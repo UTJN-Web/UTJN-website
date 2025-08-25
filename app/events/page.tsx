@@ -520,9 +520,28 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen p-8 w-full">
-      <h1 className="text-4xl font-bold text-center mb-8">Member Events</h1>
+    <div className="min-h-screen w-full">
+      {/* ───────── Hero banner (Option B) ───────── */}
+      <section className="relative h-[36vh] w-full fade-in-up">
+        <Image
+          src="/trinity_college.jpg" // put a big, crisp image in /public
+          alt="Member Events"
+          fill
+          priority
+          quality={100}
+          sizes="100vw"
+          className="object-cover"
+        />
+        {/* readability overlay */}
+        <div className="absolute inset-0 bg-black/35" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <h1 className="px-6 text-center text-4xl font-extrabold text-white drop-shadow">
+            Member Events
+          </h1>
+        </div>
+      </section>
 
+      {/* Search (kept from main) */}
       <div className="mb-10 flex justify-center gap-2">
         <label htmlFor="filter" className="sr-only">
           Search events
@@ -537,25 +556,10 @@ export default function EventsPage() {
         />
       </div>
 
-      <div className="mb-10 flex justify-center gap-4">
-        {(['all', 'career', 'social'] as const).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`rounded-full px-4 py-2 text-sm border transition ${
-              category === c
-                ? 'bg-[#1c2a52] text-white border-[#1c2a52]'
-                : 'border-gray-400 hover:bg-gray-100 dark:hover:bg-[#171717]'
-            }`}
-          >
-            {c === 'all'
-              ? 'All'
-              : c === 'career'
-              ? 'Career'
-              : 'Social'}
-          </button>
-        ))}
-      </div>
+      {/* ───────── Main content ───────── */}
+      <section className="fade-in-up mx-auto w-full max-w-4xl px-4 pb-20 pt-10">
+        {/* keep an accessible heading for screen readers */}
+        <h1 className="sr-only">Member Events</h1>
 
       <div className="mb-6 flex justify-center">
         <button
@@ -606,22 +610,22 @@ export default function EventsPage() {
         ))}
       </div>
 
-      <div className="mt-16 text-center">
-        <button
-          className="inline-flex items-center gap-2 rounded-md border border-gray-400 px-4 py-2 text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
-          onClick={() => setShowArchived((prev) => !prev)}
-        >
-          {showArchived ? (
-            <>
-              Hide archived <ChevronUp size={18} />
-            </>
-          ) : (
-            <>
-              View archived events <ChevronDown size={18} />
-            </>
-          )}
-        </button>
-      </div>
+        {/* filter tabs */}
+        <div className="mb-10 flex justify-center gap-4">
+          {(['all', 'career', 'social'] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setCategory(c)}
+              className={`rounded-full px-4 py-2 text-sm border transition ${
+                category === c
+                  ? 'bg-[#1c2a52] text-white border-[#1c2a52]'
+                  : 'border-gray-400 hover:bg-gray-100 dark:hover:bg-[#171717]'
+              }`}
+            >
+              {c === 'all' ? 'All' : c === 'career' ? 'Career' : 'Social'}
+            </button>
+          ))}
+        </div>
 
       {showArchived && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
