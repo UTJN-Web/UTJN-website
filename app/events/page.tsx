@@ -4,6 +4,7 @@
 import { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { ChevronDown, ChevronUp, CreditCard, CheckCircle, X, Coins } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { UserContext } from '../contexts/UserContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import RefundRequestModal from '../components/RefundRequestModal';
@@ -521,10 +522,10 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen w-full">
-      {/* ───────── Hero banner (Option B) ───────── */}
-      <section className="relative h-[36vh] w-full fade-in-up">
+      {/* ───────── Hero banner with trinity_college.jpg ───────── */}
+      <section className="relative h-[36vh] w-full fade-in-up visible">
         <Image
-          src="/trinity_college.jpg" // put a big, crisp image in /public
+          src="/trinity_college.jpg"
           alt="Member Events"
           fill
           priority
@@ -533,15 +534,22 @@ export default function EventsPage() {
           className="object-cover"
         />
         {/* readability overlay */}
-        <div className="absolute inset-0 bg-black/35" />
+        <div className="absolute inset-0 bg-white/30" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <h1 className="px-6 text-center text-4xl font-extrabold text-white drop-shadow">
-            Member Events
-          </h1>
+          <div className="mx-4 rounded-xl bg-white/40 p-6 text-center backdrop-blur-md shadow-lg md:p-10 max-w-2xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#1c2a52] md:text-4xl">
+              Member Events
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-gray-700 md:text-base">
+              トロントでの学生生活をより楽しく、より充実したものに
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Search (kept from main) */}
+      {/* ───────── Main content ───────── */}
+      <section className="w-full px-4 pb-20 pt-10">
+
       <div className="mb-10 flex justify-center gap-2">
         <label htmlFor="filter" className="sr-only">
           Search events
@@ -556,10 +564,25 @@ export default function EventsPage() {
         />
       </div>
 
-      {/* ───────── Main content ───────── */}
-      <section className="fade-in-up mx-auto w-full max-w-4xl px-4 pb-20 pt-10">
-        {/* keep an accessible heading for screen readers */}
-        <h1 className="sr-only">Member Events</h1>
+      <div className="mb-10 flex justify-center gap-4">
+        {(['all', 'career', 'social'] as const).map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={`rounded-full px-4 py-2 text-sm border transition ${
+              category === c
+                ? 'bg-[#1c2a52] text-white border-[#1c2a52]'
+                : 'border-gray-400 hover:bg-gray-100 dark:hover:bg-[#171717]'
+            }`}
+          >
+            {c === 'all'
+              ? 'All'
+              : c === 'career'
+              ? 'Career'
+              : 'Social'}
+          </button>
+        ))}
+      </div>
 
       <div className="mb-6 flex justify-center">
         <button
@@ -570,7 +593,7 @@ export default function EventsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         {liveEvents.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
@@ -610,22 +633,22 @@ export default function EventsPage() {
         ))}
       </div>
 
-        {/* filter tabs */}
-        <div className="mb-10 flex justify-center gap-4">
-          {(['all', 'career', 'social'] as const).map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`rounded-full px-4 py-2 text-sm border transition ${
-                category === c
-                  ? 'bg-[#1c2a52] text-white border-[#1c2a52]'
-                  : 'border-gray-400 hover:bg-gray-100 dark:hover:bg-[#171717]'
-              }`}
-            >
-              {c === 'all' ? 'All' : c === 'career' ? 'Career' : 'Social'}
-            </button>
-          ))}
-        </div>
+      <div className="mt-16 text-center">
+        <button
+          className="inline-flex items-center gap-2 rounded-md border border-gray-400 px-4 py-2 text-sm transition hover:bg-gray-100 dark:hover:bg-[#171717]"
+          onClick={() => setShowArchived((prev) => !prev)}
+        >
+          {showArchived ? (
+            <>
+              Hide archived <ChevronUp size={18} />
+            </>
+          ) : (
+            <>
+              View archived events <ChevronDown size={18} />
+            </>
+          )}
+        </button>
+      </div>
 
       {showArchived && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -709,7 +732,8 @@ export default function EventsPage() {
         title={toast.title}
         message={toast.message}
         type={toast.type}
-      />
+              />
+      </section>
     </div>
   );
 }

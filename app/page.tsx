@@ -8,12 +8,12 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 export default function HomePage() {
   /* ─────────────────────────────── events data */
   const baseEvents = [
-    'halloween.png',
-    'happy_new_year.png',
-    'new_sports_fes.png',
-    'new_utjn_advice.png',
-    'new_ball_game.png',
-    'new_end_of_year_party.png',
+    { image: 'halloween.png', slug: 'Halloween' },
+    { image: 'happy_new_year.png', slug: 'New_Year_Event' },
+    { image: 'new_sports_fes.png', slug: 'Sports_Fes' },
+    { image: 'new_utjn_advice.png', slug: 'New_Year_Event' }, // Using New Year Event as fallback
+    { image: 'new_ball_game.png', slug: 'Ball_Game' },
+    { image: 'new_end_of_year_party.png', slug: 'End_of_Year' },
   ];
 
   /** 10 loops left + centre + 10 loops right  = 126 tiles */
@@ -105,20 +105,20 @@ export default function HomePage() {
             paddingRight: 'calc(50% - 150px)',
           }}
         >
-          {events.map((file, idx) => (
+          {events.map((event, idx) => (
             <div
-              key={`${file}-${idx}`}
+              key={`${event.image}-${idx}`}
               className="fade-in-up flex w-[300px] flex-shrink-0 snap-center flex-col items-center"
             >
               <Image
-                src={`/${file}`}
+                src={`/${event.image}`}
                 alt={`Event ${(idx % baseEvents.length) + 1}`}
                 width={300}
                 height={300}
                 className="rounded-lg object-cover"
               />
               <Link
-                href="#"
+                href={`/gallery/${event.slug}`}
                 className="
                   mt-4 block w-full rounded-md border border-white
                   py-2 text-center font-medium transition-colors
@@ -160,10 +160,7 @@ export default function HomePage() {
           会員登録をすることで、様々なイベントに参加できるようになります。
           会員登録は無料ですので、お気軽にご登録ください。
         </p>
-        <div className="flex justify-center gap-4">
-          <CTA href="#" label="在校生の方" />
-          <CTA href="#" label="卒業生の方" />
-        </div>
+
       </div>
 
       {/* ─────────── Footer (unchanged) ─────────── */}
