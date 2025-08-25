@@ -92,22 +92,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <img src="/logo.png" alt="UTJN Logo" style={{ height: 80, width: 'auto' }} />
           </Link>
 
-          {/* ───────── Right-side socials + desktop Login ───────── */}
-          <nav
-            className="
-              absolute top-1/2 -translate-y-1/2
-              right-[210px] hidden md:flex gap-6 text-lg font-semibold
-            "
-          >
-            <Link href="/about" className="hover:text-[#1c2a52]">About</Link>
-          </nav>
+
           <div
             className="
               absolute right-5 top-1/2 -translate-y-1/2
-              flex items-center gap-4 text-sm font-medium
+              flex items-center gap-8 text-sm font-medium whitespace-nowrap
             "
           >
             <Link href="/contact" className="text-lg font-normal hover:text-[#1c2a52]">Contact</Link>
+            <Link href="/about" className="text-lg font-normal hover:text-[#1c2a52]">About</Link>
             <AdminLink />
             <LoginButton />
 

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     if (response.ok) {
       console.log('API route: returning events data to frontend');
-      return NextResponse.json(data);
+      return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate' } });
     } else {
       return NextResponse.json(
         { detail: data.detail || 'Failed to fetch events' },

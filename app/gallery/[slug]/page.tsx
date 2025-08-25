@@ -1,7 +1,7 @@
 // app/gallery/[slug]/page.tsx
-import { loadEvent, listEvents, type YearBlock } from '@/lib/gallery';
-import Image from 'next/image';
+import { loadEvent, listEvents } from '@/lib/gallery';
 import { notFound } from 'next/navigation';
+import GalleryCarousel from '../../components/GalleryCarousel';
 
 // ---- Optional: simple defaults you can edit here ----
 const DEFAULT_DESCRIPTIONS: Record<string, string> = {
@@ -68,6 +68,9 @@ export default async function GalleryPage(
   const fileDesc = await readDescriptionFromPublic(slug);
   const description = dataDesc || fileDesc || DEFAULT_DESCRIPTIONS[slug] || '';
 
+  // Flatten all images across years (newest first already)
+  const allImages = event.years.flatMap((y) => y.images);
+
   return (
     <main className="fade-in-up mx-auto w-full max-w-6xl px-4 py-16">
       <h1 className="mb-6 text-4xl font-bold">{event.displayName}</h1>
@@ -78,45 +81,12 @@ export default async function GalleryPage(
         </p>
       )}
 
-      {event.years.map((y, idx) => (
-        <YearSection key={y.year} openDefault={idx === 0} {...y} />
-      ))}
+      {/* Full-bleed blue band */}
+      <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen bg-[#1c2a52] py-10">
+        <div className="px-4">
+          <GalleryCarousel images={allImages} />
+        </div>
+      </section>
     </main>
-  );
-}
-
-/* ---------- sub-components ---------- */
-
-function YearSection(
-  { year, images, openDefault }: YearBlock & { openDefault?: boolean },
-) {
-  return (
-    <details className="mb-8" open={openDefault}>
-      <summary className="cursor-pointer select-none py-3 text-2xl font-semibold">
-        {year}
-      </summary>
-
-      <div className="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-        {images.map((src) => (
-          <ImageCard key={src} src={src} />
-        ))}
-      </div>
-    </details>
-  );
-}
-
-function ImageCard({ src }: { src: string }) {
-  return (
-    <div className="relative w-full pb-[75%]">
-      <Image
-        src={src}
-        alt=""
-        fill
-        sizes="(min-width: 768px) 25vw, 50vw"
-        className="rounded-lg object-cover"
-        placeholder="blur"
-        blurDataURL={src}
-      />
-    </div>
   );
 }

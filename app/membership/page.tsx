@@ -1,9 +1,10 @@
 // app/membership/page.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useContext } from 'react';
 import Image from 'next/image';
 import LoginModal from '../components/LoginModal';
+import { UserContext } from '../contexts/UserContext';
 
 const galleryImages = [
   '/Gallery/End_of_Year/2025/DSC_0577.png',
@@ -19,6 +20,8 @@ const galleryImages = [
 export default function MembershipPage() {
   // modal
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const userContext = useContext(UserContext);
+  const user = userContext?.user;
 
   // horizontal auto-scroll
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -74,18 +77,37 @@ export default function MembershipPage() {
               無料の会員登録をすることで、様々なイベントに参加できるようになります。
             </p>
 
-            <p className="mt-4">
-              <a href="/#become-a-member" className="text-blue-700 underline">
-                会員登録はこちらから
-              </a>
-            </p>
+            {user ? (
+              <>
+                <p className="mt-4 text-green-600 font-medium">
+                  ようこそ、{user.firstName || user.name || user.email.split('@')[0]}さん！
+                </p>
+                <p className="mt-2 text-[#0f172a]/85">
+                  すでにログイン済みです。イベントページで最新のイベントをご確認ください。
+                </p>
+                <a
+                  href="/events"
+                  className="mt-6 inline-flex items-center justify-center rounded-md bg-[#1c2a52] px-6 py-3 text-white hover:bg-[#2a3c6b] transition"
+                >
+                  イベントを見る
+                </a>
+              </>
+            ) : (
+              <>
+                <p className="mt-4">
+                  <a href="/signup" className="text-blue-700 underline">
+                    会員登録はこちらから
+                  </a>
+                </p>
 
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="mt-6 inline-flex items-center justify-center rounded-md bg-[#1c2a52] px-6 py-3 text-white hover:bg-[#2a3c6b] transition"
-            >
-              LOG IN
-            </button>
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="mt-6 inline-flex items-center justify-center rounded-md bg-[#1c2a52] px-6 py-3 text-white hover:bg-[#2a3c6b] transition"
+                >
+                  LOG IN
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
