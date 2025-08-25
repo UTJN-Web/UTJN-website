@@ -13,7 +13,7 @@ declare global {
 interface SquarePaymentFormProps {
   eventData: any;
   userId: string;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: (email?: string) => void;
   onPaymentError: (error: string) => void;
 }
 
@@ -194,9 +194,11 @@ export default function SquarePaymentForm({
             // Store payment ID for registration
             (window as any).lastPaymentId = data.paymentId;
           }
-          onPaymentSuccess();
+          // Keep showing Processing overlay until parent completes registration & shows success
+          onPaymentSuccess(email.trim());
         } else {
           console.error('Payment failed:', data.error);
+          setProcessing(false);
           onPaymentError(data.error || 'Payment processing failed');
         }
       } else {
@@ -205,9 +207,8 @@ export default function SquarePaymentForm({
       }
     } catch (error) {
       console.error('Payment processing error:', error);
-      onPaymentError('Payment processing failed');
-    } finally {
       setProcessing(false);
+      onPaymentError('Payment processing failed');
     }
   };
 

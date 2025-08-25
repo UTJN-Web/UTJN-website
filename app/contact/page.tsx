@@ -2,6 +2,8 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
+import { Mail, User, MessageSquare, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -24,7 +26,6 @@ export default function ContactPage() {
         setServerMsg("メールアドレスの形式が正しくありません。");
         setLoading(false);
         return;
-      
       }
       const res = await fetch('/api/contact', {
         method: 'POST',
@@ -51,48 +52,141 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-      <div className="w-full max-w-lg bg-white rounded shadow p-8">
-        <h1 className="text-2xl font-bold mb-4 text-center">企業向けお問い合わせ</h1>
-        <p className="mb-6 text-center text-gray-600">UTJNへのご連絡はこちらのフォームからどうぞ。</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="お名前"
-            className="w-full border rounded px-4 py-2"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-          />
-          <input
-            type="email"
-            placeholder="メールアドレス"
-            className="w-full border rounded px-4 py-2"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
-          <textarea
-            placeholder="メッセージ"
-            className="w-full border rounded px-4 py-2 min-h-[120px]"
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            required
-          />
-          {serverMsg && (
-            <p className={`text-sm ${success ? 'text-green-600' : 'text-red-600'}`}>
-              {serverMsg}
+    <div className="min-h-screen w-full">
+      {/* ───────── Hero banner ───────── */}
+      <section className="relative h-[40vh] w-full fade-in-up">
+        <Image
+          src="/toronto-skyline.png"
+          alt="Contact UTJN"
+          fill
+          priority
+          quality={100}
+          sizes="100vw"
+          className="object-cover"
+        />
+        {/* readability overlay */}
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="mx-4 rounded-xl bg-white/20 p-6 text-center backdrop-blur-md shadow-lg md:p-10 max-w-3xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl mb-3">
+              企業向けお問い合わせ
+            </h1>
+            <p className="text-lg leading-relaxed text-white/90 md:text-xl">
+              UTJNへのご連絡はこちらのフォームからどうぞ。
             </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#1c2a52] text-white py-2 rounded hover:bg-[#2a3c6b] transition disabled:opacity-50"
-          >
-            {loading ? '送信中…' : '送信する'}
-          </button>
-        </form>
-      </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── Main content ───────── */}
+      <section className="w-full px-4 pb-20 pt-16">
+        <div className="mx-auto max-w-4xl">
+          {/* Contact Form */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            {/* Form Header */}
+            <div className="bg-gradient-to-r from-[#1c2a52] to-[#2a3c6b] px-8 py-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Mail className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">お問い合わせフォーム</h2>
+                  <p className="text-white/80 text-sm">Contact Form</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Name Field */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <User className="w-4 h-4 text-[#1c2a52]" />
+                    お名前 / Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="お名前を入力してください"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52] transition-all duration-200 bg-gray-50 hover:bg-white"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Email Field */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Mail className="w-4 h-4 text-[#1c2a52]" />
+                    メールアドレス / Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="example@company.com"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52] transition-all duration-200 bg-gray-50 hover:bg-white"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Message Field */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <MessageSquare className="w-4 h-4 text-[#1c2a52]" />
+                    メッセージ / Message
+                  </label>
+                  <textarea
+                    placeholder="お問い合わせ内容を詳しくお聞かせください"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2a52] focus:border-[#1c2a52] transition-all duration-200 bg-gray-50 hover:bg-white min-h-[120px] resize-vertical"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Status Message */}
+                {serverMsg && (
+                  <div className={`flex items-center gap-3 p-4 rounded-lg ${
+                    success 
+                      ? 'bg-green-50 border border-green-200 text-green-800' 
+                      : 'bg-red-50 border border-red-200 text-red-800'
+                  }`}>
+                    {success ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <p className="text-sm font-medium">{serverMsg}</p>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-[#1c2a52] to-[#2a3c6b] text-white py-4 px-6 rounded-lg hover:from-[#2a3c6b] hover:to-[#1c2a52] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      送信中...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      送信する / Send Message
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+
+        </div>
+      </section>
     </div>
   );
 } 

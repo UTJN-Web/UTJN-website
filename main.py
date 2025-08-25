@@ -16,7 +16,7 @@ from authentication.use_case.event.event_controller import event_router
 from authentication.use_case.refund.refund_controller import refund_router
 from authentication.use_case.admin.admin_controller import router as admin_router
 from authentication.use_case.send_contact_form.send_contact_form_controller import email_router as contact_form_router
-from authentication.use_case.send_receipt.sendreceipt_controller import email_router as sendreceipt_controller
+from authentication.use_case.send_receipt.sendreceipt_controller import receipt_router as sendreceipt_controller
 from authentication.data_access.database_init import init_database
 from authentication.data_access.database_pool import initialize_global_pool, close_global_pool
 

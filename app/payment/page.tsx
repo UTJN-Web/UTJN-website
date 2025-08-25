@@ -3,7 +3,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { UserContext } from '@/app/contexts/UserContext';
-import { ArrowLeft, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, X, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import SquarePaymentForm from '@/app/components/SquarePaymentForm';
 
@@ -154,7 +154,7 @@ export default function PaymentPage() {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentEmail?: string) => {
     try {
       // Get payment ID from window if available
       const paymentId = (window as any).lastPaymentId;
@@ -207,7 +207,8 @@ export default function PaymentPage() {
           tierId: tierId ? parseInt(tierId) : null,
           subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : [],
           creditsUsed: creditsUsed, // For logging purposes only
-          finalPrice: finalPrice
+          finalPrice: finalPrice,
+          paymentEmail: paymentEmail // Pass the payment email for refund notifications
         }),
       });
 
@@ -217,8 +218,13 @@ export default function PaymentPage() {
         return;
       }
 
+      // Try to send receipt, but don't fail the entire transaction if it fails
+      let receiptSent = false;
+      let receiptError = null;
+      
       try {
-        const buyerEmail = user?.email;
+        // Use the email from payment form if provided, otherwise fall back to user's email
+        const buyerEmail = paymentEmail || user?.email;
         if (!buyerEmail) {
           throw new Error('Unable to determine buyer email for receipt.');
         }
@@ -237,25 +243,24 @@ export default function PaymentPage() {
           })
         });
   
-        if (!receiptRes.ok) {
+        if (receiptRes.ok) {
+          receiptSent = true;
+        } else {
           const err = await receiptRes.json().catch(() => ({}));
-          throw new Error(err?.detail || 'Failed to send receipt');
+          receiptError = err?.detail || 'Failed to send receipt';
+          console.error('Receipt sending failed:', receiptError);
         }
       } catch (receiptErr: any) {
         console.error('Receipt error:', receiptErr);
-  
-        // OPTIONAL: attempt backend rollback if you have endpoints for it
-        // await fetch(`/api/events/${eventId}/register/cancel`, { method: 'POST', ... });
-        // await fetch(`/api/payments/${paymentId}/refund`, { method: 'POST', ... });
-        // If credits were deducted, you might also credit them back in the same rollback.
-  
-        setPaymentResult('failed');
-        setErrorMessage('Receipt could not be sent; your transaction was not completed.');
-        return;
+        receiptError = receiptErr.message || 'Failed to send receipt';
       }
+      
+      // Store receipt status for display
+      (window as any).receiptSent = receiptSent;
+      (window as any).receiptError = receiptError;
 
     setPaymentResult('success');
-    setTimeout(() => router.push('/events'), 3000);
+    // Do not auto-redirect; show success until user navigates away manually
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -321,6 +326,9 @@ export default function PaymentPage() {
   }
 
   if (paymentResult === 'success') {
+    const receiptSent = (window as any).receiptSent;
+    const receiptError = (window as any).receiptError;
+    
     return (
       <div
         className="relative min-h-screen w-full flex items-center justify-center"
@@ -343,7 +351,7 @@ export default function PaymentPage() {
           <p className="text-gray-600 mb-6">
             You have successfully registered for <strong>{eventData.name}</strong>
           </p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
             <p className="text-sm text-green-700">
               <strong>Amount Paid:</strong> ${price ? parseFloat(price).toFixed(2) : eventData.fee.toFixed(2)}
             </p>
@@ -356,9 +364,30 @@ export default function PaymentPage() {
               </p>
             )}
           </div>
-          <p className="text-sm text-gray-500 mb-4">
-            Redirecting to events page in 3 seconds...
-          </p>
+          
+          {/* Receipt Status */}
+          {receiptSent ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                <p className="text-sm text-green-700">Receipt sent successfully</p>
+              </div>
+            </div>
+          ) : receiptError && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-center">
+                <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
+                <p className="text-sm text-yellow-700">
+                  <strong>Note:</strong> Receipt could not be sent, but your registration is complete
+                </p>
+              </div>
+              <p className="text-xs text-yellow-600 mt-1">
+                Error: {receiptError}
+              </p>
+            </div>
+          )}
+          
+          {/* No auto-redirect; keep user here until they choose to leave */}
           <Link 
             href="/events"
             className="inline-flex items-center px-4 py-2 bg-[#1c2a52] text-white rounded-lg hover:bg-[#1c2a52]/90 transition-colors"
@@ -558,7 +587,7 @@ export default function PaymentPage() {
                 <button
                   onClick={() => {
                     // Direct registration for free events (with credits if used)
-                    handlePaymentSuccess();
+                    handlePaymentSuccess(user?.email);
                   }}
                   className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >

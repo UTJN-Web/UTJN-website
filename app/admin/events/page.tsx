@@ -732,13 +732,13 @@ export default function AdminEventsPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className="text-center flex-1">
-                <h1 className="text-4xl font-bold text-[#1c2a52] mb-2">Event Management</h1>
-                <p className="text-gray-700 text-lg">
-                  Manage your organization's events and track registrations
-                </p>
-              </div>
+            <div className="text-center mb-6">
+              <h1 className="text-4xl font-bold text-[#1c2a52] mb-2">Event Management</h1>
+              <p className="text-gray-700 text-lg">
+                Manage your organization's events and track registrations
+              </p>
+            </div>
+            <div className="flex justify-center">
               <button
                 onClick={() => {
                   setEditingEvent(null);

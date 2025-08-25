@@ -51,6 +51,7 @@ class EventRegistrationRequest(BaseModel):
     subEventIds: Optional[List[int]] = None
     creditsUsed: Optional[float] = 0
     finalPrice: Optional[float] = None
+    paymentEmail: Optional[str] = None  # Email used for payment (for refund notifications)
 
 # Dummy payment simulation
 async def simulate_payment(amount: float) -> bool:
@@ -407,7 +408,8 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                         payment_id=registration_data.paymentId,
                         ticket_tier_id=registration_data.tierId,
                         sub_event_id=registration_data.subEventIds[0],
-                        final_price=payment_amount
+                        final_price=payment_amount,
+                        payment_email=registration_data.paymentEmail
                     )
                     additional_registrations = []
             else:
@@ -418,7 +420,8 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                     payment_id=registration_data.paymentId,
                     ticket_tier_id=registration_data.tierId,
                     sub_event_id=None,
-                    final_price=payment_amount
+                    final_price=payment_amount,
+                    payment_email=registration_data.paymentEmail
                 )
                 additional_registrations = []
             
@@ -494,6 +497,38 @@ async def get_payment_id_for_event(event_id: int, userId: int):
     except Exception as e:
         print(f"❌ Error getting payment ID: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get payment ID: {str(e)}")
+
+@event_router.get("/{event_id}/payment-email")
+async def get_payment_email_for_event(event_id: int, userId: int):
+    """Get payment email for a user's event registration (used for refund notifications)"""
+    try:
+        print(f"🔍 Getting payment email for user {userId}, event {event_id}")
+        
+        event_repo = EventRepository()
+        try:
+            await event_repo.ensure_tables_exist()
+            
+            payment_email = await event_repo.get_payment_email_for_registration(userId, event_id)
+            if payment_email:
+                print(f"✅ Found payment email for user {userId}, event {event_id}")
+                return {
+                    "success": True,
+                    "paymentEmail": payment_email
+                }
+            else:
+                print(f"⚠️ No payment email found for user {userId}, event {event_id}")
+                return {
+                    "success": False,
+                    "paymentEmail": None,
+                    "message": "No payment email found"
+                }
+                
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Error getting payment email: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get payment email: {str(e)}")
 
 @event_router.post("/seed")
 async def seed_events():
