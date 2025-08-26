@@ -75,7 +75,7 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
     # --- Send via SES v2 ---
     try:
         to_utjn = ses.send_email(
-            FromEmailAddress="test-noreply@uoftjn.com",
+            FromEmailAddress="noreply@uoftjn.com",
             Destination={"ToAddresses": ["uoftjn@gmail.com"]},
             ReplyToAddresses=[email],
             Content={
@@ -135,7 +135,7 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
 
         # Send request via AWS SES v2
         to_contacter = ses.send_email(
-            FromEmailAddress="test-noreply@uoftjn.com",
+            FromEmailAddress="noreply@uoftjn.com",
             Destination={"ToAddresses": [email]},
             ReplyToAddresses=["utjnit@gmail.com"],
             Content={
@@ -196,7 +196,7 @@ def send_receipt(email: str, event_name: str, date: str):
     # --- send via SESv2 ---
     try:
         resp = ses.send_email(
-            FromEmailAddress="test-noreply@uoftjn.com",
+            FromEmailAddress="noreply@uoftjn.com",
             Destination={"ToAddresses": [email]},
             ReplyToAddresses=(["utjnit@gmail.com", "uoftjn@gmail.com"]),
             Content={
@@ -298,7 +298,7 @@ def send_refund_notification(email: str, event_name: str, amount: float, currenc
     # --- send via SESv2 ---
     try:
         resp = ses.send_email(
-            FromEmailAddress="test-noreply@uoftjn.com",
+            FromEmailAddress="noreply@uoftjn.com",
             Destination={"ToAddresses": [email]},
             ReplyToAddresses=(["utjnit@gmail.com"]),
             Content={
