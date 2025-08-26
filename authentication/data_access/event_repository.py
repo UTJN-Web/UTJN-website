@@ -1294,3 +1294,50 @@ class EventRepository(BaseRepository):
         except Exception as e:
             print(f"❌ Error getting system stats: {e}")
             raise e 
+
+    async def get_event_registrations_detailed(self, event_id: int) -> List[Dict[str, Any]]:
+        """Get detailed registrations for an event including user and ticket info"""
+        try:
+            async with self.get_connection() as conn:
+                query = """
+                SELECT 
+                    er.id AS registration_id,
+                    er."registeredAt" AS registered_at,
+                    er."paymentStatus" AS payment_status,
+                    er."paymentId" AS payment_id,
+                    er."finalPrice" AS final_price,
+                    er."paymentEmail" AS payment_email,
+                    u.id AS user_id,
+                    u."firstName" AS first_name,
+                    u."lastName" AS last_name,
+                    u.email AS user_email,
+                    u.major AS user_major,
+                    u."graduationYear" AS graduation_year,
+                    u."currentYear" AS current_year,
+                    u.university AS university,
+                    tt.name AS tier_name,
+                    se.name AS sub_event_name
+                FROM "EventRegistration" er
+                JOIN "User" u ON er."userId" = u.id
+                LEFT JOIN "TicketTier" tt ON er."ticketTierId" = tt.id
+                LEFT JOIN "SubEvent" se ON er."subEventId" = se.id
+                WHERE er."eventId" = $1
+                ORDER BY er."registeredAt" ASC
+                """
+                rows = await conn.fetch(query, event_id)
+                result: List[Dict[str, Any]] = []
+                for r in rows:
+                    d = dict(r)
+                    # Normalize types for JSON/CSV friendliness
+                    if d.get('registered_at'):
+                        d['registered_at'] = d['registered_at'].isoformat()
+                    if d.get('final_price') is not None:
+                        try:
+                            d['final_price'] = float(d['final_price'])
+                        except Exception:
+                            pass
+                    result.append(d)
+                return result
+        except Exception as e:
+            print(f"❌ Error getting detailed registrations: {e}")
+            raise e 

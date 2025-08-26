@@ -4,6 +4,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from authentication.data_access.event_repository import EventRepository
+from fastapi.responses import StreamingResponse
+import io
+import csv
 
 event_router = APIRouter(prefix="/events", tags=["events"])
 
@@ -257,6 +260,58 @@ async def get_event_by_id(event_id: int):
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=f"Failed to retrieve event: {str(e)}")
+
+@event_router.get("/{event_id}/export_csv")
+async def export_event_registrations_csv(event_id: int):
+    """Export event participants as CSV"""
+    try:
+        repo = EventRepository()
+        await repo.ensure_tables_exist()
+        # Verify event exists
+        event = await repo.get_event_by_id(event_id)
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+
+        rows = await repo.get_event_registrations_detailed(event_id)
+
+        # Prepare CSV with only requested columns
+        output = io.StringIO()
+        writer = csv.writer(output)
+        header = [
+            "first_name",
+            "last_name",
+            "user_email",
+            "user_major",
+            "graduation_year",
+            "current_year",
+            "university",
+        ]
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                r.get("first_name"),
+                r.get("last_name"),
+                r.get("user_email"),
+                r.get("user_major"),
+                r.get("graduation_year"),
+                r.get("current_year"),
+                r.get("university"),
+            ])
+
+        output.seek(0)
+        filename = f"event_{event_id}_participants.csv"
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{filename}\""
+            },
+        )
+    except Exception as e:
+        print(f"❌ Error exporting CSV: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail="Failed to export CSV")
 
 @event_router.put("/{event_id}")
 async def update_event(event_id: int, event_data: EventRequest):
