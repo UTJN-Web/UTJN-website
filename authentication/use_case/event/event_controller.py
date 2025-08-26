@@ -818,4 +818,102 @@ async def get_ticket_options(event_id: int, user_email: Optional[str] = None):
         print(f"❌ Error getting ticket options: {e}")
         if isinstance(e, HTTPException):
             raise e
-        raise HTTPException(status_code=500, detail=f"Failed to get ticket options: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to get ticket options: {str(e)}")
+
+@event_router.get("/{event_id}/ticket-tiers-analytics")
+async def get_ticket_tiers_for_analytics(event_id: int):
+    """Get ticket tiers with registration counts for analytics (no user restrictions)"""
+    try:
+        event_repo = EventRepository()
+        try:
+            await event_repo.ensure_tables_exist()
+            
+            # Get the event first
+            event = await event_repo.get_event_with_tiers_and_subevents(event_id)
+            if not event:
+                raise HTTPException(status_code=404, detail="Event not found")
+            
+            result = {
+                "success": True,
+                "event": {
+                    "id": event['id'],
+                    "name": event['name'],
+                    "enableAdvancedTicketing": event.get('enableAdvancedTicketing', False)
+                },
+                "ticketTiers": []
+            }
+            
+            # Get ticket tiers with registration counts (no restrictions)
+            if event.get('enableAdvancedTicketing', False):
+                tiers = await event_repo.get_available_ticket_tiers(event_id)
+                
+                # Convert datetime fields
+                for tier in tiers:
+                    if tier.get('startDate'):
+                        tier['startDate'] = tier['startDate'].isoformat()
+                    if tier.get('endDate'):
+                        tier['endDate'] = tier['endDate'].isoformat()
+                
+                result['ticketTiers'] = tiers
+            
+            return result
+            
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Error getting ticket tiers for analytics: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Failed to get ticket tiers for analytics: {str(e)}")
+
+@event_router.get("/{event_id}/debug-registrations")
+async def debug_event_registrations(event_id: int):
+    """Debug endpoint to check registration data for an event"""
+    try:
+        event_repo = EventRepository()
+        try:
+            await event_repo.ensure_tables_exist()
+            
+            # Get the event first
+            event = await event_repo.get_event_with_tiers_and_subevents(event_id)
+            if not event:
+                raise HTTPException(status_code=404, detail="Event not found")
+            
+            # Get raw registration data
+            async with event_repo.get_connection() as conn:
+                query = """
+                SELECT er.*, tt.name as tier_name, tt.price as tier_price
+                FROM "EventRegistration" er
+                LEFT JOIN "TicketTier" tt ON er."ticketTierId" = tt.id
+                WHERE er."eventId" = $1
+                ORDER BY er.id DESC
+                """
+                raw_registrations = await conn.fetch(query, event_id)
+            
+            # Get ticket tiers
+            ticket_tiers = await event_repo.get_available_ticket_tiers(event_id)
+            
+            result = {
+                "success": True,
+                "event": {
+                    "id": event["id"],
+                    "name": event["name"],
+                    "enableAdvancedTicketing": event.get("enableAdvancedTicketing", False)
+                },
+                "registrations": [dict(reg) for reg in raw_registrations],
+                "ticketTiers": ticket_tiers,
+                "summary": {
+                    "totalRegistrations": len(raw_registrations),
+                    "registrationsWithTicketTier": len([r for r in raw_registrations if r["ticketTierId"] is not None]),
+                    "registrationsWithoutTicketTier": len([r for r in raw_registrations if r["ticketTierId"] is None])
+                }
+            }
+            
+            return result
+        except Exception as e:
+            print(f"Error debugging registrations: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to debug registrations: {str(e)}")
+    except Exception as e:
+        print(f"Error in debug_event_registrations: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
