@@ -342,6 +342,28 @@ export default function EventsPage() {
           `Successfully registered for ${data.registration?.eventName || 'the event'}! No payment required.`, 
           'success'
         );
+
+        // Send confirmation email (reuse receipt email as confirmation)
+        try {
+          const ev = events.find(e => e.id === eventId);
+          const eventName = data.registration?.eventName || ev?.name || 'Event';
+          const eventDate = ev?.date ? new Date(ev.date) : undefined;
+          const dateForEmail = eventDate
+            ? eventDate.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+            : new Date().toISOString().slice(0, 10);
+          await fetch('/api/receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.email,
+              event_name: eventName,
+              date: dateForEmail
+            })
+          });
+        } catch (emailErr) {
+          console.error('Free registration email send failed:', emailErr);
+        }
+
         // Refresh events to update registration status
         fetchEvents();
       } else {

@@ -938,6 +938,8 @@ export default function AdminEventsPage() {
                       </p>
                     </div>
 
+
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         UofT Students Only
@@ -1297,7 +1299,8 @@ export default function AdminEventsPage() {
                               <DollarSign size={16} className="mr-2 text-yellow-500" />
                               <div>
                                 <div className="font-medium">
-                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : `$${Number(event.fee).toFixed(2).replace(/\.00$/, '')}`}
+                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : 
+                                    Number(event.fee) === 0 ? 'Free' : `$${Number(event.fee).toFixed(2).replace(/\.00$/, '')}`}
                                 </div>
                                 <div className="text-xs">
                                   {event.enableAdvancedTicketing || event.enableSubEvents ? 'Pricing' : 'Registration fee'}
@@ -1526,6 +1529,7 @@ export default function AdminEventsPage() {
                           <input
                             type="number"
                             min="0"
+                            step="0.01"
                             value={tier.price === 0 ? '' : tier.price}
                             onChange={(e) => {
                               const newTiers = [...ticketTiers];
@@ -1533,6 +1537,7 @@ export default function AdminEventsPage() {
                               setTicketTiers(newTiers);
                             }}
                             className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                            placeholder="0.00"
                           />
                         </div>
                         <div>
