@@ -661,6 +661,28 @@ export default function AdminEventsPage() {
     };
   };
 
+  const downloadCsv = async (eventId: number, eventName: string) => {
+    try {
+      const res = await fetch(`/api/admin/events/${eventId}/export`, { method: 'GET' });
+      if (!res.ok) {
+        throw new Error('Failed to export CSV');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = eventName.replace(/[^a-z0-9-_]+/gi, '_');
+      a.download = `participants_${safeName}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert('CSVのエクスポートに失敗しました。');
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -915,6 +937,8 @@ export default function AdminEventsPage() {
                         This ensures consistency between basic and advanced pricing settings.
                       </p>
                     </div>
+
+
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1275,7 +1299,8 @@ export default function AdminEventsPage() {
                               <DollarSign size={16} className="mr-2 text-yellow-500" />
                               <div>
                                 <div className="font-medium">
-                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : `$${Number(event.fee).toFixed(2).replace(/\.00$/, '')}`}
+                                  {event.enableAdvancedTicketing || event.enableSubEvents ? 'Advanced' : 
+                                    Number(event.fee) === 0 ? 'Free' : `$${Number(event.fee).toFixed(2).replace(/\.00$/, '')}`}
                                 </div>
                                 <div className="text-xs">
                                   {event.enableAdvancedTicketing || event.enableSubEvents ? 'Pricing' : 'Registration fee'}
@@ -1378,6 +1403,13 @@ export default function AdminEventsPage() {
                         </div>
                         
                         <div className="flex flex-col gap-2 ml-6">
+                          <button
+                            onClick={() => downloadCsv(event.id, event.name)}
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+                            title="Export participants CSV"
+                          >
+                            <Eye size={16} />
+                          </button>
                           <button
                             onClick={() => handleEdit(event)}
                             className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
@@ -1497,6 +1529,7 @@ export default function AdminEventsPage() {
                           <input
                             type="number"
                             min="0"
+                            step="0.01"
                             value={tier.price === 0 ? '' : tier.price}
                             onChange={(e) => {
                               const newTiers = [...ticketTiers];
@@ -1504,6 +1537,7 @@ export default function AdminEventsPage() {
                               setTicketTiers(newTiers);
                             }}
                             className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                            placeholder="0.00"
                           />
                         </div>
                         <div>
