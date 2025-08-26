@@ -201,11 +201,11 @@ def resend_confirmation(email):
         print(f"No confirmation delivery found for {email}.")
         return False
     
-    # Print the delivery information (Delete this later)
-    print(
-        f"Confirmation code sent by {delivery['DeliveryMedium']} "
-        f"to {delivery['Destination']}."
-    )
+    # Print the delivery information
+    #print(
+    #    f"Confirmation code sent by {delivery['DeliveryMedium']} "
+    #    f"to {delivery['Destination']}."
+    #)
     return True # Success once code reaches here
 
 def request_password_reset(email):

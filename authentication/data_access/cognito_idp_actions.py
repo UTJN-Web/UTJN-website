@@ -1,12 +1,8 @@
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 """
 Purpose
 
-Shows how to use the AWS SDK for Python (Boto3) with Amazon Cognito to
-sign up a user, register a multi-factor authentication (MFA) application, sign in
-using an MFA code, and sign in using a tracked device.
+Contains functions that directly interacts with the AWS Cognito API using the Cognito Identity Provider.
+Details for each function can be found here: https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 """
 
 import base64
@@ -22,6 +18,7 @@ from authentication.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+# Define custom errors
 class UsernameExistsError(Exception):
     """Raised when the user already exists in the user pool."""
     pass
@@ -61,7 +58,7 @@ class PasswordSameError(Exception):
 # snippet-start:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
 # snippet-start:[python.example_code.cognito-idp.helper.CognitoIdentityProviderWrapper.decl]
 class CognitoIdentityProviderWrapper:
-    """Encapsulates Amazon Cognito actions"""
+    """An instance of the Cognito-idp. Encapsulates Amazon Cognito actions"""
 
     def __init__(self, client_secret=None):
         """
@@ -138,6 +135,7 @@ class CognitoIdentityProviderWrapper:
             # If we reached here, the user was just created
             return True
 
+        # Raise errors as necessary
         except ClientError as err:
             error_code = err.response["Error"]["Code"]
 
@@ -256,7 +254,6 @@ class CognitoIdentityProviderWrapper:
             return response
     # snippet-end:[python.example_code.cognito-idp.AdminGetUser]
 
-    ##################################################
     def initiate_auth(self, email: str, password: str):
        """
        Attempts to log in a user using the given email and password via AWS Cognito.
@@ -379,248 +376,3 @@ class CognitoIdentityProviderWrapper:
                 raise TooManyFailedAttemptsError
 
             raise
-    ##################################################
-
-    # snippet-start:[python.example_code.cognito-idp.ListUsers]
-    def list_users(self):
-        """
-        Returns a list of the users in the current user pool.
-
-        :return: The list of users.
-        """
-        try:
-            response = self.cognito_idp_client.list_users(UserPoolId=self.user_pool_id)
-            users = response["Users"]
-        except ClientError as err:
-            logger.error(
-                "Couldn't list users for %s. Here's why: %s: %s",
-                self.user_pool_id,
-                err.response["Error"]["Code"],
-                err.response["Error"]["Message"],
-            )
-            raise
-        else:
-            return users
-
-    # snippet-end:[python.example_code.cognito-idp.ListUsers]
-
-    # snippet-start:[python.example_code.cognito-idp.AdminInitiateAuth]
-    def start_sign_in(self, user_name, password):
-        """
-        Starts the sign-in process for a user by using administrator credentials.
-        This method of signing in is appropriate for code running on a secure server.
-
-        If the user pool is configured to require MFA and this is the first sign-in
-        for the user, Amazon Cognito returns a challenge response to set up an
-        MFA application. When this occurs, this function gets an MFA secret from
-        Amazon Cognito and returns it to the caller.
-
-        :param user_name: The name of the user to sign in.
-        :param password: The user's password.
-        :return: The result of the sign-in attempt. When sign-in is successful, this
-                 returns an access token that can be used to get AWS credentials. Otherwise,
-                 Amazon Cognito returns a challenge to set up an MFA application,
-                 or a challenge to enter an MFA code from a registered MFA application.
-        """
-        try:
-            kwargs = {
-                "UserPoolId": self.user_pool_id,
-                "ClientId": self.client_id,
-                "AuthFlow": "ADMIN_USER_PASSWORD_AUTH",
-                "AuthParameters": {"USERNAME": user_name, "PASSWORD": password},
-            }
-            if self.client_secret is not None:
-                kwargs["AuthParameters"]["SECRET_HASH"] = self._secret_hash(user_name)
-            response = self.cognito_idp_client.admin_initiate_auth(**kwargs)
-            challenge_name = response.get("ChallengeName", None)
-            if challenge_name == "MFA_SETUP":
-                if (
-                    "SOFTWARE_TOKEN_MFA"
-                    in response["ChallengeParameters"]["MFAS_CAN_SETUP"]
-                ):
-                    response.update(self.get_mfa_secret(response["Session"]))
-                else:
-                    raise RuntimeError(
-                        "The user pool requires MFA setup, but the user pool is not "
-                        "configured for TOTP MFA. This example requires TOTP MFA."
-                    )
-        except ClientError as err:
-            logger.error(
-                "Couldn't start sign in for %s. Here's why: %s: %s",
-                user_name,
-                err.response["Error"]["Code"],
-                err.response["Error"]["Message"],
-            )
-            raise
-        else:
-            response.pop("ResponseMetadata", None)
-            return response
-
-    # snippet-end:[python.example_code.cognito-idp.AdminInitiateAuth]
-
-    # snippet-start:[python.example_code.cognito-idp.AssociateSoftwareToken]
-    def get_mfa_secret(self, session):
-        """
-        Gets a token that can be used to associate an MFA application with the user.
-
-        :param session: Session information returned from a previous call to initiate
-                        authentication.
-        :return: An MFA token that can be used to set up an MFA application.
-        """
-        try:
-            response = self.cognito_idp_client.associate_software_token(Session=session)
-        except ClientError as err:
-            logger.error(
-                "Couldn't get MFA secret. Here's why: %s: %s",
-                err.response["Error"]["Code"],
-                err.response["Error"]["Message"],
-            )
-            raise
-        else:
-            response.pop("ResponseMetadata", None)
-            return response
-
-    # snippet-end:[python.example_code.cognito-idp.AssociateSoftwareToken]
-
-    # snippet-start:[python.example_code.cognito-idp.VerifySoftwareToken]
-    def verify_mfa(self, session, user_code):
-        """
-        Verify a new MFA application that is associated with a user.
-
-        :param session: Session information returned from a previous call to initiate
-                        authentication.
-        :param user_code: A code generated by the associated MFA application.
-        :return: Status that indicates whether the MFA application is verified.
-        """
-        try:
-            response = self.cognito_idp_client.verify_software_token(
-                Session=session, UserCode=user_code
-            )
-        except ClientError as err:
-            logger.error(
-                "Couldn't verify MFA. Here's why: %s: %s",
-                err.response["Error"]["Code"],
-                err.response["Error"]["Message"],
-            )
-            raise
-        else:
-            response.pop("ResponseMetadata", None)
-            return response
-
-    # snippet-end:[python.example_code.cognito-idp.VerifySoftwareToken]
-
-    # snippet-start:[python.example_code.cognito-idp.AdminRespondToAuthChallenge]
-    def respond_to_mfa_challenge(self, user_name, session, mfa_code):
-        """
-        Responds to a challenge for an MFA code. This completes the second step of
-        a two-factor sign-in. When sign-in is successful, it returns an access token
-        that can be used to get AWS credentials from Amazon Cognito.
-
-        :param user_name: The name of the user who is signing in.
-        :param session: Session information returned from a previous call to initiate
-                        authentication.
-        :param mfa_code: A code generated by the associated MFA application.
-        :return: The result of the authentication. When successful, this contains an
-                 access token for the user.
-        """
-        try:
-            kwargs = {
-                "UserPoolId": self.user_pool_id,
-                "ClientId": self.client_id,
-                "ChallengeName": "SOFTWARE_TOKEN_MFA",
-                "Session": session,
-                "ChallengeResponses": {
-                    "USERNAME": user_name,
-                    "SOFTWARE_TOKEN_MFA_CODE": mfa_code,
-                },
-            }
-            if self.client_secret is not None:
-                kwargs["ChallengeResponses"]["SECRET_HASH"] = self._secret_hash(
-                    user_name
-                )
-            response = self.cognito_idp_client.admin_respond_to_auth_challenge(**kwargs)
-            auth_result = response["AuthenticationResult"]
-        except ClientError as err:
-            if err.response["Error"]["Code"] == "ExpiredCodeException":
-                logger.warning(
-                    "Your MFA code has expired or has been used already. You might have "
-                    "to wait a few seconds until your app shows you a new code."
-                )
-            else:
-                logger.error(
-                    "Couldn't respond to mfa challenge for %s. Here's why: %s: %s",
-                    user_name,
-                    err.response["Error"]["Code"],
-                    err.response["Error"]["Message"],
-                )
-                raise
-        else:
-            return auth_result
-
-    # snippet-end:[python.example_code.cognito-idp.AdminRespondToAuthChallenge]
-
-    # snippet-start:[python.example_code.cognito-idp.ConfirmDevice]
-    def confirm_mfa_device(
-        self,
-        user_name,
-        device_key,
-        device_group_key,
-        device_password,
-        access_token,
-        aws_srp,
-    ):
-        """
-        Confirms an MFA device to be tracked by Amazon Cognito. When a device is
-        tracked, its key and password can be used to sign in without requiring a new
-        MFA code from the MFA application.
-
-        :param user_name: The user that is associated with the device.
-        :param device_key: The key of the device, returned by Amazon Cognito.
-        :param device_group_key: The group key of the device, returned by Amazon Cognito.
-        :param device_password: The password that is associated with the device.
-        :param access_token: The user's access token.
-        :param aws_srp: A class that helps with Secure Remote Password (SRP)
-                        calculations. The scenario associated with this example uses
-                        the warrant package.
-        :return: True when the user must confirm the device. Otherwise, False. When
-                 False, the device is automatically confirmed and tracked.
-        """
-        srp_helper = aws_srp.AWSSRP(
-            username=user_name,
-            password=device_password,
-            pool_id="_",
-            client_id=self.client_id,
-            client_secret=None,
-            client=self.cognito_idp_client,
-        )
-        device_and_pw = f"{device_group_key}{device_key}:{device_password}"
-        device_and_pw_hash = aws_srp.hash_sha256(device_and_pw.encode("utf-8"))
-        salt = aws_srp.pad_hex(aws_srp.get_random(16))
-        x_value = aws_srp.hex_to_long(aws_srp.hex_hash(salt + device_and_pw_hash))
-        verifier = aws_srp.pad_hex(pow(srp_helper.val_g, x_value, srp_helper.big_n))
-        device_secret_verifier_config = {
-            "PasswordVerifier": base64.standard_b64encode(
-                bytearray.fromhex(verifier)
-            ).decode("utf-8"),
-            "Salt": base64.standard_b64encode(bytearray.fromhex(salt)).decode("utf-8"),
-        }
-        try:
-            response = self.cognito_idp_client.confirm_device(
-                AccessToken=access_token,
-                DeviceKey=device_key,
-                DeviceSecretVerifierConfig=device_secret_verifier_config,
-            )
-            user_confirm = response["UserConfirmationNecessary"]
-        except ClientError as err:
-            logger.error(
-                "Couldn't confirm mfa device %s. Here's why: %s: %s",
-                device_key,
-                err.response["Error"]["Code"],
-                err.response["Error"]["Message"],
-            )
-            raise
-        else:
-            return user_confirm
-
-    # snippet-end:[python.example_code.cognito-idp.ConfirmDevice]
-# snippet-end:[python.example_code.cognito-idp.CognitoIdentityProviderWrapper.full]
