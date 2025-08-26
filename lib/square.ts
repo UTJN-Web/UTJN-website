@@ -1,16 +1,29 @@
 // Direct Square API client using fetch (SDK is broken)
 const SQUARE_SANDBOX_BASE_URL = 'https://connect.squareupsandbox.com/v2';
+const SQUARE_PRODUCTION_BASE_URL = 'https://connect.squareup.com/v2';
 const SQUARE_VERSION = '2024-07-17';
 
 class DirectSquareClient {
   private accessToken: string;
+  private isProduction: boolean;
 
   constructor(accessToken: string) {
     this.accessToken = accessToken;
+    // Determine if this is production based on access token format
+    this.isProduction = !accessToken.includes('sandbox');
   }
 
   private async makeRequest(endpoint: string, method: string = 'GET', body?: any) {
-    const url = `${SQUARE_SANDBOX_BASE_URL}${endpoint}`;
+    const baseUrl = this.isProduction ? SQUARE_PRODUCTION_BASE_URL : SQUARE_SANDBOX_BASE_URL;
+    const url = `${baseUrl}${endpoint}`;
+    
+    console.log(`🔍 Square API Request:`, {
+      url: url,
+      method: method,
+      isProduction: this.isProduction,
+      accessTokenPrefix: this.accessToken.substring(0, 10) + '...',
+      endpoint: endpoint
+    });
     
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.accessToken}`,
@@ -54,8 +67,15 @@ class DirectSquareClient {
   };
 }
 
+// Validate access token
+const accessToken = process.env.SQUARE_ACCESS_TOKEN;
+if (!accessToken) {
+  console.error('❌ SQUARE_ACCESS_TOKEN environment variable is not set');
+  throw new Error('Square access token is required. Please set SQUARE_ACCESS_TOKEN environment variable.');
+}
+
 // Export the direct client
-export const squareClient = new DirectSquareClient(process.env.SQUARE_ACCESS_TOKEN!);
+export const squareClient = new DirectSquareClient(accessToken);
 
 // For backward compatibility
 export const paymentsApi = squareClient.payments; 

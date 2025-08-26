@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
       eventId,
       userId,
       email,
-      accessToken: process.env.SQUARE_ACCESS_TOKEN ? 'present' : 'missing'
+      accessToken: process.env.SQUARE_ACCESS_TOKEN ? 'present' : 'missing',
+      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || 'missing'
     });
 
     console.log('Raw sourceId received:', sourceId);
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
     const paymentRequest = {
       idempotency_key: randomUUID(),
       source_id: sourceId, // Token from Square Web Payments SDK
+      location_id: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID, // Add location ID
       amount_money: {
         currency: 'CAD', // Your Square account is Canadian
         amount: Math.round(finalAmount * 100), // Convert to cents (no BigInt)
