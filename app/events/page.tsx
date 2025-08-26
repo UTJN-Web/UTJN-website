@@ -324,6 +324,10 @@ export default function EventsPage() {
     setRegistering(eventId);
     
     try {
+      // Get the current tier ID for Advanced Ticketing events
+      const event = events.find(e => e.id === eventId);
+      const currentTier = event?.ticketTiers?.find(tier => tier.isAvailable);
+      
       const response = await fetch(`/api/events/${eventId}/register`, {
         method: 'POST',
         headers: {
@@ -332,6 +336,7 @@ export default function EventsPage() {
         body: JSON.stringify({
           userId: user.id,
           email: user.email,
+          tierId: currentTier?.id || null,
         }),
       });
 
@@ -1248,7 +1253,7 @@ function EventCard({
               </div>
 
               {/* Registration Button */}
-              {getCurrentPrice() === 0 ? (
+              {getCurrentPrice() === 0 && !event.enableAdvancedTicketing ? (
                 <button
                   onClick={() => onFreeRegister?.(event.id)}
                   disabled={registering || !user || !canRegister()}

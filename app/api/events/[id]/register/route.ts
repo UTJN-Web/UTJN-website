@@ -6,12 +6,13 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { userId, email } = await request.json();
+    const { userId, email, tierId } = await request.json();
 
     console.log('Free event registration request:', {
       eventId: id,
       userId,
-      email
+      email,
+      tierId
     });
 
     // First, fetch the event to verify it's free
@@ -25,8 +26,8 @@ export async function POST(
 
     const event = await eventResponse.json();
     
-    // Check if event is actually free
-    if (event.fee > 0) {
+    // Check if event is actually free (but allow Advanced Ticketing with 0 price)
+    if (event.fee > 0 && !event.enableAdvancedTicketing) {
       return NextResponse.json(
         { success: false, error: 'This event requires payment. Please use the payment flow.' },
         { status: 400 }
@@ -42,6 +43,7 @@ export async function POST(
       body: JSON.stringify({
         userId: parseInt(userId),
         email: email,
+        tierId: tierId ? parseInt(tierId) : null,
         registrationType: 'free',
         registrationTime: new Date().toISOString()
       })
