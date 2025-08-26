@@ -39,24 +39,52 @@ export default function SquarePaymentForm({
     setInitialized(true);
 
     // First, let's verify environment variables are loaded
+    const applicationId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
+    const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID;
+    const isSandbox = applicationId?.startsWith('sandbox-');
+    
     console.log('Environment check:', {
-      applicationId: process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID,
-      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
-      nodeEnv: process.env.NODE_ENV
+      applicationId: applicationId,
+      locationId: locationId,
+      nodeEnv: process.env.NODE_ENV,
+      isSandbox: isSandbox
     });
 
     const initializeSquare = async () => {
-      if (!process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID || !process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID) {
+      if (!applicationId || !locationId) {
         console.error('Missing Square environment variables');
         onPaymentError('Square configuration is missing. Please check environment variables.');
+        return;
+      }
+      
+      // Validate application ID format
+      if (!isSandbox && !applicationId.startsWith('sq0idp-')) {
+        console.error('Invalid production application ID format');
+        onPaymentError('Invalid Square application ID format for production environment.');
+        return;
+      }
+      
+      if (isSandbox && !applicationId.startsWith('sandbox-sq0idb-')) {
+        console.error('Invalid sandbox application ID format');
+        onPaymentError('Invalid Square application ID format for sandbox environment.');
         return;
       }
 
       if (!window.Square) {
         console.log('Loading Square SDK...');
-        // Load Square Web Payments SDK for Sandbox
+        
+        // Determine SDK URL based on application ID
+        const applicationId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
+        const isSandbox = applicationId?.startsWith('sandbox-');
+        
+        const sdkUrl = isSandbox 
+          ? 'https://sandbox.web.squarecdn.com/v1/square.js'
+          : 'https://web.squarecdn.com/v1/square.js';
+        
+        console.log(`Loading Square SDK from: ${sdkUrl} (${isSandbox ? 'Sandbox' : 'Production'})`);
+        
         const script = document.createElement('script');
-        script.src = 'https://sandbox.web.squarecdn.com/v1/square.js'; // Use sandbox URL
+        script.src = sdkUrl;
         script.async = true;
         document.head.appendChild(script);
         
@@ -78,8 +106,9 @@ export default function SquarePaymentForm({
     const initPayments = async () => {
       try {
         console.log('Initializing Square payments with:', {
-          applicationId: process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID,
-          locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+          applicationId: applicationId,
+          locationId: locationId,
+          isSandbox: isSandbox
         });
 
         if (!window.Square) {
@@ -87,14 +116,12 @@ export default function SquarePaymentForm({
         }
 
         const paymentsInstance = window.Square.payments(
-          process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID!,
-          process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!
+          applicationId,
+          locationId
         );
         
-        // Configure for sandbox environment
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Configuring Square for sandbox environment');
-        }
+        // Log environment configuration
+        console.log(`Configuring Square for ${isSandbox ? 'sandbox' : 'production'} environment`);
         setPayments(paymentsInstance);
         console.log('Square payments instance created');
 
