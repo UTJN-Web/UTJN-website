@@ -87,6 +87,9 @@ export default function AdminFormsPage() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrFormId, setQrFormId] = useState<number | null>(null);
   const [currentForm, setCurrentForm] = useState<Form | null>(null);
+  const [showSubmissions, setShowSubmissions] = useState(false);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formIsRequired, setFormIsRequired] = useState(false);
@@ -483,7 +486,24 @@ export default function AdminFormsPage() {
                               <QrCode className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => {/* TODO: View submissions */}}
+                              onClick={async () => {
+                                setSubmissionsLoading(true);
+                                setShowSubmissions(true);
+                                try {
+                                  const res = await fetch(`/api/forms/manage/${eventForm.id}/submissions`);
+                                  if (res.ok) {
+                                    const data = await res.json();
+                                    setSubmissions(data.submissions || []);
+                                  } else {
+                                    setSubmissions([]);
+                                  }
+                                } catch (e) {
+                                  console.error('Failed to load submissions', e);
+                                  setSubmissions([]);
+                                } finally {
+                                  setSubmissionsLoading(false);
+                                }
+                              }}
                               className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                               title="View Submissions"
                             >
@@ -778,6 +798,60 @@ export default function AdminFormsPage() {
               setQrFormId(null);
             }}
           />
+        )}
+
+        {/* Submissions Modal */}
+        {showSubmissions && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-gray-200">
+              <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <h3 className="text-lg font-medium text-gray-900">Form Submissions</h3>
+                <button onClick={() => setShowSubmissions(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="p-6">
+                {submissionsLoading ? (
+                  <div className="py-12 text-center text-gray-600">Loading submissions...</div>
+                ) : submissions.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500">No submissions yet</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Answers (preview)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {submissions.map((s) => (
+                          <tr key={s.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">{`${s.firstName || ''} ${s.lastName || ''}`.trim() || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{s.email || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{new Date(s.submittedAt).toLocaleString()}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">
+                              <div className="max-w-lg truncate">
+                                {(s.responses || []).slice(0, 3).map((r: any, idx: number) => (
+                                  <span key={idx} className="inline-block mr-2 text-gray-600">
+                                    <span className="font-medium text-gray-800">{r.question}:</span> {Array.isArray(r.value) ? r.value.join(', ') : String(r.value)}
+                                    {idx < Math.min(2, (s.responses || []).length - 1) ? '; ' : ''}
+                                  </span>
+                                ))}
+                                {(s.responses || []).length > 3 && <span className="text-gray-400"> …</span>}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
