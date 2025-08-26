@@ -76,7 +76,7 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
     try:
         to_utjn = ses.send_email(
             FromEmailAddress="test-noreply@uoftjn.com",
-            Destination={"ToAddresses": ["utjnit@gmail.com"]},
+            Destination={"ToAddresses": ["uoftjn@gmail.com"]},
             ReplyToAddresses=[email],
             Content={
                 "Simple": {
@@ -89,7 +89,7 @@ def send_contact_form(name: str, email: str, body: str) -> Optional[str]:
             },
         )
 
-        # Compose mail that will be sent back to the contacter
+        # Compose mail that will be sent back to the sender
         to_contacter_subject = "We received your message — UTJN"
 
         ja_name = f"{name} 様" if name else "お客さま"
@@ -198,7 +198,7 @@ def send_receipt(email: str, event_name: str, date: str):
         resp = ses.send_email(
             FromEmailAddress="test-noreply@uoftjn.com",
             Destination={"ToAddresses": [email]},
-            ReplyToAddresses=(["utjnit@gmail.com"]), #Add utjn and utjnit just in case
+            ReplyToAddresses=(["utjnit@gmail.com", "uoftjn@gmail.com"]),
             Content={
                 "Simple": {
                     "Subject": {"Data": subject},
