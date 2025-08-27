@@ -943,12 +943,12 @@ function EventCard({
     }`}>
     
       {/* === LEFT: Image === */}
-      <div className="w-full md:w-1/2 max-h-64 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+      <div className="w-full md:w-1/2 min-h-64 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
         {event.image ? (
           <img
             src={event.image}
             alt={event.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <ImageIcon size={48} className="text-gray-400" />
