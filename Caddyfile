@@ -1,0 +1,11 @@
+uoftjn.com {
+  # アップロードされた画像を配信
+  @uploads path /api/uploads/*
+  handle @uploads {
+    uri strip_prefix /api
+    reverse_proxy api:8000
+  }
+
+  # すべてのリクエストをNext.jsに転送
+  reverse_proxy web:3000
+} 

@@ -289,7 +289,7 @@ async def update_user_admin_status(email: str, is_admin: bool):
         print(f"❌ Controller error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update admin status: {str(e)}")
 
-@user_router.get("/admin-status/{email}")
+@user_router.get("/admin-status")
 async def get_user_admin_status(email: str):
     """Get admin status for a user"""
     try:

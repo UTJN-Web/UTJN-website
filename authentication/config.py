@@ -31,9 +31,9 @@ if __name__ == "__main__":
         print("3")
     if settings.arn:
         print("4")
-    if settings.access_key:
+    if settings.aws_access_key:
         print("5")
-    if settings.secret_key:
+    if settings.aws_secret_key:
         print("6")
     if settings.client_secret:
         print("7")

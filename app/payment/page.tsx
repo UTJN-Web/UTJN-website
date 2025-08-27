@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, Suspense, useContext } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { UserContext } from '@/app/contexts/UserContext';
 import { ArrowLeft, CheckCircle, X, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import SquarePaymentForm from '@/app/components/SquarePaymentForm';
 
-export default function PaymentPage() {
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+function PaymentForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const userContext = useContext(UserContext);
@@ -599,5 +602,13 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PaymentForm />
+    </Suspense>
   );
 } 

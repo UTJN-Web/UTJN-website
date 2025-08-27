@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '../../hooks/useToast';
 import { useSuccessModal } from '../../hooks/useSuccessModal';
@@ -8,7 +8,10 @@ import Toast from '../../components/Toast';
 import SuccessModal from '../../components/SuccessModal';
 import PasswordInput from '../../components/PasswordInput';
 
-export default function ForgotPasswordPage() {
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+function VerifyForm() {
   const router = useRouter();
   const { toast, showSuccess, showError, hideToast } = useToast();
   const { modal, showSuccessModal, hideSuccessModal } = useSuccessModal();
@@ -181,5 +184,13 @@ export default function ForgotPasswordPage() {
         onButtonClick={modal.onButtonClick}
       />
     </div>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyForm />
+    </Suspense>
   );
 }

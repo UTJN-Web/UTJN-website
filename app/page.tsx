@@ -45,8 +45,8 @@ export default function HomePage() {
   /* ─────────────────────────────── render */
   return (
     <div className="fade-in-up flex min-h-screen w-full flex-col items-center">
-      {/* ─────────── Hero Section (unchanged) ─────────── */}
-      <div className="fade-in-up relative -mt-[30px] h-[calc(100vh-100px)] w-full pt-[30px]">
+      {/* ─────────── Hero Section (adjusted for new navbar) ─────────── */}
+      <div className="fade-in-up relative h-[calc(100vh-100px)] w-full">
         <Image
           src="/toronto-skyline-from-park.jpg"
           alt="Toronto Skyline"
