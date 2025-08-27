@@ -1,5 +1,0 @@
-# https://dashboard.stripe.com/apikeys
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51NmOAjJVPAoDskPznWDegVIzsmeTN9lFr3wbGOGiYoe2K2sTiQSQsIRItuvBZPn6m73y58QiaCEabOLQJTbADeDk00deivdlKC
-STRIPE_SECRET_KEY=sk_test_51NmOAjJVPAoDskPzTvLEjwKBoW1OA47uzCvNgZjkztGJQFR4K9I3faPK2eo7RT60hJ8COeO4rMmIEHsYpfOhrb2D00AJ09y80i
-# Set this environment variable to support webhooks — https://stripe.com/docs/webhooks#verify-events
-# STRIPE_WEBHOOK_SECRET=whsec_12345

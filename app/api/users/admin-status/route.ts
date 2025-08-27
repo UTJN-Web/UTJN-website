@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         
         console.log('API route: getting admin status for', email);
         
-        const response = await fetch(`${backendUrl}/users/admin-status/${encodeURIComponent(email)}`, {
+        const response = await fetch(`${backendUrl}/users/admin-status?email=${encodeURIComponent(email)}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

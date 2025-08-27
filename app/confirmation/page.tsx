@@ -1,10 +1,13 @@
 // app/confirmation/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function ConfirmPage() {
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+function ConfirmationForm() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get('email') ?? '';           // クエリから取得
@@ -117,5 +120,13 @@ export default function ConfirmPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConfirmationForm />
+    </Suspense>
   );
 }

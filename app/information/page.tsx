@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function ProfileInfoPage() {
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+function InformationForm() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get('email') ?? '';
@@ -142,7 +145,7 @@ export default function ProfileInfoPage() {
               <option>University of Toronto</option>
               <option>Exchange Program</option>
               <option>Other Universities</option>
-              <option>Other</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
@@ -231,5 +234,13 @@ export default function ProfileInfoPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ProfileInfoPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <InformationForm />
+    </Suspense>
   );
 }

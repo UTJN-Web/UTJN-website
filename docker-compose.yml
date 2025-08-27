@@ -1,42 +1,60 @@
+version: "3.8"
+
 services:
+  caddy:
+    image: caddy:2-alpine
+    depends_on: [web, api]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: always
+
   web:
     build:
       context: .
-      dockerfile: frontend.Dockerfile   # ← 変更
-    command: npm run dev
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
-      - node_deps:/app/node_modules
+      dockerfile: frontend.Dockerfile
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://api:8000
-      - NEXT_TELEMETRY_DISABLED=1
-      - NODE_ENV=development
+      NODE_ENV: "production"
+      NEXT_PUBLIC_BASE_URL: "https://uoftjn.com"
+      NEXT_PUBLIC_BACKEND_URL: "https://uoftjn.com/api"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SQUARE_APPLICATION_ID: "${NEXT_PUBLIC_SQUARE_APPLICATION_ID}"
+      NEXT_PUBLIC_SQUARE_LOCATION_ID: "${NEXT_PUBLIC_SQUARE_LOCATION_ID}"
+      SQUARE_ACCESS_TOKEN: "${SQUARE_ACCESS_TOKEN}"
     env_file:
       - .env
-    depends_on:
-      - api                               # API が先に立つまで待機
+    expose:
+      - "3000"
+    restart: always
 
   api:
     build:
       context: .
-      dockerfile: backend.Dockerfile      # ← 新規
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - ./authentication:/app/authentication
-      - ./main.py:/app/main.py
-      - ./.env:/app/.env                  # AWS/Cognito 設定など
-      - ./uploads:/app/uploads            # アップロードされた画像を永続化
-    ports:
-      - "8000:8000"
+      dockerfile: backend.Dockerfile
     environment:
-      - CORS_ORIGINS=http://localhost:3000
-      - BACKEND_URL=http://localhost:8000
-      - DATABASE_URL=postgresql://postgres:MyNewPassword123!@utjn-db.ch68m8sgy7on.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      CORS_ORIGINS: "https://uoftjn.com"
+      BACKEND_URL:  "https://uoftjn.com/api"
+      DATABASE_URL: "${DATABASE_URL}"
+      AWS_DEFAULT_REGION: "us-east-2"
+      COGNITO_REGION: "${COGNITO_REGION}"
+      COGNITO_POOL_ID: "${COGNITO_POOL_ID}"
+      COGNITO_CLIENT_ID: "${COGNITO_CLIENT_ID}"
+      COGNITO_CLIENT_SECRET: "${COGNITO_CLIENT_SECRET}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    env_file:
+      - .env
+    expose:
+      - "8000"
+    volumes:
+      - uploads:/app/uploads
+    restart: always
 
 volumes:
-  node_deps: {}
+  uploads: {}
+  caddy_data: {}
+  caddy_config: {}
