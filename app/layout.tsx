@@ -16,8 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="m-0 p-0 font-sans bg-[--color-background] text-[--color-foreground]">
         <ClientLayoutWrapper>
           <Navbar />
-          {/* Header is fixed (80/100px). Pad content so it's not hidden under it. */}
-          <main className="flex min-h-screen flex-col items-center justify-start pt-[80px] md:pt-[100px] text-center">
+          <main className="flex min-h-screen flex-col items-center justify-start pt-8 text-center">
             {children}
           </main>
           <Footer />

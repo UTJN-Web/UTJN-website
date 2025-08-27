@@ -1,8 +1,6 @@
 'use client';
 
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -21,10 +19,7 @@ const NAV_RIGHT = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [elevated, setElevated] = useState(false);
   const pathname = usePathname();
-  const lastY = useRef(0);
 
   // Close menu on route change
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -33,38 +28,11 @@ export default function Navbar() {
   useEffect(() => {
     const el = document.documentElement;
     el.classList.toggle('overflow-hidden', open);
-    if (open) setHidden(false); // keep header visible when menu is open
     return () => el.classList.remove('overflow-hidden');
   }, [open]);
 
-  // Hide-on-scroll logic (both desktop & mobile)
-  useEffect(() => {
-    const THRESHOLD = 80; // px before we allow hiding
-    const onScroll = () => {
-      const y = window.scrollY || 0;
-      setElevated(y > 2);
-      const delta = y - lastY.current;
-
-      if (!open) {
-        if (y > THRESHOLD && delta > 0) setHidden(true); // scrolling down
-        else if (delta < 0 || y <= THRESHOLD) setHidden(false); // scrolling up or near top
-      }
-      lastY.current = y;
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [open]);
-
   return (
-    // Fixed header (so it can slide in/out); we animate translateY
-    <header
-      className={[
-        'fixed top-0 left-0 right-0 z-[90] border-b bg-white',
-        'h-[80px] md:h-[100px] transition-transform duration-300 will-change-transform',
-        hidden ? '-translate-y-full' : 'translate-y-0',
-        elevated ? 'shadow-sm' : '',
-      ].join(' ')}
-    >
+    <header className="sticky top-0 z-50 h-[100px] bg-white">
       {/* Mobile: hamburger */}
       <div className="absolute left-4 top-4 md:hidden">
         <button
@@ -131,10 +99,9 @@ export default function Navbar() {
 
       {/* Mobile full-screen overlay */}
       {open && (
-        <div className="fixed inset-0 z-[999] md:hidden bg-white overflow-y-auto" role="dialog" aria-modal="true" style={{ background: '#ffffff' }}>
-          {/* hard white background layer (belt + suspenders) */}
+        <div className="fixed inset-0 z-50 bg-white">
           {/* top row inside overlay */}
-          <div className="relative mx-auto flex max-w-screen-xl items-center justify-between px-4 py-4 bg-white" style={{ background: '#ffffff' }}>
+          <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-4">
             <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-3">
               <Image src="/logo.png" alt="UTJN Logo" width={120} height={60} style={{ height: 40, width: 'auto' }} />
             </Link>
@@ -150,7 +117,7 @@ export default function Navbar() {
           </div>
 
           {/* links */}
-          <nav className="relative mx-auto max-w-screen-sm px-4 bg-white" style={{ background: '#ffffff' }}>
+          <nav className="mx-auto max-w-screen-sm px-4">
             <ul className="divide-y">
               {[...NAV_LEFT, ...NAV_RIGHT].map((l) => (
                 <li key={l.label}>
@@ -160,7 +127,7 @@ export default function Navbar() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setOpen(false)}
-                      className="block py-4 text-2xl font-semibold hover:text-[#1c2a52]"
+                      className="block py-4 text-lg font-normal hover:text-[#1c2a52]"
                     >
                       {l.label}
                     </a>
@@ -168,7 +135,7 @@ export default function Navbar() {
                     <Link
                       href={l.href}
                       onClick={() => setOpen(false)}
-                      className="block py-4 text-2xl font-semibold hover:text-[#1c2a52]"
+                      className="block py-4 text-lg font-normal hover:text-[#1c2a52]"
                     >
                       {l.label}
                     </Link>
@@ -177,14 +144,14 @@ export default function Navbar() {
               ))}
             </ul>
 
-            {/* Admin / Login — closes overlay before action */}
+            {/* Admin / Login — click anywhere here closes overlay before action */}
             <div className="mt-6 flex items-center gap-6 text-lg" onClick={() => setOpen(false)}>
               <AdminLink />
               <LoginButton />
             </div>
 
             {/* Socials */}
-            <div className="mt-10 mb-8 flex justify-center gap-6 bg-white" style={{ background: '#ffffff' }}>
+            <div className="mt-10 mb-8 flex justify-center gap-6">
               <a href="https://www.facebook.com/uoftjn/" target="_blank" rel="noopener noreferrer">
                 <Image src="/facebook.png" alt="Facebook" width={24} height={24} />
               </a>
