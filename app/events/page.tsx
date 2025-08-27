@@ -1253,7 +1253,7 @@ function EventCard({
               </div>
 
               {/* Registration Button */}
-              {getCurrentPrice() === 0 && !event.enableAdvancedTicketing ? (
+              {getCurrentPrice() === 0 ? (
                 <button
                   onClick={() => onFreeRegister?.(event.id)}
                   disabled={registering || !user || !canRegister()}
