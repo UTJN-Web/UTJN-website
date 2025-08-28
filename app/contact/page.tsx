@@ -69,7 +69,7 @@ export default function ContactPage() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="mx-4 rounded-xl bg-white/20 p-6 text-center backdrop-blur-md shadow-lg md:p-10 max-w-3xl">
             <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl mb-3">
-              企業向けお問い合わせ
+              企業様向けお問い合わせ
             </h1>
             <p className="text-lg leading-relaxed text-white/90 md:text-xl">
               UTJNへのご連絡はこちらのフォームからどうぞ。
