@@ -1,0 +1,2 @@
+# authentication/use_case/unregistered_payments/__init__.py
+from .unregistered_payments_controller import unregistered_payments_router
