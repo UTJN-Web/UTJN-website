@@ -127,6 +127,32 @@ async def init_database():
             print("✅ Database initialized successfully!")
             print("✅ User table created with correct column names")
         
+        # Ensure UnregisteredPaymentRefunds table exists
+        print("🔍 Ensuring UnregisteredPaymentRefunds table exists...")
+        async with get_global_connection() as conn:
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS "UnregisteredPaymentRefunds" (
+                    id SERIAL PRIMARY KEY,
+                    "paymentId" VARCHAR(255) NOT NULL UNIQUE,
+                    "refundId" VARCHAR(255),
+                    amount DECIMAL(10,2) NOT NULL,
+                    currency VARCHAR(10) DEFAULT 'CAD',
+                    email VARCHAR(255) NOT NULL,
+                    reason TEXT,
+                    "squareRefundData" JSONB,
+                    "refundDate" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    "adminNotes" TEXT,
+                    "processedBy" VARCHAR(255) DEFAULT 'Admin'
+                )
+            """)
+            
+            # Create indexes for better performance
+            await conn.execute('CREATE INDEX idx_unregistered_payment_id ON "UnregisteredPaymentRefunds"("paymentId");')
+            await conn.execute('CREATE INDEX idx_unregistered_email ON "UnregisteredPaymentRefunds"(email);')
+            await conn.execute('CREATE INDEX idx_unregistered_refund_date ON "UnregisteredPaymentRefunds"("refundDate");')
+            
+            print("✅ UnregisteredPaymentRefunds table ensured")
+        
     except Exception as e:
         print(f"❌ Error initializing database: {e}")
         raise e

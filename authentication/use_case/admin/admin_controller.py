@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+from typing import Optional
 import base64
 import os
 from datetime import datetime
@@ -54,4 +55,24 @@ async def upload_image(request: ImageUploadRequest):
         
     except Exception as e:
         print(f"Error uploading image: {e}")
-        raise HTTPException(status_code=500, detail="Failed to upload image") 
+        raise HTTPException(status_code=500, detail="Failed to upload image")
+
+@router.get("/unregistered-refunds")
+async def get_unregistered_refunds_admin(
+    email: Optional[str] = Query(None, description="Filter by specific email address"),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
+):
+    """Admin endpoint for unregistered refunds with email filtering"""
+    try:
+        # Forward the request to the unregistered payments endpoint
+        from authentication.use_case.unregistered_payments.unregistered_payments_controller import get_unregistered_payments
+        
+        # Call the unregistered payments function directly
+        result = await get_unregistered_payments(email, start_date, end_date)
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error in admin unregistered refunds: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve unregistered refunds: {str(e)}") 

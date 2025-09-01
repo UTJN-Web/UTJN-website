@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useContext } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { UserContext } from './contexts/UserContext';
 
 export default function HomePage() {
+  const userContext = useContext(UserContext);
+  const user = userContext?.user;
+
   /* ─────────────────────────────── events data */
   const baseEvents = [
     { image: 'halloween.png', slug: 'Halloween' },
@@ -151,7 +155,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ─────────── Membership Section (unchanged) ─────────── */}
+      {/* ─────────── Membership Section (updated) ─────────── */}
       <div id="become-a-member" className="fade-in-up bg-white px-4 py-16 text-center text-[#171717]">
         <h2 className="mb-6 text-3xl font-bold md:text-4xl">Become a Member</h2>
         <p className="mx-auto mb-8 max-w-3xl text-lg">
@@ -161,6 +165,34 @@ export default function HomePage() {
           会員登録は無料ですので、お気軽にご登録ください。
         </p>
 
+        {/* Action buttons based on login status */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          {user ? (
+            // Logged in user - show membership page link
+            <Link
+              href="/membership"
+              className="fade-in-up rounded-md bg-[#1c2a52] px-8 py-3 text-white font-medium transition hover:bg-[#0f1a3a]"
+            >
+              View Membership
+            </Link>
+          ) : (
+            // Not logged in - show login and signup buttons
+            <>
+              <Link
+                href="/login"
+                className="fade-in-up rounded-md border border-[#1c2a52] px-8 py-3 text-[#1c2a52] font-medium transition hover:bg-[#1c2a52] hover:text-white"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="fade-in-up rounded-md bg-[#1c2a52] px-8 py-3 text-white font-medium transition hover:bg-[#0f1a3a]"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ─────────── Footer (unchanged) ─────────── */}
