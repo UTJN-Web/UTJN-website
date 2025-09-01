@@ -69,40 +69,61 @@ export default function AnalyticsPage() {
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
       
-      // Calculate total revenue and monthly breakdown
+      // Calculate total revenue and monthly breakdown using actual finalPrice values
       let totalRevenue = 0;
       let thisMonthRevenue = 0;
       let lastMonthRevenue = 0;
       
       events.forEach((e: any) => {
-        const registrations = e.capacity - e.remainingSeats;
-        const eventRevenue = e.fee * registrations;
-        totalRevenue += eventRevenue;
+        // Calculate revenue from actual registrations with finalPrice
+        let eventRevenue = 0;
+        let eventThisMonthRevenue = 0;
+        let eventLastMonthRevenue = 0;
         
-        // Check if event is in current month
-        if (e.date) {
-          const eventDate = new Date(e.date);
-          if (eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear) {
-            thisMonthRevenue += eventRevenue;
-          }
-          // Check if event is in last month
-          else if (eventDate.getMonth() === (currentMonth - 1 + 12) % 12 && 
-                   eventDate.getFullYear() === (currentMonth === 0 ? currentYear - 1 : currentYear)) {
-            lastMonthRevenue += eventRevenue;
-          }
+        // Sum up actual finalPrice values from registrations
+        if (e.registeredUsers && Array.isArray(e.registeredUsers)) {
+          e.registeredUsers.forEach((registration: any) => {
+            const finalPrice = registration.finalPrice || 0;
+            eventRevenue += finalPrice;
+            
+            // Check registration date for monthly breakdown
+            if (registration.registeredAt) {
+              const regDate = new Date(registration.registeredAt);
+              if (regDate.getMonth() === currentMonth && regDate.getFullYear() === currentYear) {
+                eventThisMonthRevenue += finalPrice;
+              } else if (regDate.getMonth() === (currentMonth - 1 + 12) % 12 && 
+                        regDate.getFullYear() === (currentMonth === 0 ? currentYear - 1 : currentYear)) {
+                eventLastMonthRevenue += finalPrice;
+              }
+            }
+          });
         }
+        
+        totalRevenue += eventRevenue;
+        thisMonthRevenue += eventThisMonthRevenue;
+        lastMonthRevenue += eventLastMonthRevenue;
       });
       
       // Calculate growth percentage
       const growth = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
 
       const topEvents = events
-        .map((e: any) => ({
-          name: e.name,
-          registrations: e.capacity - e.remainingSeats,
-          revenue: e.fee * (e.capacity - e.remainingSeats),
-          capacity: e.capacity
-        }))
+        .map((e: any) => {
+          // Calculate actual revenue from finalPrice values
+          let actualRevenue = 0;
+          if (e.registeredUsers && Array.isArray(e.registeredUsers)) {
+            e.registeredUsers.forEach((registration: any) => {
+              actualRevenue += registration.finalPrice || 0;
+            });
+          }
+          
+          return {
+            name: e.name,
+            registrations: e.capacity - e.remainingSeats,
+            revenue: actualRevenue,
+            capacity: e.capacity
+          };
+        })
         .sort((a: any, b: any) => b.registrations - a.registrations)
         .slice(0, 5);
 

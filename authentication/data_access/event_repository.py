@@ -450,7 +450,15 @@ class EventRepository(BaseRepository):
                     event_dict['enableSubEvents'] = False
                     
                     # Calculate remaining seats
-                    event_dict['remainingSeats'] = event_dict['capacity'] - event_dict['registration_count']
+                    if event_dict.get('enableAdvancedTicketing') and event_dict.get('ticketTiers'):
+                        # For advanced ticketing, calculate total registrations across all tiers
+                        total_registrations = 0
+                        for tier in event_dict['ticketTiers']:
+                            total_registrations += tier.get('registered_count', 0)
+                        event_dict['remainingSeats'] = event_dict['capacity'] - total_registrations
+                    else:
+                        # For regular events, use basic capacity calculation
+                        event_dict['remainingSeats'] = event_dict['capacity'] - event_dict['registration_count']
                     event_dict['registeredUsers'] = registered_users
                     events.append(event_dict)
                 

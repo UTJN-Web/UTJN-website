@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { paymentsApi } from '@/lib/square';
-import { randomUUID } from 'crypto';
 
 // No BigInt serialization needed anymore
+
+// Helper function to check for existing payments
+async function checkExistingPayment(userId: string, eventId: string): Promise<string | null> {
+  try {
+    // This would typically check your database for existing payments
+    // For now, we'll return null to indicate no existing payment
+    // In a real implementation, you'd query your database here
+    console.log(`Checking for existing payment: userId=${userId}, eventId=${eventId}`);
+    return null;
+  } catch (error) {
+    console.error('Error checking existing payment:', error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +41,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for existing payment before processing
+    const existingPaymentId = await checkExistingPayment(userId, eventId);
+    if (existingPaymentId) {
+      console.log('Existing payment found, returning success:', existingPaymentId);
+      return NextResponse.json({
+        success: true,
+        paymentId: existingPaymentId,
+        message: 'Payment already exists for this user and event'
+      });
+    }
+
     // Create payment with Square
     console.log('Attempting to create Square payment...');
     
@@ -39,8 +63,12 @@ export async function POST(request: NextRequest) {
       console.log(`Amount adjusted: $${amount} CAD → $${finalAmount} CAD (minimum required)`);
     }
     
+    // Create a deterministic idempotency key to prevent duplicate payments
+    const timestamp = Math.floor(Date.now() / 1000); // Use seconds to avoid microsecond precision issues
+    const idempotencyKey = `${userId}-${eventId}-${timestamp}`;
+    
     const paymentRequest = {
-      idempotency_key: randomUUID(),
+      idempotency_key: idempotencyKey,
       source_id: sourceId, // Token from Square Web Payments SDK
       location_id: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID, // Add location ID
       amount_money: {
@@ -56,11 +84,14 @@ export async function POST(request: NextRequest) {
     };
     
     console.log('Payment request payload:', JSON.stringify(paymentRequest, null, 2));
+    console.log('Using idempotency key:', idempotencyKey);
+    
     const { result } = await paymentsApi.create(paymentRequest);
 
     console.log('Square payment successful:', {
       paymentId: result.payment?.id,
-      status: result.payment?.status
+      status: result.payment?.status,
+      idempotencyKey: idempotencyKey
     });
 
     return NextResponse.json({
@@ -78,12 +109,44 @@ export async function POST(request: NextRequest) {
     if (error.errors && Array.isArray(error.errors)) {
       const errorMessages = error.errors.map((err: any) => err.detail || err.code || err.category).join(', ');
       console.error('Square API specific errors:', errorMessages);
+      
+      // Check if this is an idempotency key conflict (payment already exists)
+      const isIdempotencyConflict = error.errors.some((err: any) => 
+        err.code === 'PAYMENT_ALREADY_COMPLETED' || 
+        err.code === 'IDEMPOTENCY_KEY_CONFLICT' ||
+        err.detail?.includes('idempotency')
+      );
+      
+      if (isIdempotencyConflict) {
+        console.log('Payment already exists due to idempotency key conflict - this is expected behavior');
+        return NextResponse.json(
+          { 
+            success: true,
+            error: 'Payment already processed',
+            message: 'This payment has already been processed successfully'
+          },
+          { status: 200 }
+        );
+      }
+      
       return NextResponse.json(
         { 
           success: false,
           error: `Square API Error: ${errorMessages}` 
         },
         { status: 400 }
+      );
+    }
+    
+    // Handle network errors and timeouts
+    if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('timeout')) {
+      console.error('Network error during payment processing:', error.message);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Network error during payment processing. Please check your connection and try again.' 
+        },
+        { status: 503 }
       );
     }
     

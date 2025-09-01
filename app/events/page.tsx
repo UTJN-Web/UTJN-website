@@ -813,6 +813,19 @@ function EventCard({
   
   const isFull = effectiveRemainingSeats <= 0;
   
+  // Function to display remaining seats strategically for marketing
+  const getRemainingSeatsDisplay = (remaining: number) => {
+    if (remaining <= 0) {
+      return { text: 'Out of Stock', color: 'text-red-600', bgColor: 'bg-red-100' };
+    } else if (remaining < 10) {
+      return { text: `Only ${remaining} remaining`, color: 'text-orange-600', bgColor: 'bg-orange-100' };
+    } else {
+      return { text: 'In Stock', color: 'text-green-600', bgColor: 'bg-green-100' };
+    }
+  };
+  
+  const seatsDisplay = getRemainingSeatsDisplay(effectiveRemainingSeats);
+  
   // Helper function to check if refund is still allowed
   const isRefundAllowed = () => {
     const now = new Date();
@@ -857,34 +870,21 @@ function EventCard({
       subEvents: event.subEvents
     });
 
-    // Calculate effective capacity based on current tier
+    // Calculate effective capacity and remaining seats using the same logic as admin analytics
     let capacity = event.capacity;
-    let remaining = event.remainingSeats;
+    let remaining = event.remainingSeats; // This now comes from backend with correct calculation
     let price: number | string = event.fee;
 
     if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
               if (currentTier) {
-        capacity = currentTier.capacity;
-        remaining = currentTier.remaining_capacity || 0;
-        
-        // Sub-events disabled: use tier base price
-        price = currentTier.price;
-      } else {
-        // Fallback to total capacity and price range
-        capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
-        remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
-        price = 0; // Will be calculated based on selections
-      }
-    } else if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
-      // Simple Advanced Ticketing: use current tier's capacity and price
-      if (currentTier) {
+        // For current tier display, use tier-specific capacity and remaining seats
         capacity = currentTier.capacity;
         remaining = currentTier.remaining_capacity || 0;
         price = currentTier.price;
       } else {
-        // Fallback to total capacity and regular price
+        // Fallback to total capacity and remaining seats from backend
         capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
-        remaining = event.ticketTiers.reduce((total, tier) => total + (tier.remaining_capacity || 0), 0);
+        remaining = event.remainingSeats; // Use the corrected backend calculation
         const regularTier = event.ticketTiers.find(t => t.name === 'Regular');
         price = regularTier ? regularTier.price : event.fee;
       }
@@ -962,8 +962,8 @@ function EventCard({
             {dateLabel}
           </span>
           <div className="text-center">
-            <span className="text-sm text-gray-500 block">
-              Seats {effectiveCapacity - effectiveRemainingSeats}/{effectiveCapacity}
+            <span className={`text-sm font-medium block px-2 py-1 rounded ${seatsDisplay.color} ${seatsDisplay.bgColor}`}>
+              {seatsDisplay.text}
             </span>
             {!archived && (
               <div className={`mt-1 w-full bg-gray-200 rounded-full h-2 ${

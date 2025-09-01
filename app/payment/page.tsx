@@ -33,7 +33,8 @@ function PaymentForm() {
   const [creditsLoading, setCreditsLoading] = useState<boolean>(false);
 
   const eventId = searchParams.get('eventId');
-  const userId = searchParams.get('userId');
+  const userIdFromUrl = searchParams.get('userId');
+  const userId = userIdFromUrl && userIdFromUrl !== 'undefined' ? userIdFromUrl : user?.id?.toString();
   const tierId = searchParams.get('tierId');
   const subEventIds = searchParams.get('subEventIds');
   const price = searchParams.get('price');
@@ -48,6 +49,14 @@ function PaymentForm() {
       fetchUserCredits();
     }
   }, [eventId, userId, user?.id]);
+
+  // Validate that user is authenticated
+  useEffect(() => {
+    if (!userContext.isLoading && !user) {
+      setErrorMessage('You must be logged in to make a payment. Please log in and try again.');
+      setPaymentResult('failed');
+    }
+  }, [user, userContext.isLoading]);
 
   const fetchUserCredits = async () => {
     const userIdToUse = userId || user?.id?.toString();
@@ -567,15 +576,33 @@ function PaymentForm() {
 
           {/* Payment Form */}
           {finalPrice > 0 ? (
-            <SquarePaymentForm
-              eventData={{
-                ...eventData,
-                fee: finalPrice
-              }}
-              userId={userId!}
-              onPaymentSuccess={handlePaymentSuccess}
-              onPaymentError={handlePaymentError}
-            />
+            userId ? (
+              <SquarePaymentForm
+                eventData={{
+                  ...eventData,
+                  fee: finalPrice
+                }}
+                userId={userId}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentError={handlePaymentError}
+              />
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="text-center py-8">
+                  <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Required</h3>
+                  <p className="text-gray-600 mb-6">
+                    Unable to identify your user account. Please refresh the page and try again.
+                  </p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
+              </div>
+            )
           ) : (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Free Registration</h2>

@@ -12,6 +12,7 @@ interface DashboardStats {
   processedRefunds: number;
   totalRegistrations: number;
   revenueThisMonth: number;
+  unregisteredRefunds: number;
 }
 
 export default function AdminDashboard() {
@@ -22,7 +23,8 @@ export default function AdminDashboard() {
     pendingRefunds: 0,
     processedRefunds: 0,
     totalRegistrations: 0,
-    revenueThisMonth: 0
+    revenueThisMonth: 0,
+    unregisteredRefunds: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,16 +34,19 @@ export default function AdminDashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const [eventsRes, usersRes, refundsRes] = await Promise.all([
+      const [eventsRes, usersRes, refundsRes, unregisteredRefundsRes] = await Promise.all([
         fetch('/api/events'),
         fetch('/api/users'),
-        fetch('/api/admin/refunds')
+        fetch('/api/admin/refunds'),
+        fetch('/api/admin/unregistered-refunds')
       ]);
 
       const events = eventsRes.ok ? await eventsRes.json() : [];
       const users = usersRes.ok ? await usersRes.json() : [];
       const refundsResponse = refundsRes.ok ? await refundsRes.json() : { refunds: [] };
       const refunds = refundsResponse.refunds || [];
+      const unregisteredRefundsResponse = unregisteredRefundsRes.ok ? await unregisteredRefundsRes.json() : { unregisteredRefunds: [] };
+      const unregisteredRefunds = unregisteredRefundsResponse.unregisteredRefunds || [];
 
       console.log('📊 Dashboard data:', { 
         eventsCount: events.length, 
@@ -61,6 +66,7 @@ export default function AdminDashboard() {
       const totalRegistrations = events.reduce((sum: number, e: any) => sum + (e.registration_count || 0), 0);
       const pendingRefunds = refunds.filter((r: any) => r.status === 'pending').length;
       const processedRefunds = refunds.filter((r: any) => r.status === 'approved' || r.status === 'rejected').length;
+      const unregisteredRefundsCount = unregisteredRefunds.length;
       
       // Calculate revenue (simplified - sum of all event fees * registrations)
       const revenueThisMonth = events.reduce((sum: number, e: any) => {
@@ -75,7 +81,8 @@ export default function AdminDashboard() {
         pendingRefunds,
         processedRefunds,
         totalRegistrations,
-        revenueThisMonth
+        revenueThisMonth,
+        unregisteredRefunds: unregisteredRefundsCount
       });
       
       console.log('📊 Final calculated stats:', {
@@ -182,6 +189,22 @@ export default function AdminDashboard() {
                 </p>
                 <div className="text-center">
                   <span className="text-sm font-medium text-[#1c2a52]">Manage Refunds →</span>
+                </div>
+              </div>
+            </Link>
+
+            {/* Unregistered Refunds Management */}
+            <Link href="/admin/unregistered-refunds" className="group">
+              <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[#1c2a52]">Unregistered Refunds</h3>
+                  <p className="text-sm text-gray-500">Process failed registrations</p>
+                </div>
+                <p className="text-gray-600 mb-4">
+                  Handle payments that succeeded but registration failed. Process refunds for lost revenue.
+                </p>
+                <div className="text-center">
+                  <span className="text-sm font-medium text-[#1c2a52]">Manage Unregistered Refunds →</span>
                 </div>
               </div>
             </Link>
