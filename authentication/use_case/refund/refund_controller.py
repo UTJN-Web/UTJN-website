@@ -3,10 +3,83 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+import os
+import requests
+import json
+import time
+import random
 from authentication.data_access.refund_repository import RefundRepository
 from authentication.data_access.event_repository import EventRepository
 
 refund_router = APIRouter(prefix="/refunds", tags=["refunds"])
+
+async def process_square_refund(payment_id: str, amount: float, currency: str, reason: str = "Event cancellation refund") -> dict:
+    """Process a refund through Square API"""
+    try:
+        print(f"🔁 Processing Square refund for payment {payment_id}: {currency} ${amount}")
+        
+        # Get Square access token
+        square_token = os.environ.get('SQUARE_ACCESS_TOKEN')
+        if not square_token:
+            return {
+                'success': False,
+                'error': 'Square access token not found'
+            }
+        
+        # Determine if sandbox or production
+        base_url = 'https://connect.squareupsandbox.com/v2' if 'sandbox' in square_token else 'https://connect.squareup.com/v2'
+        
+        # Process refund with Square API
+        headers = {
+            'Authorization': f'Bearer {square_token}',
+            'Square-Version': '2024-07-17',
+            'Content-Type': 'application/json'
+        }
+        
+        # Generate unique idempotency key for refund
+        idempotency_key = f"refund_{int(time.time())}_{random.randint(1000, 9999)}"
+        
+        refund_request = {
+            'idempotency_key': idempotency_key,
+            'payment_id': payment_id,
+            'amount_money': {
+                'amount': int(amount * 100),  # Convert to cents
+                'currency': currency.upper()
+            },
+            'reason': reason
+        }
+        
+        print(f"🔁 Square refund request: {json.dumps(refund_request, indent=2)}")
+        
+        # Call Square API to process refund
+        url = f"{base_url}/refunds"
+        response = requests.post(url, headers=headers, json=refund_request)
+        
+        if response.status_code == 200:
+            refund_result = response.json()
+            refund_id = refund_result.get('refund', {}).get('id')
+            
+            print(f"✅ Square refund processed successfully: {refund_id}")
+            
+            return {
+                'success': True,
+                'refundId': refund_id,
+                'details': refund_result
+            }
+        else:
+            error_data = response.json()
+            print(f"❌ Square refund failed: {json.dumps(error_data, indent=2)}")
+            return {
+                'success': False,
+                'error': f"Square refund failed: {error_data}"
+            }
+            
+    except Exception as e:
+        print(f"❌ Error processing Square refund: {e}")
+        return {
+            'success': False,
+            'error': f"Failed to process refund: {str(e)}"
+        }
 
 class RefundRequestCreate(BaseModel):
     eventId: int
@@ -161,17 +234,27 @@ async def update_refund_status(refund_id: int, status_update: RefundStatusUpdate
                 if payment_id:
                     print(f"🔍 Found payment ID {payment_id} for refund processing")
                     
-                    # TODO: Process actual Square refund here
-                    # This would call the Square API to process the refund
-                    # For now, we'll just log that it would happen
-                    print(f"🔁 Would process Square refund of {refund_request['currency']} ${refund_request['amount']} for payment {payment_id}")
+                    # Process actual Square refund
+                    print(f"🔁 Processing Square refund of {refund_request['currency']} ${refund_request['amount']} for payment {payment_id}")
                     
-                    # In production, add actual Square refund processing:
-                    # refund_result = await process_square_refund(payment_id, refund_request['amount'], refund_request['currency'])
-                    # if not refund_result.success:
-                    #     raise HTTPException(status_code=500, detail=f"Square refund failed: {refund_result.error}")
-                    
-                    admin_notes = f"{status_update.adminNotes or 'Refund approved'} - Square refund processed for payment {payment_id}"
+                    try:
+                        refund_result = await process_square_refund(
+                            payment_id=payment_id,
+                            amount=refund_request['amount'],
+                            currency=refund_request['currency'],
+                            reason=status_update.adminNotes or 'Event cancellation refund'
+                        )
+                        
+                        if refund_result['success']:
+                            print(f"✅ Square refund processed successfully: {refund_result['refundId']}")
+                            admin_notes = f"{status_update.adminNotes or 'Refund approved'} - Square refund processed successfully (Refund ID: {refund_result['refundId']})"
+                        else:
+                            print(f"❌ Square refund failed: {refund_result['error']}")
+                            raise HTTPException(status_code=500, detail=f"Square refund failed: {refund_result['error']}")
+                            
+                    except Exception as e:
+                        print(f"❌ Error processing Square refund: {e}")
+                        raise HTTPException(status_code=500, detail=f"Failed to process Square refund: {str(e)}")
                 else:
                     print(f"⚠️ No payment ID found in refund request {refund_id} - manual refund required")
                     admin_notes = f"{status_update.adminNotes or 'Refund approved'} - MANUAL REFUND REQUIRED (no payment ID found)"
