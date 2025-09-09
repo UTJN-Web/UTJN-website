@@ -1,8 +1,8 @@
 # authentication/use_case/event/event_controller.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from authentication.data_access.event_repository import EventRepository
 from fastapi.responses import StreamingResponse
 import io
@@ -54,7 +54,8 @@ class EventRegistrationRequest(BaseModel):
     subEventIds: Optional[List[int]] = None
     creditsUsed: Optional[float] = 0
     finalPrice: Optional[float] = None
-    paymentEmail: Optional[str] = None  # Email used for payment (for refund notifications)
+    paymentEmail: Optional[str] = None  # Email used for payment (should match user account email)
+    reservationId: Optional[str] = None  # Reservation ID to convert to registration
 
 # Dummy payment simulation
 async def simulate_payment(amount: float) -> bool:
@@ -70,6 +71,57 @@ async def simulate_payment(amount: float) -> bool:
     print(f"💳 Dummy payment processing: ${amount} - {'SUCCESS' if is_successful else 'FAILED'}")
     
     return is_successful
+
+async def verify_square_payment(payment_id: str, expected_amount: float) -> bool:
+    """Verify Square payment using payment ID"""
+    try:
+        import requests
+        import os
+        
+        square_token = os.environ.get('SQUARE_ACCESS_TOKEN')
+        if not square_token:
+            print(f"❌ SQUARE_ACCESS_TOKEN not found")
+            return False
+        
+        # Determine if sandbox or production
+        base_url = 'https://connect.squareupsandbox.com/v2' if 'sandbox' in square_token else 'https://connect.squareup.com/v2'
+        
+        headers = {
+            'Authorization': f'Bearer {square_token}',
+            'Square-Version': '2024-07-17',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f"{base_url}/payments/{payment_id}"
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            payment_data = response.json()
+            payment = payment_data.get('payment', {})
+            
+            # Check payment status
+            if payment.get('status') != 'COMPLETED':
+                print(f"❌ Payment {payment_id} status is {payment.get('status')}, expected COMPLETED")
+                return False
+            
+            # Check payment amount
+            amount_money = payment.get('amount_money', {})
+            actual_amount = amount_money.get('amount', 0) / 100  # Convert from cents
+            currency = amount_money.get('currency', 'CAD')
+            
+            if abs(actual_amount - expected_amount) > 0.01:  # Allow for small rounding differences
+                print(f"❌ Payment {payment_id} amount mismatch: expected ${expected_amount}, got ${actual_amount} {currency}")
+                return False
+            
+            print(f"✅ Payment {payment_id} verified: ${actual_amount} {currency}, status: {payment.get('status')}")
+            return True
+        else:
+            print(f"❌ Failed to verify Square payment {payment_id}: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error verifying Square payment {payment_id}: {e}")
+        return False
 
 @event_router.get("")
 async def get_all_events(user_email: Optional[str] = None):
@@ -391,6 +443,77 @@ async def delete_event(event_id: int):
             raise e
         raise HTTPException(status_code=500, detail=f"Failed to delete event: {str(e)}")
 
+@event_router.post("/{event_id}/reserve")
+async def reserve_event_registration(event_id: int, registration_data: EventRegistrationRequest):
+    """Reserve a spot for event registration (without payment)"""
+    try:
+        print(f"🎫 Reserving spot for user {registration_data.userId} for event {event_id}")
+        print(f"🎫 Reservation details: tier={registration_data.tierId}, subEvents={registration_data.subEventIds}")
+        
+        event_repo = EventRepository()
+        try:
+            # Ensure tables exist
+            await event_repo.ensure_tables_exist()
+            
+            # Get event to check configuration and availability
+            event = await event_repo.get_event_with_tiers_and_subevents(event_id)
+            if not event:
+                raise HTTPException(status_code=404, detail="Event not found")
+            
+            # Check capacity BEFORE any payment processing
+            registration_count = await event_repo.get_registration_count(event_id)
+            if registration_count >= event['capacity']:
+                raise HTTPException(status_code=400, detail="Event is full")
+            
+            # Check if user is already registered
+            existing = await event_repo.check_existing_registration(registration_data.userId, event_id)
+            if existing:
+                raise HTTPException(status_code=400, detail="User already registered for this event")
+            
+            # Validate advanced ticketing selections
+            if registration_data.tierId:
+                tier_capacity = await event_repo.get_available_capacity(tier_id=registration_data.tierId)
+                if tier_capacity <= 0:
+                    raise HTTPException(status_code=400, detail="Selected ticket tier is no longer available")
+            
+            if registration_data.subEventIds:
+                for sub_event_id in registration_data.subEventIds:
+                    sub_event_capacity = await event_repo.get_available_capacity(sub_event_id=sub_event_id)
+                    if sub_event_capacity <= 0:
+                        raise HTTPException(status_code=400, detail=f"Sub-event {sub_event_id} is no longer available")
+            
+            # Create a temporary reservation (without payment)
+            reservation_id = await event_repo.create_reservation(
+                user_id=registration_data.userId,
+                event_id=event_id,
+                tier_id=registration_data.tierId,
+                sub_event_ids=registration_data.subEventIds,
+                final_price=registration_data.finalPrice,
+                payment_email=registration_data.paymentEmail
+            )
+            
+            print(f"✅ Reservation created for user {registration_data.userId}: {reservation_id}")
+            return {
+                "message": "Registration spot reserved successfully",
+                "reservationId": reservation_id,
+                "expiresAt": (datetime.now() + timedelta(minutes=15)).isoformat()  # 15 minute reservation
+            }
+            
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Error creating reservation: {e}")
+        error_message = str(e)
+        
+        # Provide user-friendly error messages
+        if "Event is full" in error_message:
+            raise HTTPException(status_code=400, detail="Sorry, this event is now full. Please try another event or check back later.")
+        elif "capacity" in error_message.lower():
+            raise HTTPException(status_code=400, detail="This event has reached its capacity limit. Please try another event.")
+        else:
+            raise HTTPException(status_code=500, detail="Unable to reserve a spot at this time. Please try again.")
+
 @event_router.post("/{event_id}/register")
 async def register_for_event(event_id: int, registration_data: EventRegistrationRequest):
     """Register for an event with support for advanced ticketing"""
@@ -407,6 +530,19 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
             event = await event_repo.get_event_with_tiers_and_subevents(event_id)
             if not event:
                 raise HTTPException(status_code=404, detail="Event not found")
+            
+            # Get user email and ensure payment email is set
+            user_email = await event_repo.get_user_email(registration_data.userId)
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found")
+            
+            # Use user email as payment email (unified approach)
+            if not registration_data.paymentEmail:
+                registration_data.paymentEmail = user_email
+            elif registration_data.paymentEmail != user_email:
+                print(f"⚠️ Payment email mismatch: user_email={user_email}, payment_email={registration_data.paymentEmail}")
+                # For security, use user's account email instead
+                registration_data.paymentEmail = user_email
             
             # Validate advanced ticketing selections
             if registration_data.tierId:
@@ -435,50 +571,287 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                 else:
                     print(f"💰 Using standard event fee: ${payment_amount}")
             
-            # Simulate payment processing if amount > 0
+            # Verify actual Square payment if amount > 0
             if payment_amount > 0:
-                payment_successful = await simulate_payment(payment_amount)
-                if not payment_successful:
-                    raise HTTPException(status_code=400, detail="Payment failed")
+                if not registration_data.paymentId:
+                    # If payment amount > 0 but no payment ID, user may have paid but registration failed
+                    # Process automatic refund to be safe
+                    if payment_amount > 0:
+                        print(f"🔄 Payment amount > 0 but no payment ID. Processing automatic refund...")
+                        try:
+                            from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                            refund_repo = UnregisteredPaymentsRepository()
+                            
+                            # Get user email for refund
+                            user_email = await event_repo.get_user_email(registration_data.userId)
+                            if user_email:
+                                # Use a placeholder payment ID for refund processing
+                                refund_result = await refund_repo.process_automatic_refund(
+                                    payment_id="NO_PAYMENT_ID_PROVIDED",
+                                    amount=payment_amount,
+                                    email=user_email,
+                                    reason="Payment ID missing but amount > 0 - potential payment without registration"
+                                )
+                                
+                                if refund_result.get("success"):
+                                    print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                                else:
+                                    print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                            else:
+                                print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                                
+                        except Exception as refund_error:
+                            print(f"❌ Error processing automatic refund: {refund_error}")
+                    
+                    raise HTTPException(status_code=400, detail="Payment ID is required for paid events")
+                
+                # Verify the Square payment
+                payment_verified = await verify_square_payment(registration_data.paymentId, payment_amount)
+                if not payment_verified:
+                    # Payment verification failed - process automatic refund
+                    print(f"🔄 Payment verification failed. Processing automatic refund...")
+                    try:
+                        from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                        refund_repo = UnregisteredPaymentsRepository()
+                        
+                        # Get user email for refund
+                        user_email = await event_repo.get_user_email(registration_data.userId)
+                        if user_email:
+                            refund_result = await refund_repo.process_automatic_refund(
+                                payment_id=registration_data.paymentId,
+                                amount=payment_amount,
+                                email=user_email,
+                                reason="Payment verification failed after successful payment"
+                            )
+                            
+                            if refund_result.get("success"):
+                                print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                            else:
+                                print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                        else:
+                            print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                            
+                    except Exception as refund_error:
+                        print(f"❌ Error processing automatic refund: {refund_error}")
+                    
+                    raise HTTPException(status_code=400, detail="Payment verification failed")
             
-            # Handle registration based on advanced settings
-            if registration_data.subEventIds and len(registration_data.subEventIds) > 0:
-                # Sub-events registration
-                if len(registration_data.subEventIds) > 1:
-                    # Multiple sub-events - use dedicated method
-                    registrations = await event_repo.register_for_multiple_sub_events(
-                        user_id=registration_data.userId,
-                        event_id=event_id,
+            # Convert reservation to registration if reservation ID is provided
+            if registration_data.reservationId:
+                print(f"🔄 Converting reservation {registration_data.reservationId} to registration")
+                try:
+                    # Verify reservation exists and belongs to user
+                    reservation = await event_repo.get_reservation(registration_data.reservationId, registration_data.userId)
+                    if not reservation:
+                        # Invalid reservation - if payment was processed, refund it
+                        if registration_data.paymentId and payment_amount > 0:
+                            print(f"🔄 Invalid reservation but payment was processed. Processing automatic refund...")
+                            try:
+                                from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                                refund_repo = UnregisteredPaymentsRepository()
+                                
+                                # Get user email for refund
+                                user_email = await event_repo.get_user_email(registration_data.userId)
+                                if user_email:
+                                    refund_result = await refund_repo.process_automatic_refund(
+                                        payment_id=registration_data.paymentId,
+                                        amount=payment_amount,
+                                        email=user_email,
+                                        reason="Invalid reservation but payment was processed"
+                                    )
+                                    
+                                    if refund_result.get("success"):
+                                        print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                                    else:
+                                        print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                                else:
+                                    print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                                    
+                            except Exception as refund_error:
+                                print(f"❌ Error processing automatic refund: {refund_error}")
+                        
+                        raise HTTPException(status_code=400, detail="Invalid or expired reservation")
+                    
+                    # Convert reservation to registration
+                    registration = await event_repo.convert_reservation_to_registration(
+                        reservation_id=registration_data.reservationId,
                         payment_id=registration_data.paymentId,
-                        sub_event_ids=registration_data.subEventIds,
-                        final_price=payment_amount
-                    )
-                    registration = registrations[0]  # Main registration
-                    additional_registrations = registrations[1:]  # Additional ones
-                else:
-                    # Single sub-event registration
-                    registration = await event_repo.register_for_event_advanced(
-                        user_id=registration_data.userId,
-                        event_id=event_id,
-                        payment_id=registration_data.paymentId,
-                        ticket_tier_id=registration_data.tierId,
-                        sub_event_id=registration_data.subEventIds[0],
-                        final_price=payment_amount,
                         payment_email=registration_data.paymentEmail
                     )
                     additional_registrations = []
+                    
+                except Exception as e:
+                    print(f"❌ Error converting reservation: {e}")
+                    
+                    # If payment was verified but reservation conversion failed, process automatic refund
+                    if registration_data.paymentId and payment_amount > 0:
+                        print(f"🔄 Reservation conversion failed after payment verification. Processing automatic refund...")
+                        try:
+                            from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                            refund_repo = UnregisteredPaymentsRepository()
+                            
+                            # Get user email for refund
+                            user_email = await event_repo.get_user_email(registration_data.userId)
+                            if user_email:
+                                refund_result = await refund_repo.process_automatic_refund(
+                                    payment_id=registration_data.paymentId,
+                                    amount=payment_amount,
+                                    email=user_email,
+                                    reason="Reservation conversion failed after successful payment verification"
+                                )
+                                
+                                if refund_result.get("success"):
+                                    print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                                else:
+                                    print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                            else:
+                                print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                                
+                        except Exception as refund_error:
+                            print(f"❌ Error processing automatic refund: {refund_error}")
+                    
+                    raise HTTPException(status_code=400, detail=f"Failed to convert reservation: {str(e)}")
             else:
-                # Tier-based or basic registration
-                registration = await event_repo.register_for_event_advanced(
-                    user_id=registration_data.userId,
-                    event_id=event_id,
-                    payment_id=registration_data.paymentId,
-                    ticket_tier_id=registration_data.tierId,
-                    sub_event_id=None,
-                    final_price=payment_amount,
-                    payment_email=registration_data.paymentEmail
-                )
-                additional_registrations = []
+                # Handle registration based on advanced settings
+                if registration_data.subEventIds and len(registration_data.subEventIds) > 0:
+                    # Sub-events registration
+                    if len(registration_data.subEventIds) > 1:
+                        # Multiple sub-events - register for each one
+                        try:
+                            registrations = []
+                            for i, sub_event_id in enumerate(registration_data.subEventIds):
+                                reg = await event_repo.register_for_event_advanced(
+                                    user_id=registration_data.userId,
+                                    event_id=event_id,
+                                    payment_id=registration_data.paymentId,
+                                    ticket_tier_id=registration_data.tierId,
+                                    sub_event_id=sub_event_id,
+                                    final_price=payment_amount / len(registration_data.subEventIds),  # Split cost among sub-events
+                                    payment_email=registration_data.paymentEmail
+                                )
+                                registrations.append(reg)
+                            
+                            registration = registrations[0]  # Main registration
+                            additional_registrations = registrations[1:]  # Additional ones
+                        except Exception as e:
+                            print(f"❌ Error registering for multiple sub-events: {e}")
+                            
+                            # If payment was verified but registration failed, process automatic refund
+                            if registration_data.paymentId and payment_amount > 0:
+                                print(f"🔄 Multiple sub-events registration failed after payment verification. Processing automatic refund...")
+                                try:
+                                    from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                                    refund_repo = UnregisteredPaymentsRepository()
+                                    
+                                    # Get user email for refund
+                                    user_email = await event_repo.get_user_email(registration_data.userId)
+                                    if user_email:
+                                        refund_result = await refund_repo.process_automatic_refund(
+                                            payment_id=registration_data.paymentId,
+                                            amount=payment_amount,
+                                            email=user_email,
+                                            reason="Multiple sub-events registration failed after successful payment verification"
+                                        )
+                                        
+                                        if refund_result.get("success"):
+                                            print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                                        else:
+                                            print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                                    else:
+                                        print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                                        
+                                except Exception as refund_error:
+                                    print(f"❌ Error processing automatic refund: {refund_error}")
+                            
+                            raise HTTPException(status_code=400, detail=f"Failed to register for multiple sub-events: {str(e)}")
+                    else:
+                        # Single sub-event registration
+                        try:
+                            registration = await event_repo.register_for_event_advanced(
+                                user_id=registration_data.userId,
+                                event_id=event_id,
+                                payment_id=registration_data.paymentId,
+                                ticket_tier_id=registration_data.tierId,
+                                sub_event_id=registration_data.subEventIds[0],
+                                final_price=payment_amount,
+                                payment_email=registration_data.paymentEmail
+                            )
+                            additional_registrations = []
+                        except Exception as e:
+                            print(f"❌ Error registering for single sub-event: {e}")
+                            
+                            # If payment was verified but registration failed, process automatic refund
+                            if registration_data.paymentId and payment_amount > 0:
+                                print(f"🔄 Single sub-event registration failed after payment verification. Processing automatic refund...")
+                                try:
+                                    from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                                    refund_repo = UnregisteredPaymentsRepository()
+                                    
+                                    # Get user email for refund
+                                    user_email = await event_repo.get_user_email(registration_data.userId)
+                                    if user_email:
+                                        refund_result = await refund_repo.process_automatic_refund(
+                                            payment_id=registration_data.paymentId,
+                                            amount=payment_amount,
+                                            email=user_email,
+                                            reason="Single sub-event registration failed after successful payment verification"
+                                        )
+                                        
+                                        if refund_result.get("success"):
+                                            print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                                        else:
+                                            print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                                    else:
+                                        print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                                        
+                                except Exception as refund_error:
+                                    print(f"❌ Error processing automatic refund: {refund_error}")
+                            
+                            raise HTTPException(status_code=400, detail=f"Failed to register for sub-event: {str(e)}")
+                else:
+                    # Tier-based or basic registration
+                    try:
+                        registration = await event_repo.register_for_event_advanced(
+                            user_id=registration_data.userId,
+                            event_id=event_id,
+                            payment_id=registration_data.paymentId,
+                            ticket_tier_id=registration_data.tierId,
+                            sub_event_id=None,
+                            final_price=payment_amount,
+                            payment_email=registration_data.paymentEmail
+                        )
+                        additional_registrations = []
+                    except Exception as e:
+                        print(f"❌ Error registering for tier-based event: {e}")
+                        
+                        # If payment was verified but registration failed, process automatic refund
+                        if registration_data.paymentId and payment_amount > 0:
+                            print(f"🔄 Tier-based registration failed after payment verification. Processing automatic refund...")
+                            try:
+                                from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                                refund_repo = UnregisteredPaymentsRepository()
+                                
+                                # Get user email for refund
+                                user_email = await event_repo.get_user_email(registration_data.userId)
+                                if user_email:
+                                    refund_result = await refund_repo.process_automatic_refund(
+                                        payment_id=registration_data.paymentId,
+                                        amount=payment_amount,
+                                        email=user_email,
+                                        reason="Tier-based registration failed after successful payment verification"
+                                    )
+                                    
+                                    if refund_result.get("success"):
+                                        print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                                    else:
+                                        print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                                else:
+                                    print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                                    
+                            except Exception as refund_error:
+                                print(f"❌ Error processing automatic refund: {refund_error}")
+                        
+                        raise HTTPException(status_code=400, detail=f"Failed to register for event: {str(e)}")
             
             print(f"✅ Registration successful for user {registration_data.userId}")
             return {
@@ -489,13 +862,92 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
             }
             
         except Exception as e:
+            # If registration fails after payment verification, process automatic refund
+            if registration_data.paymentId and payment_amount > 0:
+                print(f"🔄 Registration failed after payment verification. Processing automatic refund...")
+                try:
+                    from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                    refund_repo = UnregisteredPaymentsRepository()
+                    
+                    # Get user email for refund
+                    user_email = await event_repo.get_user_email(registration_data.userId)
+                    if user_email:
+                        refund_result = await refund_repo.process_automatic_refund(
+                            payment_id=registration_data.paymentId,
+                            amount=payment_amount,
+                            email=user_email,
+                            reason="Registration failed after successful payment verification"
+                        )
+                        
+                        if refund_result.get("success"):
+                            print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                        else:
+                            print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                    else:
+                        print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                        
+                except Exception as refund_error:
+                    print(f"❌ Error processing automatic refund: {refund_error}")
+            
             raise e
             
     except Exception as e:
         print(f"❌ Error registering for event: {e}")
+        
+        # CRITICAL: If payment was verified but registration failed, process automatic refund
+        if registration_data.paymentId and payment_amount > 0:
+            print(f"🔄 Registration failed after payment verification. Processing automatic refund...")
+            try:
+                from authentication.data_access.unregistered_payments_repository import UnregisteredPaymentsRepository
+                refund_repo = UnregisteredPaymentsRepository()
+                
+                # Get user email for refund
+                user_email = await event_repo.get_user_email(registration_data.userId)
+                if user_email:
+                    refund_result = await refund_repo.process_automatic_refund(
+                        payment_id=registration_data.paymentId,
+                        amount=payment_amount,
+                        email=user_email,
+                        reason="Registration failed after successful payment verification"
+                    )
+                    
+                    if refund_result.get("success"):
+                        print(f"✅ Automatic refund processed: {refund_result.get('refund_id')}")
+                    else:
+                        print(f"⚠️ Automatic refund failed: {refund_result.get('error')}")
+                else:
+                    print(f"⚠️ Cannot process refund: user email not found for user {registration_data.userId}")
+                    
+            except Exception as refund_error:
+                print(f"❌ Error processing automatic refund: {refund_error}")
+        
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=f"Failed to register for event: {str(e)}")
+
+@event_router.delete("/{event_id}/reserve/{reservation_id}")
+async def cancel_reservation(event_id: int, reservation_id: str, user_id: int = Query(...)):
+    """Cancel a reservation (cleanup on payment failure)"""
+    try:
+        print(f"🗑️ Canceling reservation {reservation_id} for user {user_id}")
+        
+        event_repo = EventRepository()
+        try:
+            success = await event_repo.cancel_reservation(reservation_id, user_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Reservation not found or already expired")
+            
+            print(f"✅ Reservation {reservation_id} cancelled for user {user_id}")
+            return {"message": "Reservation cancelled successfully"}
+            
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Error canceling reservation: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Failed to cancel reservation: {str(e)}")
 
 @event_router.delete("/{event_id}/register")
 async def cancel_registration(event_id: int, registration_data: EventRegistrationRequest):
@@ -699,6 +1151,38 @@ async def get_sub_events(event_id: int):
     except Exception as e:
         print(f"❌ Error getting sub-events: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get sub-events: {str(e)}")
+
+@event_router.get("/{event_id}/capacity")
+async def get_event_capacity(event_id: int):
+    """Get available capacity for an event"""
+    try:
+        event_repo = EventRepository()
+        try:
+            # Get event details
+            event = await event_repo.get_event_with_tiers_and_subevents(event_id)
+            if not event:
+                raise HTTPException(status_code=404, detail="Event not found")
+            
+            # Get current registration count
+            registration_count = await event_repo.get_registration_count(event_id)
+            total_capacity = event['capacity']
+            available_capacity = max(0, total_capacity - registration_count)
+            
+            print(f"📊 Event {event_id} capacity: {available_capacity}/{total_capacity} available")
+            
+            return {
+                "success": True, 
+                "availableCapacity": available_capacity,
+                "totalCapacity": total_capacity,
+                "registrationCount": registration_count
+            }
+            
+        except Exception as e:
+            raise e
+            
+    except Exception as e:
+        print(f"❌ Error getting event capacity: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get event capacity: {str(e)}")
 
 @event_router.get("/capacity/{tier_id}")
 async def get_tier_capacity(tier_id: int):

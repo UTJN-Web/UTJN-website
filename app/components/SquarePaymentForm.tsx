@@ -13,18 +13,19 @@ declare global {
 interface SquarePaymentFormProps {
   eventData: any;
   userId: string;
-  onPaymentSuccess: (email?: string) => void;
+  userEmail: string; // Add user email prop
+  onPaymentSuccess: () => void; // Remove email parameter
   onPaymentError: (error: string) => void;
 }
 
 export default function SquarePaymentForm({ 
   eventData, 
   userId, 
+  userEmail,
   onPaymentSuccess, 
   onPaymentError 
 }: SquarePaymentFormProps) {
   const [processing, setProcessing] = useState(false);
-  const [email, setEmail] = useState('');
   const [payments, setPayments] = useState<any>(null);
   const [card, setCard] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
@@ -173,8 +174,36 @@ export default function SquarePaymentForm({
     };
   }, []); // Run only once on mount
 
+  // Helper function to clean up reservation
+  const cleanupReservation = async (reason: string) => {
+    const reservationId = (window as any).currentReservationId;
+    if (reservationId) {
+      console.log(`Cleaning up reservation ${reservationId} due to ${reason}`);
+      try {
+        const response = await fetch(`/api/events/${eventData.id}/reserve/${reservationId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId
+          })
+        });
+        
+        if (response.ok) {
+          console.log(`✅ Reservation ${reservationId} cleaned up successfully`);
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error(`⚠️ Reservation cleanup failed: ${errorData.error}`);
+        }
+      } catch (cleanupError) {
+        console.error(`❌ Failed to clean up reservation ${reservationId}:`, cleanupError);
+      }
+    }
+  };
+
   const handlePaymentSubmission = async () => {
-    if (!card || !email.trim()) {
+    if (!card) {
       onPaymentError('Please fill in all required fields');
       return;
     }
@@ -183,6 +212,35 @@ export default function SquarePaymentForm({
     console.log('Starting payment submission...');
 
     try {
+      // Create reservation BEFORE processing payment to prevent race conditions
+      console.log('Creating reservation before payment...');
+      const reservationResponse = await fetch(`/api/events/${eventData.id}/reserve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          tierId: null, // Could be enhanced to support tier selection
+          subEventIds: [],
+          finalPrice: eventData.fee,
+          paymentEmail: userEmail
+        })
+      });
+
+      if (!reservationResponse.ok) {
+        const errorData = await reservationResponse.json().catch(() => ({ error: 'Unknown error' }));
+        setProcessing(false);
+        onPaymentError(errorData.error || 'Failed to reserve spot. Event may be full.');
+        return;
+      }
+
+      const reservationData = await reservationResponse.json();
+      console.log(`Reservation created: ${reservationData.reservationId}`);
+      
+      // Store reservation ID for later use
+      (window as any).currentReservationId = reservationData.reservationId;
+
       // Tokenize the card
       console.log('Tokenizing card...');
       const result = await card.tokenize();
@@ -197,7 +255,7 @@ export default function SquarePaymentForm({
           amount: eventData.fee,
           eventId: eventData.id,
           userId: userId,
-          email: email.trim(),
+          email: userEmail, // Use user's account email
         };
         console.log('Sending payment data:', paymentData);
 
@@ -222,19 +280,32 @@ export default function SquarePaymentForm({
             (window as any).lastPaymentId = data.paymentId;
           }
           // Keep showing Processing overlay until parent completes registration & shows success
-          onPaymentSuccess(email.trim());
+          onPaymentSuccess();
         } else {
           console.error('Payment failed:', data.error);
           setProcessing(false);
+          
+          // Clean up reservation on payment failure
+          await cleanupReservation('payment failure');
+          
           onPaymentError(data.error || 'Payment processing failed');
         }
       } else {
         console.error('Card tokenization failed:', result);
+        setProcessing(false);
+        
+        // Clean up reservation on tokenization failure
+        await cleanupReservation('tokenization failure');
+        
         onPaymentError(result.errors?.[0]?.message || 'Card tokenization failed');
       }
     } catch (error) {
       console.error('Payment processing error:', error);
       setProcessing(false);
+      
+      // Clean up reservation on general error
+      await cleanupReservation('general error');
+      
       onPaymentError('Payment processing failed');
     }
   };
@@ -269,19 +340,20 @@ export default function SquarePaymentForm({
         </div>
       
       <div className="space-y-6">
-        {/* Email for receipt */}
+        {/* User email display (read-only) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email Address (for receipt) *
+            Email Address (for receipt)
           </label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="john@example.com"
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={userEmail}
+            readOnly
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
           />
+          <p className="text-sm text-gray-500 mt-1">
+            Receipt will be sent to your account email address
+          </p>
         </div>
 
         {/* Square Card Container */}
@@ -300,9 +372,9 @@ export default function SquarePaymentForm({
         {/* Payment Button */}
         <button
           onClick={handlePaymentSubmission}
-          disabled={processing || !card || !email.trim()}
+          disabled={processing || !card}
           className={`w-full py-4 px-6 rounded-lg font-semibold text-white transition-all duration-200 ${
-            processing || !card || !email.trim()
+            processing || !card
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
           }`}

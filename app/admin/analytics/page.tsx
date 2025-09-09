@@ -109,7 +109,16 @@ export default function AnalyticsPage() {
 
       const topEvents = events
         .map((e: any) => {
-          // Calculate actual revenue from finalPrice values
+          // Derive totals from ticket tiers when advanced ticketing is enabled
+          const totalTierCapacity = Array.isArray(e.ticketTiers) && e.ticketTiers.length > 0
+            ? e.ticketTiers.reduce((sum: number, tier: any) => sum + (Number(tier.capacity) || 0), 0)
+            : Number(e.capacity) || 0;
+
+          const totalTierRegistrations = Array.isArray(e.ticketTiers) && e.ticketTiers.length > 0
+            ? e.ticketTiers.reduce((sum: number, tier: any) => sum + (Number(tier.registered_count) || 0), 0)
+            : Number(e.registration_count || 0);
+          
+          // Calculate actual revenue from finalPrice values (kept but not used elsewhere per current scope)
           let actualRevenue = 0;
           if (e.registeredUsers && Array.isArray(e.registeredUsers)) {
             e.registeredUsers.forEach((registration: any) => {
@@ -119,9 +128,9 @@ export default function AnalyticsPage() {
           
           return {
             name: e.name,
-            registrations: e.capacity - e.remainingSeats,
+            registrations: totalTierRegistrations,
             revenue: actualRevenue,
-            capacity: e.capacity
+            capacity: totalTierCapacity
           };
         })
         .sort((a: any, b: any) => b.registrations - a.registrations)
@@ -425,7 +434,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Top Events */}
-          <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm mb-8">
+          {/* <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm mb-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-[#1c2a52]">Top Performing Events</h3>
               <BarChart3 className="w-5 h-5 text-green-600" />
@@ -471,10 +480,10 @@ export default function AnalyticsPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </div> */}
 
           {/* Revenue Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-white bg-opacity-95 rounded-lg p-6 shadow-lg border border-gray-200 backdrop-blur-sm">
               <h3 className="text-lg font-semibold text-[#1c2a52] mb-6">Revenue Breakdown</h3>
               <div className="space-y-4">
@@ -534,7 +543,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

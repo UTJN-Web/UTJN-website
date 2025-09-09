@@ -724,10 +724,7 @@ export default function EventsPage() {
             <h3 className="text-xl font-semibold text-[#1c2a52] dark:text-blue-300 mb-3">割引特典について</h3>
             <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
               <p>
-                Careerイベントに参加し、所定のフォームに回答することで、次回以降のSocialイベントの参加料を割引できます。
-              </p>
-              <p>
-                積極的に参加し、Socialイベントを楽しもう！
+                Coming Soon...
               </p>
             </div>
             <div className="mt-6 flex justify-end gap-3">
@@ -816,11 +813,11 @@ function EventCard({
   // Function to display remaining seats strategically for marketing
   const getRemainingSeatsDisplay = (remaining: number) => {
     if (remaining <= 0) {
-      return { text: 'Out of Stock', color: 'text-red-600', bgColor: 'bg-red-100' };
+      return { text: 'Out of Stock', color: 'text-white', bgColor: 'bg-[#1c2a52]' };
     } else if (remaining < 10) {
-      return { text: `Only ${remaining} remaining`, color: 'text-orange-600', bgColor: 'bg-orange-100' };
+      return { text: `Only ${remaining} remaining`, color: 'text-white', bgColor: 'bg-[#1c2a52]' };
     } else {
-      return { text: 'In Stock', color: 'text-green-600', bgColor: 'bg-green-100' };
+      return { text: 'In Stock', color: 'text-white', bgColor: 'bg-[#1c2a52]' };
     }
   };
   
@@ -870,21 +867,55 @@ function EventCard({
       subEvents: event.subEvents
     });
 
-    // Calculate effective capacity and remaining seats using the same logic as admin analytics
+    // Calculate effective capacity and remaining seats using total across all tiers
     let capacity = event.capacity;
     let remaining = event.remainingSeats; // This now comes from backend with correct calculation
     let price: number | string = event.fee;
 
     if (event.enableAdvancedTicketing && event.ticketTiers && event.ticketTiers.length > 0) {
-              if (currentTier) {
-        // For current tier display, use tier-specific capacity and remaining seats
-        capacity = currentTier.capacity;
-        remaining = currentTier.remaining_capacity || 0;
+      // Calculate total capacity from tiers
+      const totalCapacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
+      
+      // Use the backend's calculated remaining seats as the source of truth
+      // The backend already calculates this correctly using tier.registered_count
+      const actualRemaining = event.remainingSeats;
+      
+      // For debugging, let's see what the backend calculated
+      const backendRegistrations = event.ticketTiers.reduce((total, tier) => total + (tier.registered_count || 0), 0);
+      const backendRemaining = totalCapacity - backendRegistrations;
+      const frontendRegistrations = event.registeredUsers ? event.registeredUsers.length : 0;
+      
+      // Debug logging for stock calculation
+      console.log('🔍 Stock calculation debug for event:', event.name, {
+        eventId: event.id,
+        tiers: event.ticketTiers.map(t => ({
+          name: t.name,
+          capacity: t.capacity,
+          registered_count: t.registered_count,
+          remaining_capacity: t.remaining_capacity
+        })),
+        totalCapacity,
+        eventRemainingSeats: event.remainingSeats,
+        backendRegistrations,
+        backendRemaining,
+        frontendRegistrations,
+        eventRemainingSeats: event.remainingSeats,
+        actualRemaining,
+        registeredUsers: event.registeredUsers?.map((u: any) => ({ id: u.id, email: u.email })) || 'No registeredUsers',
+        registeredUsersLength: event.registeredUsers?.length || 0,
+        finalRemaining: actualRemaining,
+        willShowOutOfStock: actualRemaining <= 0,
+        discrepancy: frontendRegistrations !== backendRegistrations ? `FRONTEND: ${frontendRegistrations} vs BACKEND: ${backendRegistrations}` : 'MATCH'
+      });
+      
+      capacity = totalCapacity;
+      remaining = actualRemaining; // Use backend's calculated remaining seats
+      
+      if (currentTier) {
+        // For price display, use current tier price
         price = currentTier.price;
       } else {
-        // Fallback to total capacity and remaining seats from backend
-        capacity = event.ticketTiers.reduce((total, tier) => total + tier.capacity, 0);
-        remaining = event.remainingSeats; // Use the corrected backend calculation
+        // Fallback to regular tier price
         const regularTier = event.ticketTiers.find(t => t.name === 'Regular');
         price = regularTier ? regularTier.price : event.fee;
       }
@@ -965,18 +996,6 @@ function EventCard({
             <span className={`text-sm font-medium block px-2 py-1 rounded ${seatsDisplay.color} ${seatsDisplay.bgColor}`}>
               {seatsDisplay.text}
             </span>
-            {!archived && (
-              <div className={`mt-1 w-full bg-gray-200 rounded-full h-2 ${
-                isFull ? 'bg-red-200' : effectiveRemainingSeats <= 5 ? 'bg-yellow-200' : 'bg-green-200'
-              }`}>
-                <div 
-                  className={`h-2 rounded-full ${
-                    isFull ? 'bg-red-500' : effectiveRemainingSeats <= 5 ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${((effectiveCapacity - effectiveRemainingSeats) / effectiveCapacity) * 100}%` }}
-                ></div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -1046,7 +1065,7 @@ function EventCard({
             </div>
           ) : isUserRegistered ? (
             <div className="w-full space-y-2">
-              <div className="w-full rounded-md border border-green-600 bg-green-50 py-2 text-center text-sm text-green-700 flex items-center justify-center gap-1">
+              <div className="w-full rounded-md border border-[#1c2a52] bg-[#1c2a52] py-2 text-center text-sm text-white flex items-center justify-center gap-1">
                 <CheckCircle size={16} />
                 Registered
               </div>
@@ -1054,7 +1073,7 @@ function EventCard({
                 <button
                   onClick={() => onCancel(event.id, event.name)}
                   disabled={registering}
-                  className="w-full rounded-md border border-red-400 py-1 text-center text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                  className="w-full rounded-md border border-[#1c2a52] py-1 text-center text-xs text-[#1c2a52] transition hover:bg-[#1c2a52] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                 >
                   {registering ? (
                     <>
@@ -1070,7 +1089,7 @@ function EventCard({
                 </button>
               )}
               {!archived && onCancel && !isRefundAllowed() && (
-                <div className="w-full rounded-md border border-gray-400 bg-gray-50 py-1 text-center text-xs text-gray-600">
+                <div className="w-full rounded-md border border-[#1c2a52] bg-[#1c2a52] py-1 text-center text-xs text-white">
                   Refund period expired
                 </div>
               )}
@@ -1079,12 +1098,12 @@ function EventCard({
             <div className="w-full space-y-2">
               {/* Only show "no tickets" if we're NOT falling back to basic registration */}
               {event.enableAdvancedTicketing && !currentTier && event.ticketTiers && event.ticketTiers.length > 0 && (
-                <div className="w-full rounded-md border border-orange-400 bg-orange-50 py-2 text-center text-sm text-orange-700">
+                <div className="w-full rounded-md border border-[#1c2a52] bg-[#1c2a52] py-2 text-center text-sm text-white">
                   No tickets available
                 </div>
               )}
               {!event.enableAdvancedTicketing && !event.enableSubEvents && isFull && (
-                <div className="w-full rounded-md border border-red-400 bg-red-50 py-2 text-center text-sm text-red-700">
+                <div className="w-full rounded-md border border-[#1c2a52] bg-[#1c2a52] py-2 text-center text-sm text-white">
                   Event Full
                 </div>
               )}

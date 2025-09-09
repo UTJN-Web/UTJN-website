@@ -155,7 +155,7 @@ async def get_form_qr_data(form_id: int):
             # Generate the public form URL
             # Get base URL from environment or use default
             import os
-            base_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            base_url = os.getenv("FRONTEND_URL", "https://uoftjn.com")
             public_url = f"{base_url}/form/{form['accessToken']}"
             
             return {

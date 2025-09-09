@@ -92,12 +92,47 @@ export async function GET(request: NextRequest) {
       // Analyze cancellations (unchanged best-effort)
       const cancellationAnalysis = analyzeCancellations(eventRegistrations, event);
 
+      // Calculate total registrations by directly counting actual registrations from users data
+      let totalCapacity = event.capacity;
+      let totalRegistrations = 0;
+      
+      // Count actual registrations from the users data (this is the source of truth)
+      const actualRegistrations = users.filter((user: any) => 
+        user.registrations && user.registrations.some((reg: any) => 
+          reg.eventId === event.id && reg.paymentStatus === 'completed'
+        )
+      );
+      
+      totalRegistrations = actualRegistrations.length;
+      
+      // For advanced ticketing events, also calculate total capacity from tiers if available
+      if (eventDetail && eventDetail.ticketTiers && Array.isArray(eventDetail.ticketTiers)) {
+        const tierCapacity = eventDetail.ticketTiers.reduce((sum: number, tier: any) => sum + (Number(tier.capacity) || 0), 0);
+        if (tierCapacity > 0) {
+          totalCapacity = tierCapacity;
+        }
+      }
+      
+      console.log(`🔍 Event ${event.id} (${event.name}) ACTUAL registration calculation:`, {
+        eventCapacity: event.capacity,
+        eventRemainingSeats: event.remainingSeats,
+        oldCalculation: event.capacity - event.remainingSeats,
+        actualRegistrationsCount: totalRegistrations,
+        actualRegistrations: actualRegistrations.map(u => ({ id: u.id, email: u.email })),
+        totalCapacity,
+        ticketTiers: eventDetail?.ticketTiers?.map((t: any) => ({
+          name: t.name,
+          capacity: t.capacity,
+          registered_count: t.registered_count
+        })) || 'No tiers'
+      });
+
       return {
         eventId: event.id,
         eventName: event.name,
         eventDate: event.date,
-        totalCapacity: event.capacity,
-        totalRegistrations: event.capacity - event.remainingSeats,
+        totalCapacity,
+        totalRegistrations,
         ticketAnalysis,
         yearLevelAnalysis,
         refundAnalysis,
