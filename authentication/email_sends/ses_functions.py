@@ -333,3 +333,135 @@ if __name__ == "__main__":
     #    date = "August 2025, 2022"
     #)
     #print(mid[1])
+
+def send_refund_confirmation(email: str, refund_id: str, amount: float, event_name: str, reason: str = "Registration failed after successful payment") -> bool:
+    """
+    Send refund confirmation email to user
+    """
+    try:
+        if not check_email(email):
+            print(f"❌ Invalid email address: {email}")
+            return False
+
+        settings = get_settings()
+        ses = get_ses()
+        
+        # Get current time in Eastern timezone
+        now = datetime.now(ZoneInfo("America/Toronto"))
+        formatted_time = now.strftime("%B %d, %Y at %I:%M %p %Z")
+        
+        # Create HTML email content
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Refund Confirmation - UTJN</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; }}
+                .content {{ padding: 20px; }}
+                .refund-details {{ background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+                .amount {{ font-size: 24px; font-weight: bold; color: #28a745; }}
+                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔄 Refund Confirmation</h1>
+                    <p>Your refund has been processed successfully</p>
+                </div>
+                
+                <div class="content">
+                    <p>Dear Valued Member,</p>
+                    
+                    <p>We have successfully processed your refund for the following event:</p>
+                    
+                    <div class="refund-details">
+                        <h3>Refund Details</h3>
+                        <p><strong>Event:</strong> {html.escape(event_name)}</p>
+                        <p><strong>Refund Amount:</strong> <span class="amount">${amount:.2f} CAD</span></p>
+                        <p><strong>Refund ID:</strong> {html.escape(refund_id)}</p>
+                        <p><strong>Reason:</strong> {html.escape(reason)}</p>
+                        <p><strong>Processed:</strong> {formatted_time}</p>
+                    </div>
+                    
+                    <p>The refund has been processed through Square and should appear in your original payment method within 1-3 business days.</p>
+                    
+                    <p>If you have any questions about this refund, please contact our support team.</p>
+                    
+                    <p>Thank you for your understanding.</p>
+                    
+                    <p>Best regards,<br>
+                    UTJN Team</p>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Create plain text version
+        text_content = f"""
+        Refund Confirmation - UTJN
+        
+        Dear Valued Member,
+        
+        We have successfully processed your refund for the following event:
+        
+        Event: {event_name}
+        Refund Amount: ${amount:.2f} CAD
+        Refund ID: {refund_id}
+        Reason: {reason}
+        Processed: {formatted_time}
+        
+        The refund has been processed through Square and should appear in your original payment method within 1-3 business days.
+        
+        If you have any questions about this refund, please contact our support team.
+        
+        Thank you for your understanding.
+        
+        Best regards,
+        UTJN Team
+        
+        ---
+        This is an automated message. Please do not reply to this email.
+        """
+        
+        # Send email
+        response = ses.send_email(
+            FromEmailAddress=settings.from_email,
+            Destination={
+                'ToAddresses': [email]
+            },
+            Content={
+                'Simple': {
+                    'Subject': {
+                        'Data': f'Refund Confirmation - {event_name}',
+                        'Charset': 'UTF-8'
+                    },
+                    'Body': {
+                        'Html': {
+                            'Data': html_content,
+                            'Charset': 'UTF-8'
+                        },
+                        'Text': {
+                            'Data': text_content,
+                            'Charset': 'UTF-8'
+                        }
+                    }
+                }
+            }
+        )
+        
+        print(f"✅ Refund confirmation email sent to {email} for refund {refund_id}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error sending refund confirmation email: {e}")
+        return False

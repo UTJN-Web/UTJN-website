@@ -388,6 +388,34 @@ class EventRepository(BaseRepository):
                     print("✅ SubEvent table created")
                 else:
                     print("✅ SubEvent table already exists")
+                
+                # Check if EventReservation table exists
+                reservation_table_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'EventReservation'
+                    );
+                """)
+                
+                if not reservation_table_exists:
+                    print("🆕 Creating EventReservation table...")
+                    await conn.execute("""
+                        CREATE TABLE "EventReservation" (
+                            id VARCHAR(255) PRIMARY KEY,
+                            "userId" INTEGER NOT NULL,
+                            "eventId" INTEGER NOT NULL,
+                            "tierId" INTEGER,
+                            "subEventIds" INTEGER[],
+                            "finalPrice" DECIMAL(10,2),
+                            "paymentEmail" TEXT,
+                            "createdAt" TIMESTAMP DEFAULT NOW(),
+                            "expiresAt" TIMESTAMP NOT NULL
+                        );
+                    """)
+                    print("✅ EventReservation table created")
+                else:
+                    print("✅ EventReservation table already exists")
                     
         except Exception as e:
             print(f"❌ Error ensuring tables exist: {e}")
@@ -1032,22 +1060,37 @@ class EventRepository(BaseRepository):
                     if sub_event_registrations >= sub_event['capacity']:
                         raise Exception("Sub-event is full")
                 
-                # Check overall event capacity if no specific tier/sub-event capacity constraints
-                if not ticket_tier_id and not sub_event_id:
-                    registration_count = await conn.fetchval(
-                        'SELECT COUNT(*) FROM "EventRegistration" WHERE "eventId" = $1',
-                        event_id
-                    )
-                    if registration_count >= event['capacity']:
-                        raise Exception("Event is full")
+                # ATOMIC registration with capacity check to prevent race conditions
+                print(f"🔍 Inserting advanced registration with atomic capacity check: user_id={user_id}, event_id={event_id}, tier_id={ticket_tier_id}, sub_event_id={sub_event_id}, final_price={final_price}, payment_email={payment_email}")
                 
-                # Create registration with advanced ticketing data
-                print(f"🔍 Inserting advanced registration: user_id={user_id}, event_id={event_id}, tier_id={ticket_tier_id}, sub_event_id={sub_event_id}, final_price={final_price}, payment_email={payment_email}")
-                registration = await conn.fetchrow("""
-                    INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
-                    VALUES ($1, $2, $3, $4, $5, 'completed', $6, $7)
-                    RETURNING *
-                """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id, payment_email)
+                # Use a single atomic query that checks capacity and inserts in one operation
+                if not ticket_tier_id and not sub_event_id:
+                    # For basic event registration, use atomic capacity check
+                    registration = await conn.fetchrow("""
+                        WITH capacity_check AS (
+                            SELECT 
+                                CASE 
+                                    WHEN (SELECT COUNT(*) FROM "EventRegistration" WHERE "eventId" = $2) < (SELECT capacity FROM "Event" WHERE id = $2)
+                                    THEN true
+                                    ELSE false
+                                END as has_capacity
+                        )
+                        INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
+                        SELECT $1, $2, $3, $4, $5, 'completed', $6, $7
+                        FROM capacity_check
+                        WHERE has_capacity = true
+                        RETURNING *
+                    """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id, payment_email)
+                    
+                    if not registration:
+                        raise Exception("Event is full - capacity exceeded during registration")
+                else:
+                    # For tier/sub-event registration, use separate capacity checks
+                    registration = await conn.fetchrow("""
+                        INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
+                        VALUES ($1, $2, $3, $4, $5, 'completed', $6, $7)
+                        RETURNING *
+                    """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id, payment_email)
                 print(f"✅ Advanced registration created with ID: {registration['id']}")
                 
                 return {
@@ -1140,6 +1183,177 @@ class EventRepository(BaseRepository):
         except Exception as e:
             print(f"❌ Error getting payment ID: {e}")
             return None
+
+    async def get_registration_count(self, event_id: int) -> int:
+        """Get the current number of registrations for an event"""
+        try:
+            async with self.get_connection() as conn:
+                count = await conn.fetchval(
+                    'SELECT COUNT(*) FROM "EventRegistration" WHERE "eventId" = $1',
+                    event_id
+                )
+                return count or 0
+        except Exception as e:
+            print(f"❌ Error getting registration count: {e}")
+            return 0
+
+    async def check_existing_registration(self, user_id: int, event_id: int) -> bool:
+        """Check if user is already registered for an event"""
+        try:
+            async with self.get_connection() as conn:
+                result = await conn.fetchrow(
+                    'SELECT * FROM "EventRegistration" WHERE "userId" = $1 AND "eventId" = $2',
+                    user_id, event_id
+                )
+                return result is not None
+        except Exception as e:
+            print(f"❌ Error checking existing registration: {e}")
+            return False
+
+    async def create_reservation(self, user_id: int, event_id: int, tier_id: int = None,
+                                 sub_event_ids: List[int] = None, final_price: float = None,
+                                 payment_email: str = None) -> str:
+        """Create a temporary reservation for event registration with atomic capacity check"""
+        try:
+            import uuid
+            reservation_id = str(uuid.uuid4())
+
+            async with self.get_connection() as conn:
+                # First, clean up expired reservations
+                await conn.execute('DELETE FROM "EventReservation" WHERE "expiresAt" < NOW()')
+                
+                # ATOMIC reservation creation with capacity check to prevent race conditions
+                result = await conn.fetchrow("""
+                    WITH capacity_check AS (
+                        SELECT 
+                            CA                                WHEN (
+                                    (SELECT COUNT(*) FROM "EventRegistration" WHERE "eventId" = $3) + 
+                                    (SELECT COUNT(*) FROM "EventReservation" WHERE "eventId" = $3 AND "expiresAt" > NOW())
+                                ) < (SELECT capacity FROM "Event" WHERE id = $3)
+                                THEN true
+                                ELSE false
+                            END as has_capacity
+                    )
+                    INSERT INTO "EventReservation" ("id", "userId", "eventId", "tierId",
+                                                   "subEventIds", "finalPrice", "paymentEmail",
+                                                   "createdAt", "expiresAt")
+                    SELECT $1, $2, $3, $4, $5, $6, $7, NOW(), NOW() + INTERVAL '15 minutes'
+                    FROM capacity_check
+                    WHERE has_capacity = true
+                    RETURNING "id"
+                """, reservation_id, user_id, event_id, tier_id,
+                    sub_event_ids, final_price, payment_email)
+
+                if not result:
+                    raise Exception("Event is full - cannot create reservation")
+
+                print(f"✅ Reservation created with atomic capacity check: {reservation_id}")
+                return reservation_id
+
+        except Exception as e:
+            print(f"❌ Error creating reservation: {e}")
+            raise e
+
+    async def get_user_email(self, user_id: int) -> Optional[str]:
+        """Get user's email address by user ID"""
+        try:
+            async with self.get_connection() as conn:
+                result = await conn.fetchrow(
+                    'SELECT email FROM "User" WHERE id = $1',
+                    user_id
+                )
+                return result['email'] if result else None
+        except Exception as e:
+            print(f"❌ Error getting user email: {e}")
+            return None
+
+    async def get_reservation(self, reservation_id: str, user_id: int) -> Optional[Dict]:
+        """Get reservation by ID and user ID"""
+        try:
+            async with self.get_connection() as conn:
+                # First, clean up expired reservations
+                await conn.execute('DELETE FROM "EventReservation" WHERE "expiresAt" < NOW()')
+                
+                result = await conn.fetchrow(
+                    'SELECT * FROM "EventReservation" WHERE id = $1 AND "userId" = $2 AND "expiresAt" > NOW()',
+                    reservation_id, user_id
+                )
+                return dict(result) if result else None
+        except Exception as e:
+            print(f"❌ Error getting reservation: {e}")
+            return None
+
+    async def cancel_reservation(self, reservation_id: str, user_id: int) -> bool:
+        """Cancel a reservation (cleanup on payment failure)"""
+        try:
+            async with self.get_connection() as conn:
+                # First check if reservation exists and belongs to user
+                existing = await conn.fetchrow(
+                    'SELECT id FROM "EventReservation" WHERE id = $1 AND "userId" = $2',
+                    reservation_id, user_id
+                )
+                
+                if not existing:
+                    print(f"⚠️ Reservation {reservation_id} not found or doesn't belong to user {user_id}")
+                    return False
+                
+                # Delete reservation
+                await conn.execute(
+                    'DELETE FROM "EventReservation" WHERE id = $1 AND "userId" = $2',
+                    reservation_id, user_id
+                )
+                
+                print(f"✅ Reservation {reservation_id} cancelled for user {user_id}")
+                return True
+                    
+        except Exception as e:
+            print(f"❌ Error cancelling reservation: {e}")
+            return False
+
+    async def convert_reservation_to_registration(self, reservation_id: str, payment_id: str, payment_email: str) -> Dict:
+        """Convert a reservation to a registration"""
+        try:
+            async with self.get_connection() as conn:
+                # Get reservation details
+                reservation = await conn.fetchrow(
+                    'SELECT * FROM "EventReservation" WHERE id = $1',
+                    reservation_id
+                )
+                
+                if not reservation:
+                    raise Exception("Reservation not found")
+                
+                # Create registration from reservation data
+                registration = await conn.fetchrow("""
+                    INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", 
+                                                   "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
+                    VALUES ($1, $2, $3, $4, $5, 'completed', $6, $7)
+                    RETURNING *
+                """, reservation['userId'], reservation['eventId'], reservation['tierId'], 
+                    reservation['subEventIds'][0] if reservation['subEventIds'] else None,
+                    reservation['finalPrice'], payment_id, payment_email)
+                
+                # Delete the reservation
+                await conn.execute('DELETE FROM "EventReservation" WHERE id = $1', reservation_id)
+                
+                print(f"✅ Reservation {reservation_id} converted to registration {registration['id']}")
+                
+                return {
+                    'id': registration['id'],
+                    'userId': registration['userId'],
+                    'eventId': registration['eventId'],
+                    'ticketTierId': registration['ticketTierId'],
+                    'subEventId': registration['subEventId'],
+                    'finalPrice': float(registration['finalPrice']) if registration['finalPrice'] else None,
+                    'registeredAt': registration['registeredAt'].isoformat(),
+                    'paymentStatus': registration['paymentStatus'],
+                    'paymentId': registration['paymentId'],
+                    'paymentEmail': registration['paymentEmail']
+                }
+                
+        except Exception as e:
+            print(f"❌ Error converting reservation to registration: {e}")
+            raise e
 
     async def get_payment_email_for_registration(self, user_id: int, event_id: int) -> Optional[str]:
         """Get the payment email for a user's event registration"""

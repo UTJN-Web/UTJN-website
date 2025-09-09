@@ -6,7 +6,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { userId, paymentId, tierId, subEventIds, creditsUsed = 0, finalPrice, paymentEmail } = await request.json();
+    const { userId, paymentId, tierId, subEventIds, creditsUsed = 0, finalPrice, paymentEmail, reservationId } = await request.json();
 
           console.log('Paid event registration request:', {
         eventId: id,
@@ -16,9 +16,21 @@ export async function POST(
         finalPrice
       });
 
-      if (!userId) {
+      // Enhanced userId validation
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        console.error('Invalid userId received:', { userId, type: typeof userId });
         return NextResponse.json(
-          { success: false, error: 'User ID is required' },
+          { success: false, error: 'User ID is required and must be valid' },
+          { status: 400 }
+        );
+      }
+
+      // Validate userId is a valid number
+      const numericUserId = parseInt(userId);
+      if (isNaN(numericUserId) || numericUserId <= 0) {
+        console.error('Invalid numeric userId:', { userId, numericUserId });
+        return NextResponse.json(
+          { success: false, error: 'User ID must be a valid positive number' },
           { status: 400 }
         );
       }
@@ -37,13 +49,14 @@ export async function POST(
         'Content-Type': 'application/json',
       },
               body: JSON.stringify({
-          userId: parseInt(userId),
+          userId: numericUserId, // Use the validated numeric userId
           paymentId: paymentId || null,
           tierId: tierId ? parseInt(tierId) : null,
           subEventIds: subEventIds || [],
           creditsUsed: creditsUsed,
           finalPrice: finalPrice, // Pass the calculated final price with credits applied
-          paymentEmail: paymentEmail // Pass the payment email for refund notifications
+          paymentEmail: paymentEmail, // Pass the payment email for refund notifications
+          reservationId: reservationId // Pass the reservation ID for conversion
         })
     });
 
@@ -55,10 +68,34 @@ export async function POST(
       }
       
       const errorData = await registrationResponse.text();
-      console.error('Backend paid registration failed:', errorData);
+      console.error('Backend paid registration failed:', {
+        status: registrationResponse.status,
+        statusText: registrationResponse.statusText,
+        error: errorData,
+        userId: numericUserId,
+        eventId: id,
+        paymentId
+      });
+
+      // Enhanced error handling based on backend response
+      let errorMessage = 'Registration failed. Please try again.';
+      if (registrationResponse.status === 400) {
+        if (errorData.includes('User ID is required') || errorData.includes('User not found')) {
+          errorMessage = 'User session expired. Please log in again to complete registration.';
+        } else if (errorData.includes('Event not found')) {
+          errorMessage = 'Event not found. Please contact support.';
+        } else if (errorData.includes('no longer available') || errorData.includes('full')) {
+          errorMessage = 'Event or ticket tier is no longer available. Please contact support for a refund.';
+        } else {
+          errorMessage = `Registration failed: ${errorData}`;
+        }
+      } else if (registrationResponse.status === 500) {
+        errorMessage = 'Server error during registration. Please contact support if payment was processed.';
+      }
+
       return NextResponse.json(
-        { success: false, error: 'Registration failed. Please try again.' },
-        { status: 500 }
+        { success: false, error: errorMessage },
+        { status: registrationResponse.status }
       );
     }
 

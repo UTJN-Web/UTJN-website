@@ -34,19 +34,16 @@ export default function AdminDashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const [eventsRes, usersRes, refundsRes, unregisteredRefundsRes] = await Promise.all([
+      const [eventsRes, usersRes, refundsRes] = await Promise.all([
         fetch('/api/events'),
         fetch('/api/users'),
-        fetch('/api/admin/refunds'),
-        fetch('/api/admin/unregistered-refunds')
+        fetch('/api/admin/refunds')
       ]);
 
       const events = eventsRes.ok ? await eventsRes.json() : [];
       const users = usersRes.ok ? await usersRes.json() : [];
       const refundsResponse = refundsRes.ok ? await refundsRes.json() : { refunds: [] };
       const refunds = refundsResponse.refunds || [];
-      const unregisteredRefundsResponse = unregisteredRefundsRes.ok ? await unregisteredRefundsRes.json() : { unregisteredRefunds: [] };
-      const unregisteredRefunds = unregisteredRefundsResponse.unregisteredRefunds || [];
 
       console.log('📊 Dashboard data:', { 
         eventsCount: events.length, 
@@ -66,7 +63,6 @@ export default function AdminDashboard() {
       const totalRegistrations = events.reduce((sum: number, e: any) => sum + (e.registration_count || 0), 0);
       const pendingRefunds = refunds.filter((r: any) => r.status === 'pending').length;
       const processedRefunds = refunds.filter((r: any) => r.status === 'approved' || r.status === 'rejected').length;
-      const unregisteredRefundsCount = unregisteredRefunds.length;
       
       // Calculate revenue (simplified - sum of all event fees * registrations)
       const revenueThisMonth = events.reduce((sum: number, e: any) => {
@@ -81,8 +77,7 @@ export default function AdminDashboard() {
         pendingRefunds,
         processedRefunds,
         totalRegistrations,
-        revenueThisMonth,
-        unregisteredRefunds: unregisteredRefundsCount
+        revenueThisMonth
       });
       
       console.log('📊 Final calculated stats:', {

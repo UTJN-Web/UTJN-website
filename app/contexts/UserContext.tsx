@@ -35,14 +35,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.user) {
-          setUser(prevUser => ({
-            ...prevUser,
-            ...data.user
-          }));
+          const updatedUser = {
+            ...data.user,
+            email: email // Ensure email is preserved
+          };
+          setUser(updatedUser);
+          // Update localStorage with fresh data
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          console.log('User profile refreshed successfully');
+        } else {
+          console.warn('Failed to refresh user profile: Invalid response');
+          // If profile refresh fails, clear the user session
+          logout();
         }
+      } else {
+        console.warn('Failed to refresh user profile: HTTP error', response.status);
+        // If profile refresh fails, clear the user session
+        logout();
       }
     } catch (error) {
       console.error('Error refreshing user profile:', error);
+      // If profile refresh fails, clear the user session
+      logout();
     }
   };
 
@@ -78,8 +92,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    console.log('User logged out');
     setUser(null);
     localStorage.removeItem('user');
+    // Clear any other user-related data
+    localStorage.removeItem('lastPaymentId');
   };
 
   return (

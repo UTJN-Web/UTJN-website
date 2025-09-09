@@ -34,12 +34,33 @@ function PaymentForm() {
 
   const eventId = searchParams.get('eventId');
   const userIdFromUrl = searchParams.get('userId');
-  const userId = userIdFromUrl && userIdFromUrl !== 'undefined' ? userIdFromUrl : user?.id?.toString();
   const tierId = searchParams.get('tierId');
   const subEventIds = searchParams.get('subEventIds');
   const price = searchParams.get('price');
   const useCreditsParam = searchParams.get('useCredits');
   const creditsAmountParam = searchParams.get('creditsAmount');
+
+  // Enhanced userId validation function
+  const getUserId = (): string => {
+    const urlUserId = userIdFromUrl && userIdFromUrl !== 'undefined' ? userIdFromUrl : null;
+    const contextUserId = user?.id?.toString();
+    
+    console.log('User ID validation:', {
+      urlUserId,
+      contextUserId,
+      userExists: !!user,
+      userContextLoading: userContext?.isLoading
+    });
+    
+    if (!urlUserId && !contextUserId) {
+      throw new Error('User ID is required for payment. Please ensure you are logged in.');
+    }
+    
+    return urlUserId || contextUserId || '';
+  };
+
+  // Get validated userId
+  const userId = getUserId();
 
   useEffect(() => {
     if (eventId) {
@@ -50,12 +71,65 @@ function PaymentForm() {
     }
   }, [eventId, userId, user?.id]);
 
+  // Enhanced session validation
+  const validateUserSession = async (): Promise<boolean> => {
+    try {
+      // Check if user context is still loading
+      if (userContext.isLoading) {
+        console.log('User context is still loading...');
+        return false;
+      }
+
+      // Check if user exists in context
+      if (!user) {
+        console.log('No user found in context');
+        return false;
+      }
+
+      // Validate user ID
+      if (!user.id) {
+        console.log('User ID is missing');
+        return false;
+      }
+
+      // Optional: Verify session with backend
+      try {
+        const response = await fetch(`/api/users/profile?email=${encodeURIComponent(user.email)}`);
+        if (!response.ok) {
+          console.log('Session validation failed with backend');
+          return false;
+        }
+        const data = await response.json();
+        if (!data.success || !data.user) {
+          console.log('Invalid user profile from backend');
+          return false;
+        }
+      } catch (error) {
+        console.log('Backend session validation error:', error);
+        // Don't fail if backend validation fails, just log it
+      }
+
+      console.log('Session validation successful');
+      return true;
+    } catch (error) {
+      console.error('Session validation error:', error);
+      return false;
+    }
+  };
+
   // Validate that user is authenticated
   useEffect(() => {
-    if (!userContext.isLoading && !user) {
-      setErrorMessage('You must be logged in to make a payment. Please log in and try again.');
-      setPaymentResult('failed');
-    }
+    const checkAuth = async () => {
+      if (!userContext.isLoading) {
+        const isValid = await validateUserSession();
+        if (!isValid) {
+          setErrorMessage('Your session has expired. Please log in again to make a payment.');
+          setPaymentResult('failed');
+        }
+      }
+    };
+
+    checkAuth();
   }, [user, userContext.isLoading]);
 
   const fetchUserCredits = async () => {
@@ -166,13 +240,35 @@ function PaymentForm() {
     }
   };
 
-  const handlePaymentSuccess = async (paymentEmail?: string) => {
+  const handlePaymentSuccess = async () => {
     try {
+      // Validate session before processing registration
+      const isSessionValid = await validateUserSession();
+      if (!isSessionValid) {
+        setPaymentResult('failed');
+        setErrorMessage('Your session has expired. Please log in again to complete registration.');
+        return;
+      }
+
       // Get payment ID from window if available
       const paymentId = (window as any).lastPaymentId;
       console.log('Processing registration with payment ID:', paymentId);
       
-      const userIdToUse = userId || user?.id?.toString();
+      if (!paymentId) {
+        setPaymentResult('failed');
+        setErrorMessage('Payment ID not found. Please contact support if payment was processed.');
+        return;
+      }
+
+      // Get validated userId
+      let userIdToUse: string;
+      try {
+        userIdToUse = getUserId();
+      } catch (error) {
+        setPaymentResult('failed');
+        setErrorMessage(error instanceof Error ? error.message : 'User ID validation failed');
+        return;
+      }
       
       // Spend credits first if they were used
       if (creditsUsed > 0 && userIdToUse) {
@@ -208,25 +304,65 @@ function PaymentForm() {
       }
       
       // Process the actual registration (credits already deducted above)
+      console.log('Sending registration request:', {
+        userId: parseInt(userIdToUse),
+        paymentId,
+        eventId,
+        tierId: tierId ? parseInt(tierId) : null,
+        subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : [],
+        creditsUsed,
+        finalPrice,
+        paymentEmail: user?.email
+      });
+
+      // Check if we have a reservation to convert
+      const reservationId = (window as any).currentReservationId;
+      
       const response = await fetch(`/api/events/${eventId}/register/paid`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          userId: parseInt(userIdToUse || '0'),
+          userId: parseInt(userIdToUse),
           paymentId: paymentId,
           tierId: tierId ? parseInt(tierId) : null,
-          subEventIds: subEventIds ? subEventIds.split(',').map(id => parseInt(id)) : [],
+          subEventIds: subEventIds ? subEventIds.split(',').map((id: string) => parseInt(id)) : [],
           creditsUsed: creditsUsed, // For logging purposes only
           finalPrice: finalPrice,
-          paymentEmail: paymentEmail // Pass the payment email for refund notifications
+          paymentEmail: user?.email, // Use user's account email
+          reservationId: reservationId // Include reservation ID for conversion
         }),
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Registration failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+
+        // Note: Automatic refund is handled by backend to prevent double refunds
+
+        // Enhanced error handling based on specific error types
+        if (response.status === 400) {
+          if (errorData.error?.includes('User ID is required')) {
+            setErrorMessage('User session expired. Please log in again to complete registration. An automatic refund has been processed.');
+          } else if (errorData.error?.includes('Event not found')) {
+            setErrorMessage('Event not found. Please contact support. An automatic refund has been processed.');
+          } else if (errorData.error?.includes('no longer available')) {
+            setErrorMessage('Event or ticket tier is no longer available. An automatic refund has been processed.');
+          } else {
+            setErrorMessage(`Registration failed: ${errorData.error || 'Invalid request'}. An automatic refund has been processed.`);
+          }
+        } else if (response.status === 500) {
+          setErrorMessage('Server error during registration. An automatic refund has been processed. You will receive a refund confirmation email shortly.');
+        } else {
+          setErrorMessage(`Registration failed (${response.status}). An automatic refund has been processed. You will receive a refund confirmation email shortly.`);
+        }
+        
         setPaymentResult('failed');
-        setErrorMessage('Registration failed after payment');
         return;
       }
 
@@ -235,8 +371,8 @@ function PaymentForm() {
       let receiptError = null;
       
       try {
-        // Use the email from payment form if provided, otherwise fall back to user's email
-        const buyerEmail = paymentEmail || user?.email;
+        // Use the user's account email
+        const buyerEmail = user?.email;
         if (!buyerEmail) {
           throw new Error('Unable to determine buyer email for receipt.');
         }
@@ -276,8 +412,23 @@ function PaymentForm() {
 
     } catch (error) {
       console.error('Registration error:', error);
+      
+      // Note: Automatic refund is handled by backend to prevent double refunds
+      
       setPaymentResult('failed');
-      setErrorMessage('Registration failed after payment');
+      
+      // Enhanced error message based on error type
+      if (error instanceof Error) {
+        if (error.message.includes('User ID is required')) {
+          setErrorMessage('User session expired. Please log in again to complete registration. An automatic refund has been processed.');
+        } else if (error.message.includes('session')) {
+          setErrorMessage('Your session has expired. Please log in again to complete registration. An automatic refund has been processed.');
+        } else {
+          setErrorMessage(`Registration failed: ${error.message}. An automatic refund has been processed.`);
+        }
+      } else {
+        setErrorMessage('An unexpected error occurred during registration. An automatic refund has been processed.');
+      }
     }
   };
 
@@ -583,6 +734,7 @@ function PaymentForm() {
                   fee: finalPrice
                 }}
                 userId={userId}
+                userEmail={user?.email || ''}
                 onPaymentSuccess={handlePaymentSuccess}
                 onPaymentError={handlePaymentError}
               />
@@ -617,7 +769,7 @@ function PaymentForm() {
                 <button
                   onClick={() => {
                     // Direct registration for free events (with credits if used)
-                    handlePaymentSuccess(user?.email);
+                    handlePaymentSuccess();
                   }}
                   className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >

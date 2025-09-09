@@ -39,6 +39,7 @@ interface Event {
   image?: string;
   refundDeadline?: string;
   remainingSeats: number;
+  registration_count?: number; // Backend provides this field
   registeredUsers: any[];
   registrations?: any[];
 }
@@ -616,8 +617,8 @@ export default function AdminEventsPage() {
           bValue = b.capacity;
           break;
         case 'registrations':
-          aValue = a.capacity - a.remainingSeats;
-          bValue = b.capacity - b.remainingSeats;
+          aValue = a.registration_count || (a.capacity - a.remainingSeats);
+          bValue = b.registration_count || (b.capacity - b.remainingSeats);
           break;
         default:
           return 0;
@@ -639,7 +640,8 @@ export default function AdminEventsPage() {
 
   const getEventStatusColor = (event: Event) => {
     if (event.isArchived) return 'bg-gray-100 border-gray-300';
-    const registrationRate = (event.capacity - event.remainingSeats) / event.capacity;
+    const registrationCount = event.registration_count || (event.capacity - event.remainingSeats);
+    const registrationRate = registrationCount / event.capacity;
     if (registrationRate >= 0.9) return 'bg-red-50 border-red-200';
     if (registrationRate >= 0.7) return 'bg-yellow-50 border-yellow-200';
     return 'bg-green-50 border-green-200';
@@ -804,7 +806,7 @@ export default function AdminEventsPage() {
                     Total Registrations
                   </dt>
                   <dd className="text-3xl font-bold text-[#1c2a52]">
-                    {events.reduce((sum, e) => sum + (e.capacity - e.remainingSeats), 0)}
+                    {events.reduce((sum, e) => sum + (e.registration_count || (e.capacity - e.remainingSeats)), 0)}
                   </dd>
                 </div>
               </div>
@@ -1231,7 +1233,8 @@ export default function AdminEventsPage() {
             ) : (
               filteredAndSortedEvents.map((event) => {
                 const { date, time } = formatDateTime(event.date);
-                const registrationCount = event.capacity - event.remainingSeats;
+                // Use the correct registration_count from backend, fallback to calculated if not available
+                const registrationCount = event.registration_count || (event.capacity - event.remainingSeats);
                 const registrationRate = registrationCount / event.capacity;
                 
                 return (
@@ -1261,17 +1264,6 @@ export default function AdminEventsPage() {
                                 }`}
                               >
                                 {event.type === 'career' ? '' : ''} {event.type === 'career' ? 'Career' : 'Social'}
-                              </span>
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  registrationRate >= 0.9 
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                    : registrationRate >= 0.7
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                }`}
-                              >
-                                {registrationCount}/{event.capacity} registered
                               </span>
                             </div>
                           </div>

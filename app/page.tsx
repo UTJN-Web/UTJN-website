@@ -70,15 +70,10 @@ export default function HomePage() {
       {/* ─────────── Mission Section (unchanged) ─────────── */}
       <div className="fade-in-up bg-[#1c2a52] px-4 py-16 text-center text-white md:px-16">
         <p className="mb-8 text-2xl font-semibold md:text-3xl">
-          “刺激的な環境を提供することで個々の新しいアイディアや挑戦を可能にし、
-          トロント大学を才能と発想のインキュベーターにする”
+          北米最大級の日本人学生団体
         </p>
         <p className="text-base md:text-lg">
-          University of Toronto Japan Network は日英バイリンガルの在校生だけでなく、
-          トロント大学への進学を考えている方、交換留学生、大学院生、そして卒業生をつなぐ
-          グローバルネットワークの構築に力を入れています。 北米において最も影響力のある
-          バイリンガルネットワークを目指し、 何百人ものトロント大学生や様々なグローバル組織に
-          サービスを提供しています。
+          University of Toronto Japan Network（UTJN）は、トロント大学に所属する日英バイリンガルの学生（在学生・交換留学生・卒業生）をつなぎ、強固なグローバルネットワークを構築しています。
         </p>
       </div>
 

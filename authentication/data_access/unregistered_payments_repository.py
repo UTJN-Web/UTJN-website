@@ -2,6 +2,7 @@
 import asyncpg
 import os
 import json
+import aiohttp
 from datetime import datetime
 from typing import List, Dict, Optional
 from authentication.data_access.database_pool import get_global_connection
@@ -35,6 +36,125 @@ class UnregisteredPaymentsRepository:
             
         except Exception as e:
             print(f"❌ Error ensuring unregistered payments tables: {e}")
+            raise e
+
+    async def process_automatic_refund(self, payment_id: str, amount: float, email: str, reason: str = "Registration failed after successful payment") -> Dict:
+        """Process automatic refund through Square API when registration fails after payment"""
+        try:
+            print(f"🔄 Processing automatic refund for payment {payment_id}, amount: ${amount}")
+            
+            # Get Square API credentials
+            square_application_id = os.getenv('SQUARE_APPLICATION_ID')
+            square_access_token = os.getenv('SQUARE_ACCESS_TOKEN')
+            square_environment = os.getenv('SQUARE_ENVIRONMENT', 'sandbox')
+            
+            if not square_application_id or not square_access_token:
+                raise Exception("Square API credentials not configured")
+            
+            # Determine Square API URL based on environment
+            if square_environment == 'production':
+                square_api_url = "https://connect.squareup.com/v2"
+            else:
+                square_api_url = "https://connect.squareupsandbox.com/v2"
+            
+            # Prepare refund request
+            refund_data = {
+                "idempotency_key": f"refund_{payment_id}_{datetime.now().timestamp()}",
+                "payment_id": payment_id,
+                "amount_money": {
+                    "amount": int(amount * 100),  # Convert to cents
+                    "currency": "CAD"
+                },
+                "reason": reason
+            }
+            
+            headers = {
+                "Square-Version": "2023-10-18",
+                "Authorization": f"Bearer {square_access_token}",
+                "Content-Type": "application/json"
+            }
+            
+            # Process refund through Square API
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{square_api_url}/refunds",
+                    headers=headers,
+                    json=refund_data
+                ) as response:
+                    response_data = await response.json()
+                    
+                    if response.status == 200:
+                        refund_info = response_data.get('refund', {})
+                        refund_id = refund_info.get('id')
+                        
+                        print(f"✅ Automatic refund successful: {refund_id}")
+                        
+                        # Store refund record in database
+                        await self.store_refund_record(
+                            payment_id=payment_id,
+                            refund_id=refund_id,
+                            amount=amount,
+                            email=email,
+                            reason=reason,
+                            square_refund_data=refund_info
+                        )
+                        
+                        # Send refund confirmation email
+                        try:
+                            from authentication.email_sends.ses_functions import send_refund_confirmation
+                            email_sent = send_refund_confirmation(
+                                email=email,
+                                refund_id=refund_id,
+                                amount=amount,
+                                event_name="Event Registration",  # Could be enhanced to get actual event name
+                                reason=reason
+                            )
+                            if email_sent:
+                                print(f"✅ Refund confirmation email sent to {email}")
+                            else:
+                                print(f"⚠️ Failed to send refund confirmation email to {email}")
+                        except Exception as email_error:
+                            print(f"⚠️ Error sending refund confirmation email: {email_error}")
+                        
+                        return {
+                            "success": True,
+                            "refund_id": refund_id,
+                            "amount": amount,
+                            "message": "Automatic refund processed successfully"
+                        }
+                    else:
+                        error_message = response_data.get('errors', [{}])[0].get('detail', 'Unknown error')
+                        print(f"❌ Square refund failed: {error_message}")
+                        
+                        return {
+                            "success": False,
+                            "error": f"Square refund failed: {error_message}",
+                            "square_response": response_data
+                        }
+                        
+        except Exception as e:
+            print(f"❌ Error processing automatic refund: {e}")
+            return {
+                "success": False,
+                "error": f"Refund processing failed: {str(e)}"
+            }
+
+    async def store_refund_record(self, payment_id: str, refund_id: str, amount: float, 
+                                 email: str, reason: str, square_refund_data: Dict):
+        """Store refund record in database"""
+        try:
+            async with get_global_connection() as conn:
+                await conn.execute("""
+                    INSERT INTO "UnregisteredPaymentRefunds" 
+                    ("paymentId", "refundId", amount, currency, email, reason, "squareRefundData", "processedBy")
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                """, payment_id, refund_id, amount, 'CAD', email, reason, 
+                    json.dumps(square_refund_data), 'Automatic System')
+                
+                print(f"✅ Refund record stored: {refund_id}")
+                
+        except Exception as e:
+            print(f"❌ Error storing refund record: {e}")
             raise e
 
     async def get_registered_payments_by_email(self, email: str) -> List[Dict]:
