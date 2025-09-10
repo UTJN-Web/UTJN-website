@@ -10,6 +10,81 @@ from authentication.data_access.unregistered_payments_repository import Unregist
 
 unregistered_payments_router = APIRouter(prefix="/unregistered-payments", tags=["unregistered-payments"])
 
+async def get_email_from_square_payment(payment, square_token, base_url):
+    """Try to get email from Square payment data"""
+    try:
+        # Try to get email from customer if customer_id exists
+        customer_id = payment.get('customer_id')
+        if customer_id:
+            try:
+                customer_url = f"{base_url}/customers/{customer_id}"
+                response = requests.get(customer_url, headers={
+                    'Authorization': f'Bearer {square_token}',
+                    'Square-Version': '2024-07-17',
+                    'Content-Type': 'application/json'
+                })
+                
+                if response.status_code == 200:
+                    customer_data = response.json()
+                    customer = customer_data.get('customer', {})
+                    email = customer.get('email_address')
+                    if email:
+                        print(f"✅ Found email from customer {customer_id}: {email}")
+                        return email
+            except Exception as e:
+                print(f"⚠️ Error getting customer email for {customer_id}: {e}")
+        
+        # Try to get email from order if order_id exists
+        order_id = payment.get('order_id')
+        if order_id:
+            try:
+                order_url = f"{base_url}/orders/{order_id}"
+                response = requests.get(order_url, headers={
+                    'Authorization': f'Bearer {square_token}',
+                    'Square-Version': '2024-07-17',
+                    'Content-Type': 'application/json'
+                })
+                
+                if response.status_code == 200:
+                    order_data = response.json()
+                    order = order_data.get('order', {})
+                    # Check for customer information in order
+                    customer_info = order.get('customer_id')
+                    if customer_info:
+                        # Try to get customer email
+                        customer_url = f"{base_url}/customers/{customer_info}"
+                        customer_response = requests.get(customer_url, headers={
+                            'Authorization': f'Bearer {square_token}',
+                            'Square-Version': '2024-07-17',
+                            'Content-Type': 'application/json'
+                        })
+                        
+                        if customer_response.status_code == 200:
+                            customer_data = customer_response.json()
+                            customer = customer_data.get('customer', {})
+                            email = customer.get('email_address')
+                            if email:
+                                print(f"✅ Found email from order {order_id} customer: {email}")
+                                return email
+            except Exception as e:
+                print(f"⚠️ Error getting order email for {order_id}: {e}")
+        
+        # Try to extract email from payment metadata or other fields
+        metadata = payment.get('metadata', {})
+        if metadata:
+            # Look for email in metadata
+            for key, value in metadata.items():
+                if 'email' in key.lower() and '@' in str(value):
+                    print(f"✅ Found email in payment metadata: {value}")
+                    return str(value)
+        
+        print(f"⚠️ No email found for payment {payment.get('id')}")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Error extracting email from payment: {e}")
+        return None
+
 class UnregisteredPaymentRefund(BaseModel):
     paymentId: str
     amount: float
@@ -26,7 +101,7 @@ async def get_unregistered_payments(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
 ):
-    """Get unregistered payments filtered by email and date range"""
+    """Get unregistered payments - payments that succeeded but have no registration"""
     try:
         print(f"🔍 Getting unregistered payments for email: {email or 'ALL'}")
         
@@ -37,47 +112,6 @@ async def get_unregistered_payments(
         
         # Determine if sandbox or production
         base_url = 'https://connect.squareupsandbox.com/v2' if 'sandbox' in square_token else 'https://connect.squareup.com/v2'
-        
-        # Get registered payments for specific email or all if no email specified
-        unregistered_repo = UnregisteredPaymentsRepository()
-        # Note: ensure_tables_exist() is called during app startup, not here
-        
-        if email:
-            # Get registered payments for specific email
-            registered_payments = await unregistered_repo.get_registered_payments_by_email(email)
-        else:
-            # Get all registered payments (fallback for admin view)
-            registered_payments = await unregistered_repo.get_registered_payments()
-        
-        if not registered_payments:
-            print(f"⚠️ No registered payments found for email: {email or 'ALL'}")
-            return {
-                "success": True,
-                "unregisteredPayments": [],
-                "count": 0,
-                "email": email
-            }
-        
-        # Collect user identifiers (customer IDs and order IDs)
-        user_customer_ids = set()
-        user_order_ids = set()
-        
-        for payment in registered_payments:
-            if payment.get('customerId'):
-                user_customer_ids.add(payment['customerId'])
-            if payment.get('orderId'):
-                user_order_ids.add(payment['orderId'])
-        
-        print(f"🔍 Found {len(user_customer_ids)} customer IDs and {len(user_order_ids)} order IDs from registered payments")
-        
-        if not user_customer_ids and not user_order_ids:
-            print("⚠️ No customer IDs or order IDs found from registered payments")
-            return {
-                "success": True,
-                "unregisteredPayments": [],
-                "count": 0,
-                "email": email
-            }
         
         # Set date range
         if start_date and end_date:
@@ -93,467 +127,113 @@ async def get_unregistered_payments(
         
         print(f"📅 Searching payments from {start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}")
         
-        # Search for payments using customer IDs for more efficient search
+        # Step 1: Get ALL payments from Square API for the date range
         all_payments = []
+        cursor = None
         
-        # Search by customer ID first (more efficient)
-        for customer_id in user_customer_ids:
-            try:
-                url = f"{base_url}/payments"
-                params = {
-                    'customer_id': customer_id,
-                    'begin_time': start_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'end_time': end_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'limit': 100
-                }
+        while True:
+            url = f"{base_url}/payments"
+            params = {
+                'begin_time': start_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'end_time': end_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'limit': 100
+            }
+            
+            if cursor:
+                params['cursor'] = cursor
+            
+            response = requests.get(url, headers={
+                'Authorization': f'Bearer {square_token}',
+                'Square-Version': '2024-07-17',
+                'Content-Type': 'application/json'
+            }, params=params)
+            
+            if response.status_code == 200:
+                payments_data = response.json()
+                payments = payments_data.get('payments', [])
+                all_payments.extend(payments)
                 
-                response = requests.get(url, headers={
-                    'Authorization': f'Bearer {square_token}',
-                    'Square-Version': '2024-07-17',
-                    'Content-Type': 'application/json'
-                }, params=params)
+                print(f"Retrieved {len(payments)} payments (total: {len(all_payments)})")
                 
-                if response.status_code == 200:
-                    payments_data = response.json()
-                    payments = payments_data.get('payments', [])
-                    all_payments.extend(payments)
-                    print(f"Found {len(payments)} payments for customer {customer_id}")
-                else:
-                    print(f"❌ Square API Error for customer {customer_id}: {response.text}")
-                    
-            except Exception as e:
-                print(f"❌ Error searching payments for customer {customer_id}: {e}")
-        
-        # Also search by order IDs if no customer IDs found
-        if not user_customer_ids and user_order_ids:
-            for order_id in user_order_ids:
-                try:
-                    url = f"{base_url}/payments"
-                    params = {
-                        'begin_time': start_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                        'end_time': end_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                        'limit': 100
-                    }
-                    
-                    response = requests.get(url, headers={
-                        'Authorization': f'Bearer {square_token}',
-                        'Square-Version': '2024-07-17',
-                        'Content-Type': 'application/json'
-                    }, params=params)
-                    
-                    if response.status_code == 200:
-                        payments_data = response.json()
-                        payments = payments_data.get('payments', [])
-                        # Filter by order ID
-                        filtered_payments = [p for p in payments if p.get('order_id') == order_id]
-                        all_payments.extend(filtered_payments)
-                        print(f"Found {len(filtered_payments)} payments for order {order_id}")
-                    else:
-                        print(f"❌ Square API Error for order {order_id}: {response.text}")
-                        
-                except Exception as e:
-                    print(f"❌ Error searching payments for order {order_id}: {e}")
+                cursor = payments_data.get('cursor')
+                if not cursor:
+                    break
+            else:
+                print(f"❌ Square API Error: {response.text}")
+                break
         
         print(f"📊 Total payments found: {len(all_payments)}")
         
-        # Look for completed payments that belong to the same user(s) but are not in our database
+        # Step 2: Get all registered payment IDs from database
+        unregistered_repo = UnregisteredPaymentsRepository()
+        
+        # Get all payment IDs that are registered in our database
+        registered_payment_ids = set()
+        
+        # Get all payment IDs from EventRegistration table
+        from authentication.data_access.database_pool import get_global_connection
+        async with get_global_connection() as conn:
+            query = """
+            SELECT "paymentId" FROM "EventRegistration" 
+            WHERE "paymentId" IS NOT NULL AND "paymentId" != ''
+            """
+            rows = await conn.fetch(query)
+            for row in rows:
+                registered_payment_ids.add(row['paymentId'])
+        
+        print(f"📊 Found {len(registered_payment_ids)} registered payment IDs in database")
+        
+        # Step 3: Find unregistered payments
         unregistered_payments = []
-        processed_payment_ids = set()  # 重複処理を防ぐためのセット
         
-        # 全ユーザー検索時も、個別メール検索と同様の詳細な処理を実行
-        if not email:
-            print("🔍 全ユーザー検索: 支払い成功したが登録失敗した支払いを詳細検索します")
-            # 個別メール検索と同様の処理を実行（ただし、処理件数を制限）
-            payment_ids_to_check = []
-            for payment in all_payments[:100]:  # 最大100件まで制限（全ユーザー検索のため）
-                payment_id = payment.get('id')
-                if payment_id not in processed_payment_ids:
-                    payment_ids_to_check.append(payment_id)
-            
-            print(f"🔍 Found {len(payment_ids_to_check)} unique payments to check for all users")
-            
-            # 返金状態を一括で確認（個別メール検索と同様の処理）
-            refund_statuses = {}
-            if payment_ids_to_check:
-                print(f"🔍 Checking refund status for {len(payment_ids_to_check)} payments...")
-                
-                # 最大20件ずつバッチ処理（全ユーザー検索のため少し大きめ）
-                batch_size = 20
-                for i in range(0, len(payment_ids_to_check), batch_size):
-                    batch = payment_ids_to_check[i:i + batch_size]
-                    print(f"📦 Processing batch {i//batch_size + 1}: {len(batch)} payments")
-                    
-                    for payment_id in batch:
-                        try:
-                            print(f"🔍 Checking payment {payment_id}...")
-                            
-                            # データベースの返金記録を先に確認
-                            db_refund_status = await unregistered_repo.get_payment_refund_status(payment_id)
-                            if db_refund_status:
-                                refund_statuses[payment_id] = {
-                                    'status': 'refunded',
-                                    'refundId': db_refund_status.get('refundId'),
-                                    'refundDate': db_refund_status.get('refundDate'),
-                                    'source': 'database'
-                                }
-                                print(f"✅ Found refund in database for {payment_id}")
-                                continue
-                            
-                            # Square APIで返金状態を確認（必要最小限）
-                            refunds_url = f"{base_url}/v2/refunds"
-                            print(f"🔗 Calling Square API: {refunds_url} for payment {payment_id}")
-                            
-                            refunds_response = requests.get(refunds_url, headers={
-                                'Authorization': f'Bearer {square_token}',
-                                'Square-Version': '2024-07-17',
-                                'Content-Type': 'application/json'
-                            }, params={'payment_id': payment_id})
-                            
-                            print(f"📡 Square API response for {payment_id}: Status {refunds_response.status_code}")
-                            
-                            if refunds_response.status_code == 200:
-                                refunds_data = refunds_response.json()
-                                refunds = refunds_data.get('refunds', [])
-                                print(f"📊 Found {len(refunds)} refunds for payment {payment_id}")
-                                
-                                if refunds:
-                                    # 返金の詳細を確認
-                                    refund = refunds[0]
-                                    refund_amount = refund.get('amount_money', {}).get('amount', 0)
-                                    refund_status = refund.get('status', 'PENDING')
-                                    
-                                    print(f"💰 Refund details for {payment_id}: Amount=${refund_amount/100:.2f}, Status={refund_status}")
-                                    
-                                    # 支払い情報を取得して金額を比較
-                                    payment_info = next((p for p in all_payments if p.get('id') == payment_id), None)
-                                    if payment_info:
-                                        payment_amount = payment_info.get('amount_money', {}).get('amount', 0)
-                                        payment_currency = payment_info.get('amount_money', {}).get('currency', 'CAD')
-                                        refund_currency = refund.get('amount_money', {}).get('currency', 'CAD')
-                                        
-                                        print(f"💳 Payment details for {payment_id}: Amount=${payment_amount/100:.2f}, Currency={payment_currency}")
-                                        
-                                        # 金額、通貨、返金ステータスを厳密に確認
-                                        if (refund_amount == payment_amount and 
-                                            refund_currency == payment_currency and
-                                            refund_status == 'COMPLETED'):
-                                            
-                                            # 返金日時を確認（支払い作成日より後であることを確認）
-                                            refund_created = refund.get('created_at')
-                                            payment_created = payment_info.get('created_at')
-                                            
-                                            if refund_created and payment_created:
-                                                try:
-                                                    refund_date = datetime.fromisoformat(refund_created.replace('Z', '+00:00'))
-                                                    payment_date = datetime.fromisoformat(payment_created.replace('Z', '+00:00'))
-                                                    
-                                                    print(f"📅 Date comparison for {payment_id}: Payment={payment_date}, Refund={refund_date}")
-                                                    
-                                                    if refund_date > payment_date:
-                                                        # 本当にこの支払いに対する返金
-                                                        refund_statuses[payment_id] = {
-                                                            'status': 'refunded',
-                                                            'refundId': refund.get('id'),
-                                                            'refundDate': refund_created,
-                                                            'source': 'square_api'
-                                                        }
-                                                        print(f"✅ Found valid refund from Square API for {payment_id}")
-                                                except Exception as e:
-                                                    print(f"❌ Error parsing dates for {payment_id}: {e}")
-                                            else:
-                                                print(f"⚠️ Missing date information for {payment_id}")
-                                        else:
-                                            print(f"⚠️ Amount/currency mismatch or incomplete refund for {payment_id}")
-                                    else:
-                                        print(f"⚠️ Payment info not found for {payment_id}")
-                                else:
-                                    print(f"📊 No refunds found for payment {payment_id}")
-                                    # 返金がない場合、未返金として扱う
-                                    refund_statuses[payment_id] = {
-                                        'status': 'pending',
-                                        'source': 'square_api'
-                                    }
-                            else:
-                                print(f"❌ Square API Error for {payment_id}: {refunds_response.text}")
-                                # API エラーの場合、未返金として扱う
-                                refund_statuses[payment_id] = {
-                                    'status': 'pending',
-                                    'source': 'square_api'
-                                }
-                                
-                        except Exception as e:
-                            print(f"❌ Error checking payment {payment_id}: {e}")
-                            # エラーの場合、未返金として扱う
-                            refund_statuses[payment_id] = {
-                                'status': 'pending',
-                                'source': 'error'
-                            }
-                
-                # 返金状態に基づいて unregistered payments を作成
-                for payment in all_payments:
-                    payment_id = payment.get('id')
-                    if payment_id in refund_statuses:
-                        refund_info = refund_statuses[payment_id]
-                        
-                        # 支払いの存在確認
-                        existing = await unregistered_repo.check_payment_exists(payment_id)
-                        
-                        if not existing:
-                            # 支払い成功したが登録失敗した支払い
-                            unregistered_payment = {
-                                'id': len(unregistered_payments) + 1,
-                                'paymentId': payment_id,
-                                'email': 'All Users Search',
-                                'amount': payment.get('amount_money', {}).get('amount', 0) / 100,
-                                'currency': payment.get('amount_money', {}).get('currency', 'CAD'),
-                                'customerId': payment.get('customer_id'),
-                                'orderId': payment.get('order_id'),
-                                'createdAt': payment.get('created_at'),
-                                'status': refund_info['status'],
-                                'refundId': refund_info.get('refundId'),
-                                'refundDate': refund_info.get('refundDate'),
-                                'rawPaymentData': payment
-                            }
-                            unregistered_payments.append(unregistered_payment)
-                            print(f"✅ Added unregistered payment: {payment_id} (Status: {refund_info['status']})")
-                
-                print(f"📊 All users search: Found {len(unregistered_payments)} unregistered payments")
-                return {
-                    "success": True,
-                    "unregisteredPayments": unregistered_payments,
-                    "count": len(unregistered_payments),
-                    "dateRange": f"{start_date} to {end_date}",
-                    "message": "All users search completed - showing all unregistered payments (pending, refunded, etc.)"
-                }
-        
-        # 特定のメールアドレス検索時は、詳細な処理を実行
-        # まず、全ての支払いIDに対して一括で返金状態を確認
-        unregistered_payments = []
-        processed_payment_ids = set()  # 重複処理を防ぐためのセット
-        
-        payment_ids_to_check = []
         for payment in all_payments:
             payment_id = payment.get('id')
-            if payment_id not in processed_payment_ids:
-                payment_ids_to_check.append(payment_id)
-        
-        print(f"🔍 Found {len(payment_ids_to_check)} unique payments to check for email: {email}")
-        
-        # 返金状態を一括で確認（Square API呼び出しを削減）
-        refund_statuses = {}
-        if payment_ids_to_check:
-            print(f"🔍 Checking refund status for {len(payment_ids_to_check)} payments...")
+            status = payment.get('status')
             
-            # 最大10件ずつバッチ処理
-            batch_size = 10
-            for i in range(0, len(payment_ids_to_check), batch_size):
-                batch = payment_ids_to_check[i:i + batch_size]
-                print(f"📦 Processing batch {i//batch_size + 1}: {len(batch)} payments")
-                
-                for payment_id in batch:
-                    try:
-                        print(f"🔍 Checking payment {payment_id}...")
-                        
-                        # データベースの返金記録を先に確認
-                        db_refund_status = await unregistered_repo.get_payment_refund_status(payment_id)
-                        if db_refund_status:
-                            refund_statuses[payment_id] = {
-                                'status': 'refunded',
-                                'refundId': db_refund_status.get('refundId'),
-                                'refundDate': db_refund_status.get('refundDate'),
-                                'source': 'database'
-                            }
-                            print(f"✅ Found refund in database for {payment_id}")
-                            continue
-                        
-                        # Square APIで返金状態を確認（必要最小限）
-                        refunds_url = f"{base_url}/v2/refunds"
-                        print(f"🔗 Calling Square API: {refunds_url} for payment {payment_id}")
-                        
-                        refunds_response = requests.get(refunds_url, headers={
-                            'Authorization': f'Bearer {square_token}',
-                            'Square-Version': '2024-07-17',
-                            'Content-Type': 'application/json'
-                        }, params={'payment_id': payment_id})
-                        
-                        print(f"📡 Square API response for {payment_id}: Status {refunds_response.status_code}")
-                        
-                        if refunds_response.status_code == 200:
-                            refunds_data = refunds_response.json()
-                            refunds = refunds_data.get('refunds', [])
-                            print(f"📊 Found {len(refunds)} refunds for payment {payment_id}")
-                            
-                            if refunds:
-                                # 返金の詳細を確認
-                                refund = refunds[0]
-                                refund_amount = refund.get('amount_money', {}).get('amount', 0)
-                                refund_status = refund.get('status', 'PENDING')
-                                
-                                print(f"💰 Refund details for {payment_id}: Amount=${refund_amount/100:.2f}, Status={refund_status}")
-                                
-                                # 支払い情報を取得して金額を比較
-                                payment_info = next((p for p in all_payments if p.get('id') == payment_id), None)
-                                if payment_info:
-                                    payment_amount = payment_info.get('amount_money', {}).get('amount', 0)
-                                    payment_currency = payment_info.get('amount_money', {}).get('currency', 'CAD')
-                                    refund_currency = refund.get('amount_money', {}).get('currency', 'CAD')
-                                    
-                                    print(f"💳 Payment details for {payment_id}: Amount=${payment_amount/100:.2f}, Currency={payment_currency}")
-                                    
-                                    # 金額、通貨、返金ステータスを厳密に確認
-                                    if (refund_amount == payment_amount and 
-                                        refund_currency == payment_currency and
-                                        refund_status == 'COMPLETED'):
-                                        
-                                        # 返金日時を確認（支払い作成日より後であることを確認）
-                                        refund_created = refund.get('created_at')
-                                        payment_created = payment_info.get('created_at')
-                                        
-                                        if refund_created and payment_created:
-                                            try:
-                                                refund_date = datetime.fromisoformat(refund_created.replace('Z', '+00:00'))
-                                                payment_date = datetime.fromisoformat(payment_created.replace('Z', '+00:00'))
-                                                
-                                                print(f"📅 Date comparison for {payment_id}: Payment={payment_date}, Refund={refund_date}")
-                                                
-                                                if refund_date > payment_date:
-                                                    # 本当にこの支払いに対する返金
-                                                    refund_statuses[payment_id] = {
-                                                        'status': 'refunded',
-                                                        'refundId': refund.get('id'),
-                                                        'refundDate': refund_created,
-                                                        'source': 'square_api_validated'
-                                                    }
-                                                    print(f"✅ Found valid refund for payment {payment_id}: {refund.get('id')} (Amount: ${refund_amount/100:.2f}, Status: {refund_status})")
-                                                else:
-                                                    refund_statuses[payment_id] = {
-                                                        'status': 'pending',
-                                                        'refundId': None,
-                                                        'refundDate': None,
-                                                        'source': 'date_invalid'
-                                                    }
-                                                    print(f"⚠️ Refund date ({refund_date}) is before payment date ({payment_date}) for {payment_id}")
-                                            except Exception as e:
-                                                print(f"⚠️ Error parsing dates for payment {payment_id}: {e}")
-                                                refund_statuses[payment_id] = {
-                                                    'status': 'pending',
-                                                    'refundId': None,
-                                                    'refundDate': None,
-                                                    'source': 'date_parse_error'
-                                                }
-                                        else:
-                                            refund_statuses[payment_id] = {
-                                                'status': 'pending',
-                                                'refundId': None,
-                                                'refundDate': None,
-                                                'source': 'missing_dates'
-                                            }
-                                    else:
-                                        refund_statuses[payment_id] = {
-                                            'status': 'pending',
-                                            'refundId': None,
-                                            'refundDate': None,
-                                            'source': f'validation_failed: amount={refund_amount==payment_amount}, currency={refund_currency==payment_currency}, status={refund_status}'
-                                        }
-                                        print(f"⚠️ Refund validation failed for payment {payment_id}: Amount match={refund_amount==payment_amount}, Currency match={refund_currency==payment_currency}, Status={refund_status}")
-                                else:
-                                    refund_statuses[payment_id] = {
-                                        'status': 'pending',
-                                        'refundId': None,
-                                        'refundDate': None,
-                                        'source': 'payment_not_found'
-                                    }
-                            else:
-                                refund_statuses[payment_id] = {
-                                    'status': 'pending',
-                                    'refundId': None,
-                                    'refundDate': None,
-                                    'source': 'no_refund'
-                                }
-                        else:
-                            refund_statuses[payment_id] = {
-                                'status': 'pending',
-                                'refundId': None,
-                                'refundDate': None,
-                                'source': f'api_error_{refunds_response.status_code}'
-                            }
-                            
-                    except Exception as e:
-                        print(f"⚠️ Error checking refund status for {payment_id}: {e}")
-                        refund_statuses[payment_id] = {
-                            'status': 'pending',
-                            'refundId': None,
-                            'refundDate': None,
-                            'source': 'error'
-                        }
-                
-                # バッチ間で少し待機（API制限を避ける）
-                if i + batch_size < len(payment_ids_to_check):
-                    import time
-                    time.sleep(0.1)
-        
-        print(f"📊 Refund status check completed for {len(refund_statuses)} payments")
-        print(f"📋 Refund status summary:")
-        for payment_id, status_info in refund_statuses.items():
-            print(f"  - {payment_id}: {status_info['status']} (source: {status_info['source']})")
-        
-        # 支払い情報を処理
-        for payment in all_payments:
-            payment_id = payment.get('id')
-            
-            # 既に処理済みの支払いIDはスキップ
-            if payment_id in processed_payment_ids:
+            # Only process COMPLETED payments
+            if status != 'COMPLETED':
                 continue
             
-            status = payment.get('status')
-            amount = payment.get('amount_money', {}).get('amount', 0)
-            created_at = payment.get('created_at')
-            customer_id = payment.get('customer_id')
-            order_id = payment.get('order_id')
-            
-            # Check if this payment belongs to the same user(s)
-            is_same_user = (
-                (customer_id and customer_id in user_customer_ids) or
-                (order_id and order_id in user_order_ids)
-            )
-            
-            # Check all completed payments that belong to the same user(s)
-            if status == 'COMPLETED' and is_same_user:
-                # Check if this payment is already in our database
-                existing = await unregistered_repo.check_payment_exists(payment_id)
+            # Check if this payment ID is NOT in our database
+            if payment_id not in registered_payment_ids:
+                # This is an unregistered payment
+                amount = payment.get('amount_money', {}).get('amount', 0)
+                created_at = payment.get('created_at')
+                customer_id = payment.get('customer_id')
+                order_id = payment.get('order_id')
                 
-                if not existing:
-                    # Get user email from registered payments
-                    user_email = await unregistered_repo.get_user_email_by_identifiers(customer_id, order_id)
-                    
-                    # 返金状態を確認
-                    if payment_id in refund_statuses:
-                        refund_status = refund_statuses[payment_id]['status']
-                        refund_id = refund_statuses[payment_id]['refundId']
-                        refund_date = refund_statuses[payment_id]['refundDate']
-                    else:
-                        refund_status = 'pending'
-                        refund_id = None
-                        refund_date = None
-                    
-                    unregistered_payment = {
-                        'id': len(unregistered_payments) + 1,  # Temporary ID
-                        'paymentId': payment_id,
-                        'email': user_email or 'Unknown',
-                        'amount': amount / 100,  # Convert from cents
-                        'currency': payment.get('amount_money', {}).get('currency', 'CAD'),
-                        'customerId': customer_id,
-                        'orderId': order_id,
-                        'createdAt': created_at,
-                        'status': refund_status,
-                        'refundId': refund_id,
-                        'refundDate': refund_date,
-                        'rawPaymentData': payment
-                    }
-                    
-                    unregistered_payments.append(unregistered_payment)
-                    processed_payment_ids.add(payment_id)  # 処理済みとしてマーク
-                    print(f"❌ UNREGISTERED PAYMENT FOUND: {payment_id} - {user_email} - ${amount/100:.2f} CAD - Status: {refund_status}")
+                # Try to get user email from customer_id or order_id (fast method)
+                user_email = await unregistered_repo.get_user_email_by_identifiers(customer_id, order_id)
+                
+                # If no email found from identifiers, try to get from Square payment data (slow method)
+                # Skip this for now to avoid timeout - we'll get email later if needed
+                if not user_email:
+                    user_email = 'Unknown'  # Skip Square API call to avoid timeout
+                
+                # Check if this payment has been refunded
+                refund_status = await unregistered_repo.get_payment_refund_status(payment_id)
+                
+                # Determine status
+                payment_status = 'refunded' if refund_status else 'pending'
+                print(f"🔍 Payment {payment_id} status: {payment_status} (refund_status: {refund_status is not None})")
+                
+                unregistered_payment = {
+                    'id': len(unregistered_payments) + 1,
+                    'paymentId': payment_id,
+                    'email': user_email or 'Unknown',
+                    'amount': amount / 100,  # Convert from cents
+                    'currency': payment.get('amount_money', {}).get('currency', 'CAD'),
+                    'customerId': customer_id,
+                    'orderId': order_id,
+                    'createdAt': created_at,
+                    'status': payment_status,
+                    'refundId': refund_status.get('refundId') if refund_status else None,
+                    'refundDate': refund_status.get('refundDate') if refund_status else None,
+                    'rawPaymentData': payment
+                }
+                
+                unregistered_payments.append(unregistered_payment)
+                print(f"❌ UNREGISTERED PAYMENT FOUND: {payment_id} - {user_email or 'Unknown'} - ${amount/100:.2f} CAD")
         
         print(f"📊 Summary: Found {len(unregistered_payments)} unregistered payments")
         

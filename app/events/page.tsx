@@ -831,7 +831,10 @@ function EventCard({
   };
 
   // Get available ticket tiers (for automatic progression)
-  const availableTiers = event.ticketTiers?.filter(tier => tier.isAvailable) || [];
+  const availableTiers = event.ticketTiers?.filter(tier => {
+    console.log(`🔍 Tier ${tier.name} (ID: ${tier.id}): isAvailable=${tier.isAvailable}, type=${typeof tier.isAvailable}`);
+    return tier.isAvailable;
+  }) || [];
   const currentTier = availableTiers.length > 0 ? availableTiers[0] : null; // First available tier
 
   // Debug: Log ticket tiers availability
