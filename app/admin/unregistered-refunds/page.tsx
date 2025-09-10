@@ -52,17 +52,23 @@ export default function AdminUnregisteredRefundsPage() {
       setLoading(true);
       console.log('🔍 Fetching unregistered payments...');
       
-      const response = await fetch('/api/admin/unregistered-refunds');
+      // Build query parameters for date range
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      
+      const url = params.toString() ? `/api/admin/unregistered-refunds?${params.toString()}` : '/api/admin/unregistered-refunds';
+      console.log(`🔗 Search All Users URL: ${url}`);
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error('Failed to fetch unregistered payments');
       }
 
       const data = await response.json();
-      console.log('✅ Unregistered payments fetched:', data);
-      
       // Transform the data to match our interface
-      const transformedPayments: UnregisteredPayment[] = data.unregisteredRefunds.map((payment: any) => ({
+      const transformedPayments: UnregisteredPayment[] = (data.unregisteredRefunds || []).map((payment: any) => ({
         id: payment.id.toString(),
         paymentId: payment.paymentId,
         email: payment.email,
@@ -77,6 +83,7 @@ export default function AdminUnregisteredRefundsPage() {
         adminNotes: payment.adminNotes
       }));
 
+      console.log(`✅ Set ${transformedPayments.length} unregistered payments to state`);
       setUnregisteredPayments(transformedPayments);
     } catch (error) {
       console.error('Error fetching unregistered payments:', error);
@@ -487,13 +494,18 @@ export default function AdminUnregisteredRefundsPage() {
               {/* Warning Message */}
               <div className="mt-2 text-center">
                 <p className="text-sm text-orange-600">
-                  ⚠️ 全ユーザー検索は重い処理のため、データベースの返金記録のみ表示されます。
+                  ⚠️ 全ユーザー検索は重い処理です。期間を指定して検索範囲を絞ることを推奨します。
                   <br />
                   詳細な情報が必要な場合は、特定のメールアドレスで検索してください。
                 </p>
               </div>
               <div className="mt-3 text-sm text-gray-500">
                 💡 <strong>Tip:</strong> Enter a specific email for fast search, or use "Search All Users" to find all unregistered payments.
+                {startDate && endDate && (
+                  <div className="mt-2 text-blue-600">
+                    📅 Search period: {startDate} to {endDate}
+                  </div>
+                )}
               </div>
             </div>
           </div>

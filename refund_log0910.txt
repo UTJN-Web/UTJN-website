@@ -1,0 +1,947 @@
+ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment xQA2KKDnlzs2NWU7m1l6SZDwGFSZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: xQA2KKDnlzs2NWU7m1l6SZDwGFSZY - koseiuemura1227@gmail.com - $1.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment hc4jrXMjJhRCrHP2TBZ5GHR4irbZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: hc4jrXMjJhRCrHP2TBZ5GHR4irbZY - shinoken5656@gmail.com - $10.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment jN2iNZHn7nAUmpA5vGMT0nyp1K6YY
+🔍 Payment jN2iNZHn7nAUmpA5vGMT0nyp1K6YY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: jN2iNZHn7nAUmpA5vGMT0nyp1K6YY - Unknown - $10.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment ZwQ7whoE0TdYZnl6VM79nK0NSWDZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: ZwQ7whoE0TdYZnl6VM79nK0NSWDZY - shinoken5656@gmail.com - $10.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment VCm39APc6PnmbjoT9zLYtQDi1k7YY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: VCm39APc6PnmbjoT9zLYtQDi1k7YY - shinoken5656@gmail.com - $10.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment VuScSaAtEk8OSmBdr99jBoyKeHBZY
+🔍 Payment VuScSaAtEk8OSmBdr99jBoyKeHBZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: VuScSaAtEk8OSmBdr99jBoyKeHBZY - Unknown - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment VsZAOyPlAd5956HI7NSgjsgFvg8YY
+🔍 Payment VsZAOyPlAd5956HI7NSgjsgFvg8YY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: VsZAOyPlAd5956HI7NSgjsgFvg8YY - Unknown - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment lIdJehseU3P3EAPJ3NPzO2bLqRRZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: lIdJehseU3P3EAPJ3NPzO2bLqRRZY - aito.inoue@mail.utoronto.ca - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment tqq8ikxCCnKG40V1sMKb6VsPXRcZY
+🔍 Payment tqq8ikxCCnKG40V1sMKb6VsPXRcZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: tqq8ikxCCnKG40V1sMKb6VsPXRcZY - Unknown - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment z3D4vEf8r6HC6JAEqFwzieKTr7eZY
+🔍 Payment z3D4vEf8r6HC6JAEqFwzieKTr7eZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: z3D4vEf8r6HC6JAEqFwzieKTr7eZY - Unknown - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment D5md8iM877EvZANmUxJVtLqY0FcZY
+🔍 Payment D5md8iM877EvZANmUxJVtLqY0FcZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: D5md8iM877EvZANmUxJVtLqY0FcZY - Unknown - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+⚠️ No email found for payment vhtGbB7qVPXK5I0DM6CathVHAkGZY
+🔍 Payment vhtGbB7qVPXK5I0DM6CathVHAkGZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: vhtGbB7qVPXK5I0DM6CathVHAkGZY - Unknown - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment lKGB8ZXeLHcOK5JufulbZWg9XJ8YY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: lKGB8ZXeLHcOK5JufulbZWg9XJ8YY - taishizoshima@gmail.com - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment N4DloQA4l1C9dsbOdeRriUMIEhMZY status: refunded (refund_status: True)
+❌ UNREGISTERED PAYMENT FOUND: N4DloQA4l1C9dsbOdeRriUMIEhMZY - mayu.asanuma@mail.utoronto.ca - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment 1KyZqA1fGzVrr3iTtbVxQGUUEKIZY status: refunded (refund_status: True)
+❌ UNREGISTERED PAYMENT FOUND: 1KyZqA1fGzVrr3iTtbVxQGUUEKIZY - tamima.wadageri@mail.utoronto.ca - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment 37ccvCVerx6lNLfhA2QCENTC9MRZY status: refunded (refund_status: True)
+❌ UNREGISTERED PAYMENT FOUND: 37ccvCVerx6lNLfhA2QCENTC9MRZY - tamima.wadageri@mail.utoronto.ca - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment FA5tOPWMQWHcwvjs1fMHIXph5XdZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: FA5tOPWMQWHcwvjs1fMHIXph5XdZY - kaishinryotrac07@gmail.com - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+❌ Error getting Square payment details: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+🔍 Payment ZoQrTro1RfPmuhH6SrwrIdH6fofZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: ZoQrTro1RfPmuhH6SrwrIdH6fofZY - kaishinryotrac07@gmail.com - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment zfx7SWat3Ws00HeZatfzmY4qcCLZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: zfx7SWat3Ws00HeZatfzmY4qcCLZY - suai.inoue@mail.utoronto.ca - $5.00 CAD
+❌ Failed to get Square payment details for test_payment_123: 404
+🔍 Payment 14fUKu0PXzRYjEqPBKk8P9meNZeZY status: pending (refund_status: False)
+❌ UNREGISTERED PAYMENT FOUND: 14fUKu0PXzRYjEqPBKk8P9meNZeZY - koseiuemura1227@gmail.com - $1.00 CAD
+📊 Summary: Found 53 unregistered payments
+📊 総未登録Payment: 53件
+📊 未返金Payment: 50件
+💰 返金予定総額: CAD $537.87
+
+⚠️  注意: この処理は実際にSquare APIを呼び出して返金を実行します
+続行しますか？ (y/N): ✅ 返金処理を開始します...
+============================================================
+
+🔄 Processing 1/50: ZmVyPirFaiVmzOIVrOzO9gFXzBCZY
+💰 Processing refund for ZmVyPirFaiVmzOIVrOzO9gFXzBCZY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518643_6848",
+  "payment_id": "ZmVyPirFaiVmzOIVrOzO9gFXzBCZY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: ZmVyPirFaiVmzOIVrOzO9gFXzBCZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 2/50: vniDve70NThNQP4vZOFSlQPaTm6YY
+💰 Processing refund for vniDve70NThNQP4vZOFSlQPaTm6YY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518644_2827",
+  "payment_id": "vniDve70NThNQP4vZOFSlQPaTm6YY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: vniDve70NThNQP4vZOFSlQPaTm6YY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 3/50: d2KzcQqAXmioALCSFI7o1BHR4XJZY
+💰 Processing refund for d2KzcQqAXmioALCSFI7o1BHR4XJZY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518645_9238",
+  "payment_id": "d2KzcQqAXmioALCSFI7o1BHR4XJZY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: d2KzcQqAXmioALCSFI7o1BHR4XJZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 4/50: XhhH4bOOF1aQV8SasjORygZOP9HZY
+💰 Processing refund for XhhH4bOOF1aQV8SasjORygZOP9HZY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518646_9471",
+  "payment_id": "XhhH4bOOF1aQV8SasjORygZOP9HZY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: XhhH4bOOF1aQV8SasjORygZOP9HZY_9cpS8j7TjuqoPwwVOO1MFdCf5H3seBXmLXUPf9XOgJB
+✅ Refund record created for payment XhhH4bOOF1aQV8SasjORygZOP9HZY
+✅ Success: XhhH4bOOF1aQV8SasjORygZOP9HZY -> XhhH4bOOF1aQV8SasjORygZOP9HZY_9cpS8j7TjuqoPwwVOO1MFdCf5H3seBXmLXUPf9XOgJB
+
+🔄 Processing 5/50: X70ikBjAPhZZ0qop86Q9jtLrAlKZY
+💰 Processing refund for X70ikBjAPhZZ0qop86Q9jtLrAlKZY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518648_8723",
+  "payment_id": "X70ikBjAPhZZ0qop86Q9jtLrAlKZY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: X70ikBjAPhZZ0qop86Q9jtLrAlKZY_wpgLErLncpMqHyF1ZzpNoix59lxnktdG3rqbRlWEE4W
+✅ Refund record created for payment X70ikBjAPhZZ0qop86Q9jtLrAlKZY
+✅ Success: X70ikBjAPhZZ0qop86Q9jtLrAlKZY -> X70ikBjAPhZZ0qop86Q9jtLrAlKZY_wpgLErLncpMqHyF1ZzpNoix59lxnktdG3rqbRlWEE4W
+
+🔄 Processing 6/50: 5IGY2tvkzxOoV3yWiVfpYhkIDZEZY
+💰 Processing refund for 5IGY2tvkzxOoV3yWiVfpYhkIDZEZY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518650_2628",
+  "payment_id": "5IGY2tvkzxOoV3yWiVfpYhkIDZEZY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: 5IGY2tvkzxOoV3yWiVfpYhkIDZEZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 7/50: BM0pZu1pm66SWUQ9dSYMNau3zGXZY
+💰 Processing refund for BM0pZu1pm66SWUQ9dSYMNau3zGXZY - koseiuemura1227@gmail.com - $0.01 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518651_8347",
+  "payment_id": "BM0pZu1pm66SWUQ9dSYMNau3zGXZY",
+  "amount_money": {
+    "amount": 1,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: BM0pZu1pm66SWUQ9dSYMNau3zGXZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 8/50: lYj6fzvkF78YFhzp0d5AunlrbqIZY
+💰 Processing refund for lYj6fzvkF78YFhzp0d5AunlrbqIZY - koseiuemura1227@gmail.com - $0.10 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518653_2910",
+  "payment_id": "lYj6fzvkF78YFhzp0d5AunlrbqIZY",
+  "amount_money": {
+    "amount": 10,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: lYj6fzvkF78YFhzp0d5AunlrbqIZY_MMkTCWmoCqMqHY2D4K2GxZBnX8xU5QbQlOeEGClK6sZ
+✅ Refund record created for payment lYj6fzvkF78YFhzp0d5AunlrbqIZY
+✅ Success: lYj6fzvkF78YFhzp0d5AunlrbqIZY -> lYj6fzvkF78YFhzp0d5AunlrbqIZY_MMkTCWmoCqMqHY2D4K2GxZBnX8xU5QbQlOeEGClK6sZ
+
+🔄 Processing 9/50: nNrdNLaCOlNvesLLFS2q9IuuJt8YY
+💰 Processing refund for nNrdNLaCOlNvesLLFS2q9IuuJt8YY - koseiuemura1227@gmail.com - $0.10 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518655_3347",
+  "payment_id": "nNrdNLaCOlNvesLLFS2q9IuuJt8YY",
+  "amount_money": {
+    "amount": 10,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: nNrdNLaCOlNvesLLFS2q9IuuJt8YY_Es6nZJ4HyaDCmR64Av1zRrwPHEE2QbzJkglit0YJwHM
+✅ Refund record created for payment nNrdNLaCOlNvesLLFS2q9IuuJt8YY
+✅ Success: nNrdNLaCOlNvesLLFS2q9IuuJt8YY -> nNrdNLaCOlNvesLLFS2q9IuuJt8YY_Es6nZJ4HyaDCmR64Av1zRrwPHEE2QbzJkglit0YJwHM
+
+🔄 Processing 10/50: PvC7iiIT9kvisVWGUFkIYeRKCvEZY
+💰 Processing refund for PvC7iiIT9kvisVWGUFkIYeRKCvEZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518657_4511",
+  "payment_id": "PvC7iiIT9kvisVWGUFkIYeRKCvEZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: PvC7iiIT9kvisVWGUFkIYeRKCvEZY_FOuzKs45gkEWgg7jHLuh1CQSV3YYmBP7TWMPwQPMVda
+✅ Refund record created for payment PvC7iiIT9kvisVWGUFkIYeRKCvEZY
+✅ Success: PvC7iiIT9kvisVWGUFkIYeRKCvEZY -> PvC7iiIT9kvisVWGUFkIYeRKCvEZY_FOuzKs45gkEWgg7jHLuh1CQSV3YYmBP7TWMPwQPMVda
+
+🔄 Processing 11/50: vRhYraCWsobaMONiYqr23WeXGMEZY
+💰 Processing refund for vRhYraCWsobaMONiYqr23WeXGMEZY - fuma.kano@mail.utoronto.ca - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518659_8344",
+  "payment_id": "vRhYraCWsobaMONiYqr23WeXGMEZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: vRhYraCWsobaMONiYqr23WeXGMEZY_bBMwp4lF1JqpspGki2XhmUjSa8hIkdHADjD8vRaJhBL
+✅ Refund record created for payment vRhYraCWsobaMONiYqr23WeXGMEZY
+✅ Success: vRhYraCWsobaMONiYqr23WeXGMEZY -> vRhYraCWsobaMONiYqr23WeXGMEZY_bBMwp4lF1JqpspGki2XhmUjSa8hIkdHADjD8vRaJhBL
+
+🔄 Processing 12/50: l8R0767dPclbnNKruFgvDlfYB28YY
+💰 Processing refund for l8R0767dPclbnNKruFgvDlfYB28YY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518661_3668",
+  "payment_id": "l8R0767dPclbnNKruFgvDlfYB28YY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: l8R0767dPclbnNKruFgvDlfYB28YY_vBTAm3iNrXakhqGqsuzb8KFkzpzKzVNUhykhwxU56KW
+✅ Refund record created for payment l8R0767dPclbnNKruFgvDlfYB28YY
+✅ Success: l8R0767dPclbnNKruFgvDlfYB28YY -> l8R0767dPclbnNKruFgvDlfYB28YY_vBTAm3iNrXakhqGqsuzb8KFkzpzKzVNUhykhwxU56KW
+
+🔄 Processing 13/50: vzAHtD10XvHRBxtLljKZtRT4vMAZY
+💰 Processing refund for vzAHtD10XvHRBxtLljKZtRT4vMAZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518663_9611",
+  "payment_id": "vzAHtD10XvHRBxtLljKZtRT4vMAZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: vzAHtD10XvHRBxtLljKZtRT4vMAZY_bSMoK5c0fXLITbgn7YRyHmgIcvrsOvQrphpFq6VmoJT
+✅ Refund record created for payment vzAHtD10XvHRBxtLljKZtRT4vMAZY
+✅ Success: vzAHtD10XvHRBxtLljKZtRT4vMAZY -> vzAHtD10XvHRBxtLljKZtRT4vMAZY_bSMoK5c0fXLITbgn7YRyHmgIcvrsOvQrphpFq6VmoJT
+
+🔄 Processing 14/50: jxexFM1uNHr6H5g2HrVBP2wpm96YY
+💰 Processing refund for jxexFM1uNHr6H5g2HrVBP2wpm96YY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518665_9505",
+  "payment_id": "jxexFM1uNHr6H5g2HrVBP2wpm96YY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: jxexFM1uNHr6H5g2HrVBP2wpm96YY_E7QXYxbTL02Fno5sKDtiV14hdnpYRWT28I5WezszqGH
+✅ Refund record created for payment jxexFM1uNHr6H5g2HrVBP2wpm96YY
+✅ Success: jxexFM1uNHr6H5g2HrVBP2wpm96YY -> jxexFM1uNHr6H5g2HrVBP2wpm96YY_E7QXYxbTL02Fno5sKDtiV14hdnpYRWT28I5WezszqGH
+
+🔄 Processing 15/50: bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY
+💰 Processing refund for bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY - fuma.kano@mail.utoronto.ca - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518667_2635",
+  "payment_id": "bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY_P9cMCAQvOD6Zz0nGw7XSRrnJbmEEZbfrbAN0vOyPHvT
+✅ Refund record created for payment bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY
+✅ Success: bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY -> bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY_P9cMCAQvOD6Zz0nGw7XSRrnJbmEEZbfrbAN0vOyPHvT
+
+🔄 Processing 16/50: nBBlcEMxrYhIZDJjKR1NmSH5AYeZY
+💰 Processing refund for nBBlcEMxrYhIZDJjKR1NmSH5AYeZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518669_7349",
+  "payment_id": "nBBlcEMxrYhIZDJjKR1NmSH5AYeZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: nBBlcEMxrYhIZDJjKR1NmSH5AYeZY_4YkOz9Bzm24l49S4B9Yu9j7FKuF1wss9ltrWj8Lz7hO
+✅ Refund record created for payment nBBlcEMxrYhIZDJjKR1NmSH5AYeZY
+✅ Success: nBBlcEMxrYhIZDJjKR1NmSH5AYeZY -> nBBlcEMxrYhIZDJjKR1NmSH5AYeZY_4YkOz9Bzm24l49S4B9Yu9j7FKuF1wss9ltrWj8Lz7hO
+
+🔄 Processing 17/50: lIbex1iHEBeSd3Z5c6LYmypXLfFZY
+💰 Processing refund for lIbex1iHEBeSd3Z5c6LYmypXLfFZY - Hamyu.258@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518671_2098",
+  "payment_id": "lIbex1iHEBeSd3Z5c6LYmypXLfFZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: lIbex1iHEBeSd3Z5c6LYmypXLfFZY_Oxap1q5DqHnuiARuWRlPiZAzOXGD9gkHm1S4LeVmWrR
+✅ Refund record created for payment lIbex1iHEBeSd3Z5c6LYmypXLfFZY
+✅ Success: lIbex1iHEBeSd3Z5c6LYmypXLfFZY -> lIbex1iHEBeSd3Z5c6LYmypXLfFZY_Oxap1q5DqHnuiARuWRlPiZAzOXGD9gkHm1S4LeVmWrR
+
+🔄 Processing 18/50: TVoZcEPAh7wqPbsoXalco2yPHDPZY
+💰 Processing refund for TVoZcEPAh7wqPbsoXalco2yPHDPZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518673_7559",
+  "payment_id": "TVoZcEPAh7wqPbsoXalco2yPHDPZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: TVoZcEPAh7wqPbsoXalco2yPHDPZY_6Zxs5DR6yc5wuIhp2dJhBbJ10X6lTUKNHWG7GJ9QKOT
+✅ Refund record created for payment TVoZcEPAh7wqPbsoXalco2yPHDPZY
+✅ Success: TVoZcEPAh7wqPbsoXalco2yPHDPZY -> TVoZcEPAh7wqPbsoXalco2yPHDPZY_6Zxs5DR6yc5wuIhp2dJhBbJ10X6lTUKNHWG7GJ9QKOT
+
+🔄 Processing 19/50: h2zer41mIXpzSkpJ9JZWqfcejPcZY
+💰 Processing refund for h2zer41mIXpzSkpJ9JZWqfcejPcZY - Hamyu.258@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518675_8002",
+  "payment_id": "h2zer41mIXpzSkpJ9JZWqfcejPcZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: h2zer41mIXpzSkpJ9JZWqfcejPcZY_VpX4U001OzVnWpMVq1zJLf15aqNwQZv8k9uJhmj1jMK
+✅ Refund record created for payment h2zer41mIXpzSkpJ9JZWqfcejPcZY
+✅ Success: h2zer41mIXpzSkpJ9JZWqfcejPcZY -> h2zer41mIXpzSkpJ9JZWqfcejPcZY_VpX4U001OzVnWpMVq1zJLf15aqNwQZv8k9uJhmj1jMK
+
+🔄 Processing 20/50: ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY
+💰 Processing refund for ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY - megumi.sugimoto@mail.utoronto.ca - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518677_1126",
+  "payment_id": "ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY_IbO9hAGcoJAQZPbz8Fzby0lLFCWDieodqpr8D5ceicL
+✅ Refund record created for payment ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY
+✅ Success: ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY -> ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY_IbO9hAGcoJAQZPbz8Fzby0lLFCWDieodqpr8D5ceicL
+
+🔄 Processing 21/50: 16USeRbDLM9R6UAhcicwRs3ZRBKZY
+💰 Processing refund for 16USeRbDLM9R6UAhcicwRs3ZRBKZY - daijiro.fukuda@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518679_5835",
+  "payment_id": "16USeRbDLM9R6UAhcicwRs3ZRBKZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: 16USeRbDLM9R6UAhcicwRs3ZRBKZY_riOatDvX7OZAw2i8YLZIBrV84kTCJ2jKeArMFhhEZpN
+✅ Refund record created for payment 16USeRbDLM9R6UAhcicwRs3ZRBKZY
+✅ Success: 16USeRbDLM9R6UAhcicwRs3ZRBKZY -> 16USeRbDLM9R6UAhcicwRs3ZRBKZY_riOatDvX7OZAw2i8YLZIBrV84kTCJ2jKeArMFhhEZpN
+
+🔄 Processing 22/50: LpANpHtNZA1mCvM6s9L8c1nwLICZY
+💰 Processing refund for LpANpHtNZA1mCvM6s9L8c1nwLICZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518681_4646",
+  "payment_id": "LpANpHtNZA1mCvM6s9L8c1nwLICZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: LpANpHtNZA1mCvM6s9L8c1nwLICZY_59n6O0P9oDmgtyveCDxlPrgB5xxFdPPNrHhslgz4MM
+✅ Refund record created for payment LpANpHtNZA1mCvM6s9L8c1nwLICZY
+✅ Success: LpANpHtNZA1mCvM6s9L8c1nwLICZY -> LpANpHtNZA1mCvM6s9L8c1nwLICZY_59n6O0P9oDmgtyveCDxlPrgB5xxFdPPNrHhslgz4MM
+
+🔄 Processing 23/50: XPyc8Difas8RcBVWSBWECGfVgYQZY
+💰 Processing refund for XPyc8Difas8RcBVWSBWECGfVgYQZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518683_7661",
+  "payment_id": "XPyc8Difas8RcBVWSBWECGfVgYQZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: XPyc8Difas8RcBVWSBWECGfVgYQZY_LzgFADG2as5fsXoVfI8QDoWIB08mZBjPGe0hcZq0s0D
+✅ Refund record created for payment XPyc8Difas8RcBVWSBWECGfVgYQZY
+✅ Success: XPyc8Difas8RcBVWSBWECGfVgYQZY -> XPyc8Difas8RcBVWSBWECGfVgYQZY_LzgFADG2as5fsXoVfI8QDoWIB08mZBjPGe0hcZq0s0D
+
+🔄 Processing 24/50: BCjPrgVz9HJ58iCtbUlz7bRHuLGZY
+💰 Processing refund for BCjPrgVz9HJ58iCtbUlz7bRHuLGZY - daijiro.fukuda@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518685_3662",
+  "payment_id": "BCjPrgVz9HJ58iCtbUlz7bRHuLGZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: BCjPrgVz9HJ58iCtbUlz7bRHuLGZY_1kGYIdYqWFRSejqAmSV2UJ3Ic1L4v0MF2ppH76oUwSW
+✅ Refund record created for payment BCjPrgVz9HJ58iCtbUlz7bRHuLGZY
+✅ Success: BCjPrgVz9HJ58iCtbUlz7bRHuLGZY -> BCjPrgVz9HJ58iCtbUlz7bRHuLGZY_1kGYIdYqWFRSejqAmSV2UJ3Ic1L4v0MF2ppH76oUwSW
+
+🔄 Processing 25/50: JYEJiGChicgTSy5Q1pMeHDn4j96YY
+💰 Processing refund for JYEJiGChicgTSy5Q1pMeHDn4j96YY - daijiro.fukuda@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518688_9738",
+  "payment_id": "JYEJiGChicgTSy5Q1pMeHDn4j96YY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: JYEJiGChicgTSy5Q1pMeHDn4j96YY_VrfDC8nx6kmBFtFkS9YK9wGrutnjZi0tHuLLfhgaYea
+✅ Refund record created for payment JYEJiGChicgTSy5Q1pMeHDn4j96YY
+✅ Success: JYEJiGChicgTSy5Q1pMeHDn4j96YY -> JYEJiGChicgTSy5Q1pMeHDn4j96YY_VrfDC8nx6kmBFtFkS9YK9wGrutnjZi0tHuLLfhgaYea
+
+🔄 Processing 26/50: PBZmEURVEq6SAgHkX3LIlBg5XQRZY
+💰 Processing refund for PBZmEURVEq6SAgHkX3LIlBg5XQRZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518690_5418",
+  "payment_id": "PBZmEURVEq6SAgHkX3LIlBg5XQRZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: PBZmEURVEq6SAgHkX3LIlBg5XQRZY_sfLSRxljAKDu0NXVznEpTe5c9WUo5KGXvLebhTdVxsa
+✅ Refund record created for payment PBZmEURVEq6SAgHkX3LIlBg5XQRZY
+✅ Success: PBZmEURVEq6SAgHkX3LIlBg5XQRZY -> PBZmEURVEq6SAgHkX3LIlBg5XQRZY_sfLSRxljAKDu0NXVznEpTe5c9WUo5KGXvLebhTdVxsa
+
+🔄 Processing 27/50: tc5B3SeL9Rc1HtmnP00ZRErK1ldZY
+💰 Processing refund for tc5B3SeL9Rc1HtmnP00ZRErK1ldZY - ogasari37@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518692_1868",
+  "payment_id": "tc5B3SeL9Rc1HtmnP00ZRErK1ldZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: tc5B3SeL9Rc1HtmnP00ZRErK1ldZY_nQJjZqadKWp6daDAARHA5qpHk19ugKPaE3ljy8ZKL0E
+✅ Refund record created for payment tc5B3SeL9Rc1HtmnP00ZRErK1ldZY
+✅ Success: tc5B3SeL9Rc1HtmnP00ZRErK1ldZY -> tc5B3SeL9Rc1HtmnP00ZRErK1ldZY_nQJjZqadKWp6daDAARHA5qpHk19ugKPaE3ljy8ZKL0E
+
+🔄 Processing 28/50: t4btu12T99KaTP64qcPLC6LB475YY
+💰 Processing refund for t4btu12T99KaTP64qcPLC6LB475YY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518695_4308",
+  "payment_id": "t4btu12T99KaTP64qcPLC6LB475YY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: t4btu12T99KaTP64qcPLC6LB475YY_BmBPhz2m1t7i6sBklR2jIjAmgpmq2cMKkCkOVGVKbvO
+✅ Refund record created for payment t4btu12T99KaTP64qcPLC6LB475YY
+✅ Success: t4btu12T99KaTP64qcPLC6LB475YY -> t4btu12T99KaTP64qcPLC6LB475YY_BmBPhz2m1t7i6sBklR2jIjAmgpmq2cMKkCkOVGVKbvO
+
+🔄 Processing 29/50: brTaCPXsdSAglpEeHkjDawTW0VUZY
+💰 Processing refund for brTaCPXsdSAglpEeHkjDawTW0VUZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518697_6102",
+  "payment_id": "brTaCPXsdSAglpEeHkjDawTW0VUZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: brTaCPXsdSAglpEeHkjDawTW0VUZY_X2Q8FNY8LbBYjjK8CUmgcuwfEvVdGzyARkJ45v7RVOF
+✅ Refund record created for payment brTaCPXsdSAglpEeHkjDawTW0VUZY
+✅ Success: brTaCPXsdSAglpEeHkjDawTW0VUZY -> brTaCPXsdSAglpEeHkjDawTW0VUZY_X2Q8FNY8LbBYjjK8CUmgcuwfEvVdGzyARkJ45v7RVOF
+
+🔄 Processing 30/50: p27laJ2GCpUdIYCVj8ZmOSLlcNcZY
+💰 Processing refund for p27laJ2GCpUdIYCVj8ZmOSLlcNcZY - ogasari37@gmail.com - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518699_7191",
+  "payment_id": "p27laJ2GCpUdIYCVj8ZmOSLlcNcZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: p27laJ2GCpUdIYCVj8ZmOSLlcNcZY_JiKFLE4I97DKKP30zSH8ujPgzFYpmxmo8ftTwOWM7DP
+✅ Refund record created for payment p27laJ2GCpUdIYCVj8ZmOSLlcNcZY
+✅ Success: p27laJ2GCpUdIYCVj8ZmOSLlcNcZY -> p27laJ2GCpUdIYCVj8ZmOSLlcNcZY_JiKFLE4I97DKKP30zSH8ujPgzFYpmxmo8ftTwOWM7DP
+
+🔄 Processing 31/50: JkCHxJCOBY3T0Cv1BeKvx5GDElQZY
+💰 Processing refund for JkCHxJCOBY3T0Cv1BeKvx5GDElQZY - Unknown - $20.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518701_9367",
+  "payment_id": "JkCHxJCOBY3T0Cv1BeKvx5GDElQZY",
+  "amount_money": {
+    "amount": 2000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: JkCHxJCOBY3T0Cv1BeKvx5GDElQZY_0tnPknY8LbA7KWlKanevT02tn2dDSyhxenwlj5hcwCC
+✅ Refund record created for payment JkCHxJCOBY3T0Cv1BeKvx5GDElQZY
+✅ Success: JkCHxJCOBY3T0Cv1BeKvx5GDElQZY -> JkCHxJCOBY3T0Cv1BeKvx5GDElQZY_0tnPknY8LbA7KWlKanevT02tn2dDSyhxenwlj5hcwCC
+
+🔄 Processing 32/50: tCuIkdho6mOEeaepk9nMlilsxmYZY
+💰 Processing refund for tCuIkdho6mOEeaepk9nMlilsxmYZY - koseiuemura1227@gmail.com - $0.50 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518703_7235",
+  "payment_id": "tCuIkdho6mOEeaepk9nMlilsxmYZY",
+  "amount_money": {
+    "amount": 50,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: tCuIkdho6mOEeaepk9nMlilsxmYZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 33/50: 9WeZEkS10wRbg0OIoj2A8SxGkxVZY
+💰 Processing refund for 9WeZEkS10wRbg0OIoj2A8SxGkxVZY - koseiuemura1227@gmail.com - $0.10 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518704_5062",
+  "payment_id": "9WeZEkS10wRbg0OIoj2A8SxGkxVZY",
+  "amount_money": {
+    "amount": 10,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+❌ Square refund failed: {
+  "errors": [
+    {
+      "code": "REFUND_AMOUNT_INVALID",
+      "detail": "The requested refund amount exceeds the amount available to refund.",
+      "field": "amount_money.amount",
+      "category": "REFUND_ERROR"
+    }
+  ]
+}
+❌ Failed: 9WeZEkS10wRbg0OIoj2A8SxGkxVZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]}
+
+🔄 Processing 34/50: xQA2KKDnlzs2NWU7m1l6SZDwGFSZY
+💰 Processing refund for xQA2KKDnlzs2NWU7m1l6SZDwGFSZY - koseiuemura1227@gmail.com - $1.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518705_5386",
+  "payment_id": "xQA2KKDnlzs2NWU7m1l6SZDwGFSZY",
+  "amount_money": {
+    "amount": 100,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: xQA2KKDnlzs2NWU7m1l6SZDwGFSZY_stQJA9e5SjiRIOGAQh925dhEyHxBXMyCN2EHDKxWRUC
+✅ Refund record created for payment xQA2KKDnlzs2NWU7m1l6SZDwGFSZY
+✅ Success: xQA2KKDnlzs2NWU7m1l6SZDwGFSZY -> xQA2KKDnlzs2NWU7m1l6SZDwGFSZY_stQJA9e5SjiRIOGAQh925dhEyHxBXMyCN2EHDKxWRUC
+
+🔄 Processing 35/50: hc4jrXMjJhRCrHP2TBZ5GHR4irbZY
+💰 Processing refund for hc4jrXMjJhRCrHP2TBZ5GHR4irbZY - shinoken5656@gmail.com - $10.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518707_5810",
+  "payment_id": "hc4jrXMjJhRCrHP2TBZ5GHR4irbZY",
+  "amount_money": {
+    "amount": 1000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: hc4jrXMjJhRCrHP2TBZ5GHR4irbZY_zU7SOFctnw83oFMiX3bQqgKEDBziNzX7M7UEmT3JPvQ
+✅ Refund record created for payment hc4jrXMjJhRCrHP2TBZ5GHR4irbZY
+✅ Success: hc4jrXMjJhRCrHP2TBZ5GHR4irbZY -> hc4jrXMjJhRCrHP2TBZ5GHR4irbZY_zU7SOFctnw83oFMiX3bQqgKEDBziNzX7M7UEmT3JPvQ
+
+🔄 Processing 36/50: jN2iNZHn7nAUmpA5vGMT0nyp1K6YY
+💰 Processing refund for jN2iNZHn7nAUmpA5vGMT0nyp1K6YY - Unknown - $10.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518709_6891",
+  "payment_id": "jN2iNZHn7nAUmpA5vGMT0nyp1K6YY",
+  "amount_money": {
+    "amount": 1000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: jN2iNZHn7nAUmpA5vGMT0nyp1K6YY_cDti42dJJNxvY48V83hyAmWVQ6TmzlwTClUPkMvxYMG
+✅ Refund record created for payment jN2iNZHn7nAUmpA5vGMT0nyp1K6YY
+✅ Success: jN2iNZHn7nAUmpA5vGMT0nyp1K6YY -> jN2iNZHn7nAUmpA5vGMT0nyp1K6YY_cDti42dJJNxvY48V83hyAmWVQ6TmzlwTClUPkMvxYMG
+
+🔄 Processing 37/50: ZwQ7whoE0TdYZnl6VM79nK0NSWDZY
+💰 Processing refund for ZwQ7whoE0TdYZnl6VM79nK0NSWDZY - shinoken5656@gmail.com - $10.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518712_2724",
+  "payment_id": "ZwQ7whoE0TdYZnl6VM79nK0NSWDZY",
+  "amount_money": {
+    "amount": 1000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: ZwQ7whoE0TdYZnl6VM79nK0NSWDZY_URX0mlSJg9cLJh0D3VpXoTEJ7qfhsXBPnCapwObSoGS
+✅ Refund record created for payment ZwQ7whoE0TdYZnl6VM79nK0NSWDZY
+✅ Success: ZwQ7whoE0TdYZnl6VM79nK0NSWDZY -> ZwQ7whoE0TdYZnl6VM79nK0NSWDZY_URX0mlSJg9cLJh0D3VpXoTEJ7qfhsXBPnCapwObSoGS
+
+🔄 Processing 38/50: VCm39APc6PnmbjoT9zLYtQDi1k7YY
+💰 Processing refund for VCm39APc6PnmbjoT9zLYtQDi1k7YY - shinoken5656@gmail.com - $10.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518713_9380",
+  "payment_id": "VCm39APc6PnmbjoT9zLYtQDi1k7YY",
+  "amount_money": {
+    "amount": 1000,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: VCm39APc6PnmbjoT9zLYtQDi1k7YY_4Rp6eGHj2aKgvuun8VvqKpjJbgSdDfpOOa1ywlRd3PL
+✅ Refund record created for payment VCm39APc6PnmbjoT9zLYtQDi1k7YY
+✅ Success: VCm39APc6PnmbjoT9zLYtQDi1k7YY -> VCm39APc6PnmbjoT9zLYtQDi1k7YY_4Rp6eGHj2aKgvuun8VvqKpjJbgSdDfpOOa1ywlRd3PL
+
+🔄 Processing 39/50: VuScSaAtEk8OSmBdr99jBoyKeHBZY
+💰 Processing refund for VuScSaAtEk8OSmBdr99jBoyKeHBZY - Unknown - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518715_8905",
+  "payment_id": "VuScSaAtEk8OSmBdr99jBoyKeHBZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: VuScSaAtEk8OSmBdr99jBoyKeHBZY_n1nAQfjNDSFT8CtENa14P77fkTyMS26UdDdyCwXh5tG
+✅ Refund record created for payment VuScSaAtEk8OSmBdr99jBoyKeHBZY
+✅ Success: VuScSaAtEk8OSmBdr99jBoyKeHBZY -> VuScSaAtEk8OSmBdr99jBoyKeHBZY_n1nAQfjNDSFT8CtENa14P77fkTyMS26UdDdyCwXh5tG
+
+🔄 Processing 40/50: VsZAOyPlAd5956HI7NSgjsgFvg8YY
+💰 Processing refund for VsZAOyPlAd5956HI7NSgjsgFvg8YY - Unknown - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518717_9564",
+  "payment_id": "VsZAOyPlAd5956HI7NSgjsgFvg8YY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: VsZAOyPlAd5956HI7NSgjsgFvg8YY_9o30zmFoKNkdrOtTLnmSkEimLvNTbCXfuWlDTY0xFqd
+✅ Refund record created for payment VsZAOyPlAd5956HI7NSgjsgFvg8YY
+✅ Success: VsZAOyPlAd5956HI7NSgjsgFvg8YY -> VsZAOyPlAd5956HI7NSgjsgFvg8YY_9o30zmFoKNkdrOtTLnmSkEimLvNTbCXfuWlDTY0xFqd
+
+🔄 Processing 41/50: lIdJehseU3P3EAPJ3NPzO2bLqRRZY
+💰 Processing refund for lIdJehseU3P3EAPJ3NPzO2bLqRRZY - aito.inoue@mail.utoronto.ca - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518719_4292",
+  "payment_id": "lIdJehseU3P3EAPJ3NPzO2bLqRRZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: lIdJehseU3P3EAPJ3NPzO2bLqRRZY_QIOGoDqjxmUjeiqi5p5tsHhWhKB1FrwNlph1W5ibgOb
+✅ Refund record created for payment lIdJehseU3P3EAPJ3NPzO2bLqRRZY
+✅ Success: lIdJehseU3P3EAPJ3NPzO2bLqRRZY -> lIdJehseU3P3EAPJ3NPzO2bLqRRZY_QIOGoDqjxmUjeiqi5p5tsHhWhKB1FrwNlph1W5ibgOb
+
+🔄 Processing 42/50: tqq8ikxCCnKG40V1sMKb6VsPXRcZY
+💰 Processing refund for tqq8ikxCCnKG40V1sMKb6VsPXRcZY - Unknown - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518721_7636",
+  "payment_id": "tqq8ikxCCnKG40V1sMKb6VsPXRcZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: tqq8ikxCCnKG40V1sMKb6VsPXRcZY_H2YNBWiWhFVHWyiuOAR6qmj1FYLwiE5WSWbKPjVpWpN
+✅ Refund record created for payment tqq8ikxCCnKG40V1sMKb6VsPXRcZY
+✅ Success: tqq8ikxCCnKG40V1sMKb6VsPXRcZY -> tqq8ikxCCnKG40V1sMKb6VsPXRcZY_H2YNBWiWhFVHWyiuOAR6qmj1FYLwiE5WSWbKPjVpWpN
+
+🔄 Processing 43/50: z3D4vEf8r6HC6JAEqFwzieKTr7eZY
+💰 Processing refund for z3D4vEf8r6HC6JAEqFwzieKTr7eZY - Unknown - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518723_1019",
+  "payment_id": "z3D4vEf8r6HC6JAEqFwzieKTr7eZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: z3D4vEf8r6HC6JAEqFwzieKTr7eZY_fLC4LoxillwUau5qyKe6Y9JHPaWOk8jtgyNlJ07WOlG
+✅ Refund record created for payment z3D4vEf8r6HC6JAEqFwzieKTr7eZY
+✅ Success: z3D4vEf8r6HC6JAEqFwzieKTr7eZY -> z3D4vEf8r6HC6JAEqFwzieKTr7eZY_fLC4LoxillwUau5qyKe6Y9JHPaWOk8jtgyNlJ07WOlG
+
+🔄 Processing 44/50: D5md8iM877EvZANmUxJVtLqY0FcZY
+💰 Processing refund for D5md8iM877EvZANmUxJVtLqY0FcZY - Unknown - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518725_6844",
+  "payment_id": "D5md8iM877EvZANmUxJVtLqY0FcZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: D5md8iM877EvZANmUxJVtLqY0FcZY_nET2TwcSIwyq3L3Pk1xo7LO6J1nWg3tJTu5cym3NLMS
+✅ Refund record created for payment D5md8iM877EvZANmUxJVtLqY0FcZY
+✅ Success: D5md8iM877EvZANmUxJVtLqY0FcZY -> D5md8iM877EvZANmUxJVtLqY0FcZY_nET2TwcSIwyq3L3Pk1xo7LO6J1nWg3tJTu5cym3NLMS
+
+🔄 Processing 45/50: vhtGbB7qVPXK5I0DM6CathVHAkGZY
+💰 Processing refund for vhtGbB7qVPXK5I0DM6CathVHAkGZY - Unknown - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518727_6480",
+  "payment_id": "vhtGbB7qVPXK5I0DM6CathVHAkGZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: vhtGbB7qVPXK5I0DM6CathVHAkGZY_JvORucSfyFZnVToOfthfhzWnjzWDOhdFSYgWz5WGTKK
+✅ Refund record created for payment vhtGbB7qVPXK5I0DM6CathVHAkGZY
+✅ Success: vhtGbB7qVPXK5I0DM6CathVHAkGZY -> vhtGbB7qVPXK5I0DM6CathVHAkGZY_JvORucSfyFZnVToOfthfhzWnjzWDOhdFSYgWz5WGTKK
+
+🔄 Processing 46/50: lKGB8ZXeLHcOK5JufulbZWg9XJ8YY
+💰 Processing refund for lKGB8ZXeLHcOK5JufulbZWg9XJ8YY - taishizoshima@gmail.com - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518729_5748",
+  "payment_id": "lKGB8ZXeLHcOK5JufulbZWg9XJ8YY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: lKGB8ZXeLHcOK5JufulbZWg9XJ8YY_2M6YSJresREpTyM6MAAFUXKOmPl2biOLJroxHgwLxaC
+✅ Refund record created for payment lKGB8ZXeLHcOK5JufulbZWg9XJ8YY
+✅ Success: lKGB8ZXeLHcOK5JufulbZWg9XJ8YY -> lKGB8ZXeLHcOK5JufulbZWg9XJ8YY_2M6YSJresREpTyM6MAAFUXKOmPl2biOLJroxHgwLxaC
+
+🔄 Processing 47/50: FA5tOPWMQWHcwvjs1fMHIXph5XdZY
+💰 Processing refund for FA5tOPWMQWHcwvjs1fMHIXph5XdZY - kaishinryotrac07@gmail.com - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518731_5199",
+  "payment_id": "FA5tOPWMQWHcwvjs1fMHIXph5XdZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: FA5tOPWMQWHcwvjs1fMHIXph5XdZY_y7k2JtAFnNxFTgJTThI9hUZKXsVgy3I4E6EEMg0fGtO
+✅ Refund record created for payment FA5tOPWMQWHcwvjs1fMHIXph5XdZY
+✅ Success: FA5tOPWMQWHcwvjs1fMHIXph5XdZY -> FA5tOPWMQWHcwvjs1fMHIXph5XdZY_y7k2JtAFnNxFTgJTThI9hUZKXsVgy3I4E6EEMg0fGtO
+
+🔄 Processing 48/50: ZoQrTro1RfPmuhH6SrwrIdH6fofZY
+💰 Processing refund for ZoQrTro1RfPmuhH6SrwrIdH6fofZY - kaishinryotrac07@gmail.com - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518732_7186",
+  "payment_id": "ZoQrTro1RfPmuhH6SrwrIdH6fofZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: ZoQrTro1RfPmuhH6SrwrIdH6fofZY_xKgQ5fCIN6RwzjBJVczUpal7ov6I2cbXqTA2NRajtVH
+✅ Refund record created for payment ZoQrTro1RfPmuhH6SrwrIdH6fofZY
+✅ Success: ZoQrTro1RfPmuhH6SrwrIdH6fofZY -> ZoQrTro1RfPmuhH6SrwrIdH6fofZY_xKgQ5fCIN6RwzjBJVczUpal7ov6I2cbXqTA2NRajtVH
+
+🔄 Processing 49/50: zfx7SWat3Ws00HeZatfzmY4qcCLZY
+💰 Processing refund for zfx7SWat3Ws00HeZatfzmY4qcCLZY - suai.inoue@mail.utoronto.ca - $5.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518734_7436",
+  "payment_id": "zfx7SWat3Ws00HeZatfzmY4qcCLZY",
+  "amount_money": {
+    "amount": 500,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: zfx7SWat3Ws00HeZatfzmY4qcCLZY_AqkKdoN2J20KCymH6nK6d3hRQLthUI88TlT79kC14DJ
+✅ Refund record created for payment zfx7SWat3Ws00HeZatfzmY4qcCLZY
+✅ Success: zfx7SWat3Ws00HeZatfzmY4qcCLZY -> zfx7SWat3Ws00HeZatfzmY4qcCLZY_AqkKdoN2J20KCymH6nK6d3hRQLthUI88TlT79kC14DJ
+
+🔄 Processing 50/50: 14fUKu0PXzRYjEqPBKk8P9meNZeZY
+💰 Processing refund for 14fUKu0PXzRYjEqPBKk8P9meNZeZY - koseiuemura1227@gmail.com - $1.00 CAD
+🔁 Square refund request: {
+  "idempotency_key": "unregistered_refund_1757518736_6175",
+  "payment_id": "14fUKu0PXzRYjEqPBKk8P9meNZeZY",
+  "amount_money": {
+    "amount": 100,
+    "currency": "CAD"
+  },
+  "reason": "Refund for failed registration - payment succeeded but registration failed"
+}
+✅ Square refund processed successfully: 14fUKu0PXzRYjEqPBKk8P9meNZeZY_TeEajlP77Un9V1ISkVQYuiuX8A8Kg2hxAvHhjpMrJ3N
+✅ Refund record created for payment 14fUKu0PXzRYjEqPBKk8P9meNZeZY
+✅ Success: 14fUKu0PXzRYjEqPBKk8P9meNZeZY -> 14fUKu0PXzRYjEqPBKk8P9meNZeZY_TeEajlP77Un9V1ISkVQYuiuX8A8Kg2hxAvHhjpMrJ3N
+
+============================================================
+📊 返金処理完了サマリー
+============================================================
+✅ 成功: 43件
+❌ 失敗: 7件
+💰 返金成功金額: CAD $537.22
+
+✅ 成功した返金:
+   XhhH4bOOF1aQV8SasjORygZOP9HZY -> XhhH4bOOF1aQV8SasjORygZOP9HZY_9cpS8j7TjuqoPwwVOO1MFdCf5H3seBXmLXUPf9XOgJB ($0.01 CAD) - koseiuemura1227@gmail.com
+   X70ikBjAPhZZ0qop86Q9jtLrAlKZY -> X70ikBjAPhZZ0qop86Q9jtLrAlKZY_wpgLErLncpMqHyF1ZzpNoix59lxnktdG3rqbRlWEE4W ($0.01 CAD) - koseiuemura1227@gmail.com
+   lYj6fzvkF78YFhzp0d5AunlrbqIZY -> lYj6fzvkF78YFhzp0d5AunlrbqIZY_MMkTCWmoCqMqHY2D4K2GxZBnX8xU5QbQlOeEGClK6sZ ($0.10 CAD) - koseiuemura1227@gmail.com
+   nNrdNLaCOlNvesLLFS2q9IuuJt8YY -> nNrdNLaCOlNvesLLFS2q9IuuJt8YY_Es6nZJ4HyaDCmR64Av1zRrwPHEE2QbzJkglit0YJwHM ($0.10 CAD) - koseiuemura1227@gmail.com
+   PvC7iiIT9kvisVWGUFkIYeRKCvEZY -> PvC7iiIT9kvisVWGUFkIYeRKCvEZY_FOuzKs45gkEWgg7jHLuh1CQSV3YYmBP7TWMPwQPMVda ($20.00 CAD) - Unknown
+   vRhYraCWsobaMONiYqr23WeXGMEZY -> vRhYraCWsobaMONiYqr23WeXGMEZY_bBMwp4lF1JqpspGki2XhmUjSa8hIkdHADjD8vRaJhBL ($20.00 CAD) - fuma.kano@mail.utoronto.ca
+   l8R0767dPclbnNKruFgvDlfYB28YY -> l8R0767dPclbnNKruFgvDlfYB28YY_vBTAm3iNrXakhqGqsuzb8KFkzpzKzVNUhykhwxU56KW ($20.00 CAD) - Unknown
+   vzAHtD10XvHRBxtLljKZtRT4vMAZY -> vzAHtD10XvHRBxtLljKZtRT4vMAZY_bSMoK5c0fXLITbgn7YRyHmgIcvrsOvQrphpFq6VmoJT ($20.00 CAD) - Unknown
+   jxexFM1uNHr6H5g2HrVBP2wpm96YY -> jxexFM1uNHr6H5g2HrVBP2wpm96YY_E7QXYxbTL02Fno5sKDtiV14hdnpYRWT28I5WezszqGH ($20.00 CAD) - Unknown
+   bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY -> bh0LVxdwA8vzfuHbQJ7Cd3ViagEZY_P9cMCAQvOD6Zz0nGw7XSRrnJbmEEZbfrbAN0vOyPHvT ($20.00 CAD) - fuma.kano@mail.utoronto.ca
+   nBBlcEMxrYhIZDJjKR1NmSH5AYeZY -> nBBlcEMxrYhIZDJjKR1NmSH5AYeZY_4YkOz9Bzm24l49S4B9Yu9j7FKuF1wss9ltrWj8Lz7hO ($20.00 CAD) - Unknown
+   lIbex1iHEBeSd3Z5c6LYmypXLfFZY -> lIbex1iHEBeSd3Z5c6LYmypXLfFZY_Oxap1q5DqHnuiARuWRlPiZAzOXGD9gkHm1S4LeVmWrR ($20.00 CAD) - Hamyu.258@gmail.com
+   TVoZcEPAh7wqPbsoXalco2yPHDPZY -> TVoZcEPAh7wqPbsoXalco2yPHDPZY_6Zxs5DR6yc5wuIhp2dJhBbJ10X6lTUKNHWG7GJ9QKOT ($20.00 CAD) - Unknown
+   h2zer41mIXpzSkpJ9JZWqfcejPcZY -> h2zer41mIXpzSkpJ9JZWqfcejPcZY_VpX4U001OzVnWpMVq1zJLf15aqNwQZv8k9uJhmj1jMK ($20.00 CAD) - Hamyu.258@gmail.com
+   ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY -> ZCVRAlxGfbqYWiXJszB1Q4D6N6JZY_IbO9hAGcoJAQZPbz8Fzby0lLFCWDieodqpr8D5ceicL ($20.00 CAD) - megumi.sugimoto@mail.utoronto.ca
+   16USeRbDLM9R6UAhcicwRs3ZRBKZY -> 16USeRbDLM9R6UAhcicwRs3ZRBKZY_riOatDvX7OZAw2i8YLZIBrV84kTCJ2jKeArMFhhEZpN ($20.00 CAD) - daijiro.fukuda@gmail.com
+   LpANpHtNZA1mCvM6s9L8c1nwLICZY -> LpANpHtNZA1mCvM6s9L8c1nwLICZY_59n6O0P9oDmgtyveCDxlPrgB5xxFdPPNrHhslgz4MM ($20.00 CAD) - Unknown
+   XPyc8Difas8RcBVWSBWECGfVgYQZY -> XPyc8Difas8RcBVWSBWECGfVgYQZY_LzgFADG2as5fsXoVfI8QDoWIB08mZBjPGe0hcZq0s0D ($20.00 CAD) - Unknown
+   BCjPrgVz9HJ58iCtbUlz7bRHuLGZY -> BCjPrgVz9HJ58iCtbUlz7bRHuLGZY_1kGYIdYqWFRSejqAmSV2UJ3Ic1L4v0MF2ppH76oUwSW ($20.00 CAD) - daijiro.fukuda@gmail.com
+   JYEJiGChicgTSy5Q1pMeHDn4j96YY -> JYEJiGChicgTSy5Q1pMeHDn4j96YY_VrfDC8nx6kmBFtFkS9YK9wGrutnjZi0tHuLLfhgaYea ($20.00 CAD) - daijiro.fukuda@gmail.com
+   PBZmEURVEq6SAgHkX3LIlBg5XQRZY -> PBZmEURVEq6SAgHkX3LIlBg5XQRZY_sfLSRxljAKDu0NXVznEpTe5c9WUo5KGXvLebhTdVxsa ($20.00 CAD) - Unknown
+   tc5B3SeL9Rc1HtmnP00ZRErK1ldZY -> tc5B3SeL9Rc1HtmnP00ZRErK1ldZY_nQJjZqadKWp6daDAARHA5qpHk19ugKPaE3ljy8ZKL0E ($20.00 CAD) - ogasari37@gmail.com
+   t4btu12T99KaTP64qcPLC6LB475YY -> t4btu12T99KaTP64qcPLC6LB475YY_BmBPhz2m1t7i6sBklR2jIjAmgpmq2cMKkCkOVGVKbvO ($20.00 CAD) - Unknown
+   brTaCPXsdSAglpEeHkjDawTW0VUZY -> brTaCPXsdSAglpEeHkjDawTW0VUZY_X2Q8FNY8LbBYjjK8CUmgcuwfEvVdGzyARkJ45v7RVOF ($20.00 CAD) - Unknown
+   p27laJ2GCpUdIYCVj8ZmOSLlcNcZY -> p27laJ2GCpUdIYCVj8ZmOSLlcNcZY_JiKFLE4I97DKKP30zSH8ujPgzFYpmxmo8ftTwOWM7DP ($20.00 CAD) - ogasari37@gmail.com
+   JkCHxJCOBY3T0Cv1BeKvx5GDElQZY -> JkCHxJCOBY3T0Cv1BeKvx5GDElQZY_0tnPknY8LbA7KWlKanevT02tn2dDSyhxenwlj5hcwCC ($20.00 CAD) - Unknown
+   xQA2KKDnlzs2NWU7m1l6SZDwGFSZY -> xQA2KKDnlzs2NWU7m1l6SZDwGFSZY_stQJA9e5SjiRIOGAQh925dhEyHxBXMyCN2EHDKxWRUC ($1.00 CAD) - koseiuemura1227@gmail.com
+   hc4jrXMjJhRCrHP2TBZ5GHR4irbZY -> hc4jrXMjJhRCrHP2TBZ5GHR4irbZY_zU7SOFctnw83oFMiX3bQqgKEDBziNzX7M7UEmT3JPvQ ($10.00 CAD) - shinoken5656@gmail.com
+   jN2iNZHn7nAUmpA5vGMT0nyp1K6YY -> jN2iNZHn7nAUmpA5vGMT0nyp1K6YY_cDti42dJJNxvY48V83hyAmWVQ6TmzlwTClUPkMvxYMG ($10.00 CAD) - Unknown
+   ZwQ7whoE0TdYZnl6VM79nK0NSWDZY -> ZwQ7whoE0TdYZnl6VM79nK0NSWDZY_URX0mlSJg9cLJh0D3VpXoTEJ7qfhsXBPnCapwObSoGS ($10.00 CAD) - shinoken5656@gmail.com
+   VCm39APc6PnmbjoT9zLYtQDi1k7YY -> VCm39APc6PnmbjoT9zLYtQDi1k7YY_4Rp6eGHj2aKgvuun8VvqKpjJbgSdDfpOOa1ywlRd3PL ($10.00 CAD) - shinoken5656@gmail.com
+   VuScSaAtEk8OSmBdr99jBoyKeHBZY -> VuScSaAtEk8OSmBdr99jBoyKeHBZY_n1nAQfjNDSFT8CtENa14P77fkTyMS26UdDdyCwXh5tG ($5.00 CAD) - Unknown
+   VsZAOyPlAd5956HI7NSgjsgFvg8YY -> VsZAOyPlAd5956HI7NSgjsgFvg8YY_9o30zmFoKNkdrOtTLnmSkEimLvNTbCXfuWlDTY0xFqd ($5.00 CAD) - Unknown
+   lIdJehseU3P3EAPJ3NPzO2bLqRRZY -> lIdJehseU3P3EAPJ3NPzO2bLqRRZY_QIOGoDqjxmUjeiqi5p5tsHhWhKB1FrwNlph1W5ibgOb ($5.00 CAD) - aito.inoue@mail.utoronto.ca
+   tqq8ikxCCnKG40V1sMKb6VsPXRcZY -> tqq8ikxCCnKG40V1sMKb6VsPXRcZY_H2YNBWiWhFVHWyiuOAR6qmj1FYLwiE5WSWbKPjVpWpN ($5.00 CAD) - Unknown
+   z3D4vEf8r6HC6JAEqFwzieKTr7eZY -> z3D4vEf8r6HC6JAEqFwzieKTr7eZY_fLC4LoxillwUau5qyKe6Y9JHPaWOk8jtgyNlJ07WOlG ($5.00 CAD) - Unknown
+   D5md8iM877EvZANmUxJVtLqY0FcZY -> D5md8iM877EvZANmUxJVtLqY0FcZY_nET2TwcSIwyq3L3Pk1xo7LO6J1nWg3tJTu5cym3NLMS ($5.00 CAD) - Unknown
+   vhtGbB7qVPXK5I0DM6CathVHAkGZY -> vhtGbB7qVPXK5I0DM6CathVHAkGZY_JvORucSfyFZnVToOfthfhzWnjzWDOhdFSYgWz5WGTKK ($5.00 CAD) - Unknown
+   lKGB8ZXeLHcOK5JufulbZWg9XJ8YY -> lKGB8ZXeLHcOK5JufulbZWg9XJ8YY_2M6YSJresREpTyM6MAAFUXKOmPl2biOLJroxHgwLxaC ($5.00 CAD) - taishizoshima@gmail.com
+   FA5tOPWMQWHcwvjs1fMHIXph5XdZY -> FA5tOPWMQWHcwvjs1fMHIXph5XdZY_y7k2JtAFnNxFTgJTThI9hUZKXsVgy3I4E6EEMg0fGtO ($5.00 CAD) - kaishinryotrac07@gmail.com
+   ZoQrTro1RfPmuhH6SrwrIdH6fofZY -> ZoQrTro1RfPmuhH6SrwrIdH6fofZY_xKgQ5fCIN6RwzjBJVczUpal7ov6I2cbXqTA2NRajtVH ($5.00 CAD) - kaishinryotrac07@gmail.com
+   zfx7SWat3Ws00HeZatfzmY4qcCLZY -> zfx7SWat3Ws00HeZatfzmY4qcCLZY_AqkKdoN2J20KCymH6nK6d3hRQLthUI88TlT79kC14DJ ($5.00 CAD) - suai.inoue@mail.utoronto.ca
+   14fUKu0PXzRYjEqPBKk8P9meNZeZY -> 14fUKu0PXzRYjEqPBKk8P9meNZeZY_TeEajlP77Un9V1ISkVQYuiuX8A8Kg2hxAvHhjpMrJ3N ($1.00 CAD) - koseiuemura1227@gmail.com
+
+❌ 失敗した返金:
+💰 返金失敗金額: CAD $0.65
+   ZmVyPirFaiVmzOIVrOzO9gFXzBCZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.01 CAD) - koseiuemura1227@gmail.com
+   vniDve70NThNQP4vZOFSlQPaTm6YY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.01 CAD) - koseiuemura1227@gmail.com
+   d2KzcQqAXmioALCSFI7o1BHR4XJZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.01 CAD) - koseiuemura1227@gmail.com
+   5IGY2tvkzxOoV3yWiVfpYhkIDZEZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.01 CAD) - koseiuemura1227@gmail.com
+   BM0pZu1pm66SWUQ9dSYMNau3zGXZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.01 CAD) - koseiuemura1227@gmail.com
+   tCuIkdho6mOEeaepk9nMlilsxmYZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.50 CAD) - koseiuemura1227@gmail.com
+   9WeZEkS10wRbg0OIoj2A8SxGkxVZY - {'errors': [{'code': 'REFUND_AMOUNT_INVALID', 'detail': 'The requested refund amount exceeds the amount available to refund.', 'field': 'amount_money.amount', 'category': 'REFUND_ERROR'}]} ($0.10 CAD) - koseiuemura1227@gmail.com
+
+🎉 処理完了: 43/50件の返金が成功しました
+[ec2-user@ip-172-31-32-200 UTJN-website]$ 

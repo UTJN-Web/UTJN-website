@@ -26,8 +26,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔗 Backend URL: ${backendUrl}`);
 
-    // Get unregistered payments from backend
-    const response = await fetch(backendUrl);
+    // Get unregistered payments from backend with longer timeout
+    const response = await fetch(backendUrl, {
+      signal: AbortSignal.timeout(120000) // 2 minutes timeout
+    });
     
     if (!response.ok) {
       const errorData = await response.text();

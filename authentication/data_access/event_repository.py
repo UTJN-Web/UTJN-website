@@ -929,8 +929,8 @@ class EventRepository(BaseRepository):
                 
                 event = dict(event_row)
                 
-                # Get ticket tiers
-                tiers = await self.get_ticket_tiers(event_id)
+                # Get ticket tiers with availability information
+                tiers = await self.get_available_ticket_tiers(event_id)
                 event['ticketTiers'] = tiers
                 
                 # Get sub-events
@@ -1084,8 +1084,48 @@ class EventRepository(BaseRepository):
                     
                     if not registration:
                         raise Exception("Event is full - capacity exceeded during registration")
+                elif ticket_tier_id:
+                    # For ticket tier registration, use atomic tier capacity check
+                    registration = await conn.fetchrow("""
+                        WITH tier_capacity_check AS (
+                            SELECT 
+                                CASE 
+                                    WHEN (SELECT COUNT(*) FROM "EventRegistration" WHERE "ticketTierId" = $3) < (SELECT capacity FROM "TicketTier" WHERE id = $3)
+                                    THEN true
+                                    ELSE false
+                                END as has_tier_capacity
+                        )
+                        INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
+                        SELECT $1, $2, $3, $4, $5, 'completed', $6, $7
+                        FROM tier_capacity_check
+                        WHERE has_tier_capacity = true
+                        RETURNING *
+                    """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id, payment_email)
+                    
+                    if not registration:
+                        raise Exception("Ticket tier is full - capacity exceeded during registration")
+                elif sub_event_id:
+                    # For sub-event registration, use atomic sub-event capacity check
+                    registration = await conn.fetchrow("""
+                        WITH sub_event_capacity_check AS (
+                            SELECT 
+                                CASE 
+                                    WHEN (SELECT COUNT(*) FROM "EventRegistration" WHERE "subEventId" = $4) < (SELECT capacity FROM "SubEvent" WHERE id = $4)
+                                    THEN true
+                                    ELSE false
+                                END as has_sub_event_capacity
+                        )
+                        INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
+                        SELECT $1, $2, $3, $4, $5, 'completed', $6, $7
+                        FROM sub_event_capacity_check
+                        WHERE has_sub_event_capacity = true
+                        RETURNING *
+                    """, user_id, event_id, ticket_tier_id, sub_event_id, final_price, payment_id, payment_email)
+                    
+                    if not registration:
+                        raise Exception("Sub-event is full - capacity exceeded during registration")
                 else:
-                    # For tier/sub-event registration, use separate capacity checks
+                    # Fallback for any other case
                     registration = await conn.fetchrow("""
                         INSERT INTO "EventRegistration" ("userId", "eventId", "ticketTierId", "subEventId", "finalPrice", "paymentStatus", "paymentId", "paymentEmail")
                         VALUES ($1, $2, $3, $4, $5, 'completed', $6, $7)
@@ -1226,7 +1266,8 @@ class EventRepository(BaseRepository):
                 result = await conn.fetchrow("""
                     WITH capacity_check AS (
                         SELECT 
-                            CA                                WHEN (
+                            CASE 
+                                WHEN (
                                     (SELECT COUNT(*) FROM "EventRegistration" WHERE "eventId" = $3) + 
                                     (SELECT COUNT(*) FROM "EventReservation" WHERE "eventId" = $3 AND "expiresAt" > NOW())
                                 ) < (SELECT capacity FROM "Event" WHERE id = $3)
