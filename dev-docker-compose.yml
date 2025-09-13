@@ -1,0 +1,42 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile   # ← 変更
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_deps:/app/node_modules
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://api:8000
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_ENV=development
+    env_file:
+      - .env
+    depends_on:
+      - api                               # API が先に立つまで待機
+
+  api:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile      # ← 新規
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./authentication:/app/authentication
+      - ./main.py:/app/main.py
+      - ./.env:/app/.env                  # AWS/Cognito 設定など
+      - ./uploads:/app/uploads            # アップロードされた画像を永続化
+    ports:
+      - "8000:8000"
+    environment:
+      - CORS_ORIGINS=http://localhost:3000
+      - BACKEND_URL=http://localhost:8000
+      - DATABASE_URL=postgresql://postgres:MyNewPassword123!@utjn-db.ch68m8sgy7on.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+
+volumes:
+  node_deps: {}

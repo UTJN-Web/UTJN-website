@@ -260,6 +260,18 @@ NODE_ENV=production
 NEXT_PUBLIC_BACKEND_URL=https://api.utjn.com
 ```
 
+### Development Deployment
+Used when you want to test the changes you have made locally before putting them out on the production level.
+
+```bash
+docker compose -f dev-docker-compose.yml up -d --build
+```
+
+Once you are done testing locally, stop the running stack with
+```bash
+docker compose -f dev-docker-compose.yml down
+```
+
 ### Environment Variables
 - **Development**: Local development configuration
 - **Staging**: Pre-production testing environment
