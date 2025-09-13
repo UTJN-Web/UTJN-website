@@ -42,6 +42,7 @@ interface Event {
   registration_count?: number; // Backend provides this field
   registeredUsers: any[];
   registrations?: any[];
+  url?: string;
 }
 
 interface EventFormData {
@@ -57,6 +58,7 @@ interface EventFormData {
   isUofTOnly: boolean;
   enableAdvancedTicketing: boolean;
   enableSubEvents: boolean;
+  url: string;
 }
 
 type NotificationType = 'success' | 'error' | 'info';
@@ -140,7 +142,8 @@ export default function AdminEventsPage() {
     refundDeadline: '',
     isUofTOnly: false,
     enableAdvancedTicketing: false,
-    enableSubEvents: false
+    enableSubEvents: false,
+    url: ''
   });
 
   useEffect(() => {
@@ -453,7 +456,8 @@ export default function AdminEventsPage() {
       refundDeadline: '',
       isUofTOnly: false,
       enableAdvancedTicketing: false,
-      enableSubEvents: false
+      enableSubEvents: false,
+      url: ''
     });
     // Reset image state
     setImageFile(null);
@@ -492,7 +496,8 @@ export default function AdminEventsPage() {
       refundDeadline: event.refundDeadline ? formatDateForInput(event.refundDeadline) : formatDateForInput(event.date),
       isUofTOnly: event.isUofTOnly !== undefined ? event.isUofTOnly : false,
       enableAdvancedTicketing: event.enableAdvancedTicketing !== undefined ? event.enableAdvancedTicketing : false,
-      enableSubEvents: event.enableSubEvents !== undefined ? event.enableSubEvents : false
+      enableSubEvents: event.enableSubEvents !== undefined ? event.enableSubEvents : false,
+      url: event.url || ''
     });
 
     // Set image preview if event has an image
@@ -1104,6 +1109,22 @@ export default function AdminEventsPage() {
                         className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all resize-none"
                         placeholder="Describe your event in detail..."
                       />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Event URL (Optional)
+                      </label>
+                      <input
+                        type="url"
+                        value={formData.url}
+                        onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
+                        placeholder="https://example.com/event-registration"
+                      />
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        If provided, users will register in both UTJN system and the external company system. UTJN registration happens first, then external URL opens in a new window.
+                      </p>
                     </div>
                   </div>
 

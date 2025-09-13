@@ -560,8 +560,8 @@ class EventRepository(BaseRepository):
         try:
             async with self.get_connection() as conn:
                 query = """
-                INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived", "isUofTOnly", "enableAdvancedTicketing", "enableSubEvents")
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                INSERT INTO "Event" (name, description, "targetYear", fee, capacity, date, type, image, "refundDeadline", "isArchived", "isUofTOnly", "enableAdvancedTicketing", "enableSubEvents", url)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 RETURNING *
                 """
                 
@@ -586,7 +586,8 @@ class EventRepository(BaseRepository):
                     event_data.get("isArchived", False),
                     event_data.get("isUofTOnly", False),
                     event_data.get("enableAdvancedTicketing", False),
-                    event_data.get("enableSubEvents", False)
+                    event_data.get("enableSubEvents", False),
+                    event_data.get("url")
                 )
                 
                 event_dict = dict(row)
@@ -673,13 +674,19 @@ class EventRepository(BaseRepository):
             raise e
     
     async def get_ticket_tiers(self, event_id: int) -> List[Dict[str, Any]]:
-        """Get all ticket tiers for an event"""
+        """Get all ticket tiers for an event with registration counts"""
         try:
             async with self.get_connection() as conn:
                 query = """
-                SELECT * FROM "TicketTier" 
-                WHERE "eventId" = $1 AND "isActive" = TRUE
-                ORDER BY price ASC
+                SELECT 
+                    tt.*,
+                    COUNT(er.id) as registered_count,
+                    (tt.capacity - COUNT(er.id)) as remaining_capacity
+                FROM "TicketTier" tt
+                LEFT JOIN "EventRegistration" er ON tt.id = er."ticketTierId"
+                WHERE tt."eventId" = $1 AND tt."isActive" = TRUE
+                GROUP BY tt.id
+                ORDER BY tt.price ASC
                 """
                 rows = await conn.fetch(query, event_id)
                 
@@ -951,8 +958,8 @@ class EventRepository(BaseRepository):
                 SET name = $1, description = $2, "targetYear" = $3, fee = $4, 
                     capacity = $5, date = $6, type = $7, image = $8, "refundDeadline" = $9, 
                     "isArchived" = $10, "isUofTOnly" = $11, "enableAdvancedTicketing" = $12, 
-                    "enableSubEvents" = $13, "updatedAt" = NOW()
-                WHERE id = $14
+                    "enableSubEvents" = $13, url = $14, "updatedAt" = NOW()
+                WHERE id = $15
                 RETURNING *
                 """
                 
@@ -978,6 +985,7 @@ class EventRepository(BaseRepository):
                     event_data.get("isUofTOnly", False),
                     event_data.get("enableAdvancedTicketing", False),
                     event_data.get("enableSubEvents", False),
+                    event_data.get("url"),
                     event_id
                 )
                 
