@@ -26,6 +26,7 @@ class EventRequest(BaseModel):
     enableSubEvents: bool = False  # Enable sub-events
     ticketTiers: Optional[List[dict]] = []  # Ticket tier configurations
     subEvents: Optional[List[dict]] = []  # Sub-event configurations
+    url: Optional[str] = None  # External URL for event registration
 
 class TicketTierRequest(BaseModel):
     eventId: int
@@ -710,7 +711,7 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                         except Exception as refund_error:
                             print(f"❌ Error processing automatic refund: {refund_error}")
                     
-                    raise HTTPException(status_code=400, detail=f"Failed to convert reservation: {str(e)}")
+                    raise HTTPException(status_code=400, detail="Failed to convert reservation")
             else:
                 # Handle registration based on advanced settings
                 if registration_data.subEventIds and len(registration_data.subEventIds) > 0:
@@ -763,7 +764,7 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                                 except Exception as refund_error:
                                     print(f"❌ Error processing automatic refund: {refund_error}")
                             
-                        raise HTTPException(status_code=400, detail=f"Failed to register for multiple sub-events: {str(e)}")
+                            raise HTTPException(status_code=400, detail=f"Failed to register for multiple sub-events: {str(e)}")
                     else:
                         # Single sub-event registration
                         try:
@@ -807,7 +808,7 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                                 except Exception as refund_error:
                                     print(f"❌ Error processing automatic refund: {refund_error}")
                             
-                        raise HTTPException(status_code=400, detail=f"Failed to register for sub-event: {str(e)}")
+                            raise HTTPException(status_code=400, detail=f"Failed to register for sub-event: {str(e)}")
                 else:
                     # Tier-based or basic registration
                     try:
@@ -851,7 +852,7 @@ async def register_for_event(event_id: int, registration_data: EventRegistration
                             except Exception as refund_error:
                                 print(f"❌ Error processing automatic refund: {refund_error}")
                         
-                    raise HTTPException(status_code=400, detail=f"Failed to register for event: {str(e)}")
+                        raise HTTPException(status_code=400, detail=f"Failed to register for event: {str(e)}")
             
             print(f"✅ Registration successful for user {registration_data.userId}")
             return {
