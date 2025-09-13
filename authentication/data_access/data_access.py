@@ -136,7 +136,7 @@ async def login_user(email, password) -> tuple:
         return (False, ds.USER_UNCONFIRMED, None)
     
     except IncorrectParameterError:
-        return (False, ds.LOGIN_INVALID_EMAIL, None)
+        return (False, ds.INVALID_PARAMETERL, None)
 
     except Exception as e:
         print(f"Login error: {e}")

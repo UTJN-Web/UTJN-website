@@ -66,9 +66,6 @@ export default function DetailedAnalyticsPage() {
     });
   };
 
-  const calculateFillRate = (registrations: number, capacity: number) => {
-    return capacity > 0 ? Math.round((registrations / capacity) * 100) : 0;
-  };
 
   if (loading) {
     return (
@@ -136,19 +133,8 @@ export default function DetailedAnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Registrations</span>
                   <span className="font-semibold text-gray-900">
-                    {event.totalRegistrations} / {event.totalCapacity}
+                    {event.totalRegistrations}
                   </span>
-                </div>
-                
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${calculateFillRate(event.totalRegistrations, event.totalCapacity)}%` }}
-                  />
-                </div>
-                
-                <div className="text-xs text-gray-500 text-center">
-                  {calculateFillRate(event.totalRegistrations, event.totalCapacity)}% fill rate
                 </div>
               </div>
             </div>
@@ -182,17 +168,6 @@ export default function DetailedAnalyticsPage() {
                     </div>
                   </div>
                   
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="flex items-center">
-                      <Ticket className="w-8 h-8 text-green-600 mr-3" />
-                      <div>
-                        <p className="text-sm text-green-600">Fill rate</p>
-                        <p className="text-2xl font-bold text-green-900">
-                          {calculateFillRate(selectedEvent.totalRegistrations, selectedEvent.totalCapacity)}%
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                   
                   <div className="bg-red-50 p-4 rounded-lg">
                     <div className="flex items-center">

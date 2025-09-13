@@ -64,10 +64,27 @@ export async function GET(request: NextRequest) {
     );
 
     // Process detailed analytics
-    const detailedAnalytics = events.map((event: any, idx: number) => {
+    const detailedAnalytics = await Promise.all(events.map(async (event: any, idx: number) => {
       const eventDetail = eventDetails[idx];
 
-      // Get registrations for this event (best-effort, may be empty)
+      // Get actual registrations from EventRegistration table via CSV export
+      let actualRegistrations: any[] = [];
+      let totalRegistrations = 0;
+      
+      try {
+        const csvRes = await fetch(`${backendUrl}/events/${event.id}/export_csv`);
+        if (csvRes.ok) {
+          const csvText = await csvRes.text();
+          const lines = csvText.split('\n');
+          // Skip header row and filter out empty lines
+          actualRegistrations = lines.slice(1).filter(line => line.trim().length > 0);
+          totalRegistrations = actualRegistrations.length;
+        }
+      } catch (error) {
+        console.error(`Error fetching registrations for event ${event.id}:`, error);
+      }
+
+      // Get registrations for this event (fallback for analysis)
       const eventRegistrations = users.filter((user: any) => 
         user.registrations && user.registrations.some((reg: any) => reg.eventId === event.id)
       );
@@ -92,18 +109,8 @@ export async function GET(request: NextRequest) {
       // Analyze cancellations (unchanged best-effort)
       const cancellationAnalysis = analyzeCancellations(eventRegistrations, event);
 
-      // Calculate total registrations by directly counting actual registrations from users data
+      // Calculate total capacity
       let totalCapacity = event.capacity;
-      let totalRegistrations = 0;
-      
-      // Count actual registrations from the users data (this is the source of truth)
-      const actualRegistrations = users.filter((user: any) => 
-        user.registrations && user.registrations.some((reg: any) => 
-          reg.eventId === event.id && reg.paymentStatus === 'completed'
-        )
-      );
-      
-      totalRegistrations = actualRegistrations.length;
       
       // For advanced ticketing events, also calculate total capacity from tiers if available
       if (eventDetail && eventDetail.ticketTiers && Array.isArray(eventDetail.ticketTiers)) {
@@ -118,7 +125,7 @@ export async function GET(request: NextRequest) {
         eventRemainingSeats: event.remainingSeats,
         oldCalculation: event.capacity - event.remainingSeats,
         actualRegistrationsCount: totalRegistrations,
-        actualRegistrations: actualRegistrations.map(u => ({ id: u.id, email: u.email })),
+        actualRegistrations: actualRegistrations.slice(0, 5), // Show first 5 for debugging
         totalCapacity,
         ticketTiers: eventDetail?.ticketTiers?.map((t: any) => ({
           name: t.name,
@@ -138,7 +145,7 @@ export async function GET(request: NextRequest) {
         refundAnalysis,
         cancellationAnalysis
       };
-    });
+    }));
 
     return NextResponse.json({ success: true, detailedAnalytics });
 

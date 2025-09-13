@@ -48,16 +48,16 @@ export async function POST(
       headers: {
         'Content-Type': 'application/json',
       },
-              body: JSON.stringify({
-          userId: numericUserId, // Use the validated numeric userId
-          paymentId: paymentId || null,
-          tierId: tierId ? parseInt(tierId) : null,
-          subEventIds: subEventIds || [],
-          creditsUsed: creditsUsed,
-          finalPrice: finalPrice, // Pass the calculated final price with credits applied
-          paymentEmail: paymentEmail, // Pass the payment email for refund notifications
-          reservationId: reservationId // Pass the reservation ID for conversion
-        })
+      body: JSON.stringify({
+        userId: numericUserId, // Use the validated numeric userId
+        paymentId: paymentId || null,
+        tierId: tierId ? parseInt(tierId) : null,
+        subEventIds: subEventIds || [],
+        creditsUsed: creditsUsed,
+        finalPrice: finalPrice, // Pass the calculated final price with credits applied
+        paymentEmail: paymentEmail, // Pass the payment email for refund notifications
+        reservationId: reservationId // Pass the reservation ID for conversion
+      })
     });
 
     if (!registrationResponse.ok) {

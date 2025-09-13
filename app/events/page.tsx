@@ -62,6 +62,7 @@ interface Event {
   enableSubEvents?: boolean;
   ticketTiers?: TicketTier[];
   subEvents?: SubEvent[];
+  url?: string;
 }
 
 export default function EventsPage() {
@@ -302,6 +303,21 @@ export default function EventsPage() {
       return;
     }
 
+    // Find the event to check if it has an external URL
+    const event = events.find(e => e.id === eventId);
+    if (event && event.url) {
+      // For events with external URL, first register in UTJN system, then open external URL
+      // This ensures both UTJN and external company registrations are completed
+      handleUTJNRegistration(eventId).then(() => {
+        // Open external URL in new window after UTJN registration
+        window.open(event.url, '_blank', 'noopener,noreferrer');
+      }).catch((error) => {
+        console.error('UTJN registration failed:', error);
+        showToast('Registration Error', 'Failed to register in UTJN system. Please try again.', 'error');
+      });
+      return;
+    }
+
     // Build payment URL with credit usage information
     let paymentUrl = `/payment?eventId=${eventId}&userId=${user.id}`;
     
@@ -312,6 +328,25 @@ export default function EventsPage() {
     // }
 
     // Redirect to payment page
+    window.location.href = paymentUrl;
+  };
+
+  const handleUTJNRegistration = async (eventId: number) => {
+    // This function handles UTJN-side registration for events with external URLs
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+      throw new Error('Event not found');
+    }
+
+    // For free events, use the free registration API
+    if (event.fee === 0) {
+      return handleFreeEventRegistration(eventId);
+    }
+
+    // For paid events, we need to handle payment first
+    // Since this is called from handleRegister, we should redirect to payment
+    // and let the payment success callback handle the external URL opening
+    let paymentUrl = `/payment?eventId=${eventId}&userId=${user?.id}`;
     window.location.href = paymentUrl;
   };
 
@@ -367,6 +402,12 @@ export default function EventsPage() {
           });
         } catch (emailErr) {
           console.error('Free registration email send failed:', emailErr);
+        }
+
+        // Check if event has external URL and open it
+        if (event && event.url) {
+          // Open external URL in new window after successful registration
+          window.open(event.url, '_blank', 'noopener,noreferrer');
         }
 
         // Refresh events to update registration status
@@ -902,7 +943,6 @@ function EventCard({
         backendRegistrations,
         backendRemaining,
         frontendRegistrations,
-        eventRemainingSeats: event.remainingSeats,
         actualRemaining,
         registeredUsers: event.registeredUsers?.map((u: any) => ({ id: u.id, email: u.email })) || 'No registeredUsers',
         registeredUsersLength: event.registeredUsers?.length || 0,
@@ -1289,9 +1329,22 @@ function EventCard({
                   ) : (
                     <>
                       <CheckCircle size={16} />
-                      Register FREE
+                      {event.url ? 'Register (UTJN + External)' : 'Register FREE'}
                     </>
                   )}
+                </button>
+              ) : event.url && event.fee === 0 ? (
+                <button
+                  onClick={() => onRegister(event.id)}
+                  disabled={!user || !canRegister()}
+                  className={`w-full rounded-md border py-2 text-center text-sm transition flex items-center justify-center gap-1 ${
+                    canRegister()
+                      ? 'border-[#1c2a52] text-[#1c2a52] hover:bg-[#1c2a52] hover:text-white'
+                      : 'border-gray-400 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <CreditCard size={16} />
+                  Register (UTJN + External)
                 </button>
               ) : (
                 <Link
